@@ -1,4 +1,4 @@
-# Vehicle Log
+# Vehicle History
 
 Offline-first Flutter app to track the full service history of one or more
 vehicles — maintenance, refuelling, expenses, inspections, deadlines and

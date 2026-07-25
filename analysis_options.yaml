@@ -1,0 +1,28 @@
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
+
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  # Stricter rule set enforced by this project, on top of `flutter_lints`.
+  # These encode the non-negotiable conventions in CLAUDE.md (Effective Dart,
+  # const constructors, documented public API, trailing commas, no `print`).
+  # Do not disable a rule to silence noise — raise it for discussion instead.
+  rules:
+    # Prefer `const` constructors wherever the arguments are constant.
+    - prefer_const_constructors
+    # Every public class, method and field must carry a `///` doc comment.
+    - public_member_api_docs
+    # Require a trailing comma on multi-argument calls for stable formatting.
+    - require_trailing_commas
+    # Forbid `print`; use a proper logging mechanism instead.
+    - avoid_print
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
