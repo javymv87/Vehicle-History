@@ -223,7 +223,22 @@ output green — raise it instead.
 
 ---
 
-## 10. Open points
+## 10. Contribution workflow
+
+`main` is protected by a repository ruleset (`main-protection`): direct
+pushes are rejected, and force pushes and branch deletion are blocked.
+
+- Every change starts from an up-to-date `main`, on a dedicated branch named
+  `<type>/<short-kebab-description>`, where `<type>` is one of `feature`,
+  `fix`, `chore`, `docs`, `test`, `refactor`.
+- Open a pull request towards `main`; the PR template checklist applies.
+- Merging requires the `analyze-and-test` check to be green **and** the
+  branch to be up to date with `main` (strict status checks).
+- No required reviewers: the single developer self-merges once CI is green.
+
+---
+
+## 11. Open points
 
 - App display name (the repository is `Vehicle-History`).
 - Licence — currently undefined in `README.md`.
