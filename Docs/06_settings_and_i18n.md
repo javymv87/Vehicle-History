@@ -14,6 +14,9 @@ Contiene le configurazioni generali dell'app (tabella `Settings`, doc 02):
   - attiva/disattiva l'uso del cloud
 - Eventuali preferenze future (unità di misura, formato data, ecc.)
 
+**La valuta non è configurabile**: è sempre l'euro (vedi doc 02). Della lingua
+scelta dipende solo il *formato* con cui l'importo viene mostrato.
+
 ## Lingue
 
 L'app supporta tre lingue, selezionabili dall'utente:
