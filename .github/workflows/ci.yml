@@ -37,6 +37,18 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
 
+      # Generated sources (e.g. Drift `*.g.dart`) are gitignored, so CI must
+      # produce them before analysing. Guarded because `build_runner` is not a
+      # dependency yet: without the guard this step would fail immediately.
+      # The guard can be removed once build_runner is permanently in place.
+      - name: Generate code
+        run: |
+          if grep -qE '^\s*build_runner:' pubspec.yaml; then
+            dart run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner is not a dependency yet — skipping code generation."
+          fi
+
       - name: Analyze
         run: flutter analyze --fatal-infos --fatal-warnings
 

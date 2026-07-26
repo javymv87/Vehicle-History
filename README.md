@@ -64,8 +64,13 @@ conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 
 ## Status
 
-Concept complete, documented before writing code. Next step: scaffold the
-Flutter project following the structure in `CLAUDE.md`.
+Concept documented and Flutter project scaffolded: folder structure, strict
+lint rules, CI and the conceptual documentation in `Docs/` are all in place.
+The application code has not been written yet.
+
+Next steps, in order: the data layer (Drift database, models, repositories),
+the Material 3 theme and the `gen_l10n` localisation setup, then the first
+vertical feature (vehicles) end to end.
 
 ## License
 
