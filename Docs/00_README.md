@@ -32,5 +32,10 @@ e report esportabili in PDF.
 
 ## Stato
 
-Concept completo. Prossimo passo: impostazione del progetto Flutter secondo la
-struttura descritta in `../CLAUDE.md`.
+Concept completo e progetto Flutter impostato: struttura delle cartelle, regole
+di lint, CI e questa documentazione sono già in repository. Il codice
+dell'applicazione non è ancora stato scritto.
+
+Prossimi passi, in ordine: la capa dati (database Drift, modelli, repository),
+il tema Material 3 e la localizzazione con `gen_l10n`, poi la prima feature
+verticale (veicoli) completa.

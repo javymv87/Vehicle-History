@@ -14,6 +14,7 @@ discrepancy instead of silently choosing.
 
 | Item | Value |
 | --- | --- |
+| App display name | `Vehicle History` |
 | Repository | `Vehicle-History` |
 | Dart package name | `vehicle_history` |
 | Application id | `io.github.javymv87.vehicle_history` — fixed at `flutter create`, never change after publishing |
@@ -240,5 +241,4 @@ pushes are rejected, and force pushes and branch deletion are blocked.
 
 ## 11. Open points
 
-- App display name (the repository is `Vehicle-History`).
 - Licence — currently undefined in `README.md`.
