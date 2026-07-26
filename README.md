@@ -74,4 +74,9 @@ vertical feature (vehicles) end to end.
 
 ## License
 
-_To be defined._
+No licence is granted. All rights reserved.
+
+This is a personal project published for reference only: the source can be
+read, but it may not be reused, redistributed or derived from without explicit
+written permission. The absence of a licence file is deliberate, not an
+oversight.
