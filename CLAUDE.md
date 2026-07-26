@@ -21,6 +21,7 @@ discrepancy instead of silently choosing.
 | Platform priority | Android first; iOS must stay possible (no Android-only APIs without an abstraction) |
 | Users | Single user per device. No accounts, no multi-user, no server |
 | Data location | On device. Cloud is used for backup only, never as the live store |
+| Licence | None — all rights reserved. Deliberate decision, not an open point |
 
 ---
 
@@ -236,9 +237,3 @@ pushes are rejected, and force pushes and branch deletion are blocked.
 - Merging requires the `analyze-and-test` check to be green **and** the
   branch to be up to date with `main` (strict status checks).
 - No required reviewers: the single developer self-merges once CI is green.
-
----
-
-## 11. Open points
-
-- Licence — currently undefined in `README.md`.
