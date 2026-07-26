@@ -22,6 +22,18 @@ record principale porta con sé:
   distrutta subito: viene marcata come cancellata. Serve a poter recuperare
   errori e a far sapere al backup che l'elemento è stato rimosso di proposito.
 
+## Valuta e importi
+
+Tutti gli importi sono in **euro**. La valuta è fissa: non esiste un campo
+valuta nello schema e non è configurabile dall'utente. L'app è pensata per uso
+personale in area euro, e supportare più valute richiederebbe anche i tassi di
+cambio storici per rendere sensati i report — complessità che non vale il
+beneficio.
+
+La *formattazione* segue comunque la lingua scelta (vedi doc 06): lo stesso
+importo appare come `1.234,56 €` in italiano e spagnolo e come `€1,234.56` in
+inglese.
+
 ## Tabelle
 
 ### Owner (proprietario)
@@ -81,7 +93,7 @@ Campi sempre presenti:
   (`MileageReading`). I due registri sono indipendenti.
 - **Tipo** di voce (vedi elenco sotto)
 - **Testo** / descrizione libera
-- **Costo** totale (opzionale)
+- **Costo** totale (opzionale), in euro
 - **Promemoria** opzionale (data futura + eventuale soglia km) che genera una
   notifica
 
