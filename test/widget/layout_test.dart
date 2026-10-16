@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/app/router/app_routes.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
+import 'package:vehicle_history/data/models/vehicle_kind.dart';
 
 import '../support/fake_repositories.dart';
 import '../support/pump_app.dart';
@@ -25,6 +26,10 @@ void main() {
           km: 1234567,
           fuelType: FuelType.pluginHybrid,
           nickname: 'The family car for long trips',
+          kind: VehicleKind.moped,
+          make: 'Mercedes-Benz',
+          makeSlug: 'mercedes-benz',
+          model: 'Classe A 180 d Automatic Premium',
         )
         .id;
   });
@@ -62,5 +67,30 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('make picker fits 360 dp with 2x text (${brightness.name})',
+        (tester) async {
+      tester.view
+        ..physicalSize = const Size(360, 720)
+        ..devicePixelRatio = 1;
+      tester.platformDispatcher
+        ..textScaleFactorTestValue = 2
+        ..platformBrightnessTestValue = brightness;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.newVehicle,
+        locale: const Locale('it'),
+      );
+      await tester.tap(find.byKey(const ValueKey('make-field')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Più diffuse'), findsOneWidget);
+      expect(find.text('Altra marca…'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   }
 }

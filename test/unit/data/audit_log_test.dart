@@ -3,6 +3,7 @@ import 'package:vehicle_history/data/db/app_database.dart';
 import 'package:vehicle_history/data/db/daos/audit_log_dao.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
+import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/audit_log_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
@@ -71,6 +72,7 @@ void main() {
     final owner = await owners.create(firstName: 'Mario');
     final v = await vehicles.create(
       plate: 'AB123CD',
+      kind: VehicleKind.car,
       ownerId: owner.id,
       currentOdometerKm: 0,
       fuelType: FuelType.diesel,
@@ -78,6 +80,7 @@ void main() {
     await vehicles.update(
       v.id,
       plate: 'AB123CD',
+      kind: VehicleKind.car,
       ownerId: owner.id,
       fuelType: FuelType.petrol,
     );
@@ -98,6 +101,7 @@ void main() {
     final owner = await owners.create(firstName: 'Mario');
     await vehicles.create(
       plate: 'AB123CD',
+      kind: VehicleKind.car,
       ownerId: owner.id,
       currentOdometerKm: 0,
       fuelType: FuelType.diesel,
@@ -107,6 +111,7 @@ void main() {
     await expectLater(
       vehicles.create(
         plate: 'AB123CD',
+        kind: VehicleKind.car,
         ownerId: owner.id,
         currentOdometerKm: 0,
         fuelType: FuelType.diesel,

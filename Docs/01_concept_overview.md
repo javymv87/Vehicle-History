@@ -7,6 +7,9 @@ preparada también para iOS en el futuro) para llevar el **historial completo de
 uno o varios vehículos**: mantenimientos, reparaciones, repostajes, controles,
 gastos, vencimientos legales y documentos.
 
+Gestiona **coches, furgonetas, motos y ciclomotores** (los scooters son muy
+comunes en Italia). Camiones y autobuses quedan fuera.
+
 No es una app "conectada al vehículo" (sin OBD, sin diagnóstico): es un
 **registro digital** llevado a mano, pensado para sustituir el clásico
 cuaderno de mantenimiento y la caja de recibos.

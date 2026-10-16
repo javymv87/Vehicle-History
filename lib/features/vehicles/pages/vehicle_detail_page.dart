@@ -11,6 +11,7 @@ import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../controllers/vehicle_deletion_controller.dart';
 import '../controllers/vehicle_detail_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
@@ -94,7 +95,7 @@ class _VehicleDetailView extends ConsumerWidget {
     final owner = item.owner;
     return Scaffold(
       appBar: AppBar(
-        title: Text(vehicle.plate),
+        title: Text(vehicle.makeAndModel ?? vehicle.plate),
         actions: [
           IconButton(
             tooltip: l10n.actionEdit,
@@ -111,6 +112,19 @@ class _VehicleDetailView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          ListTile(
+            leading: Icon(vehicle.kind.icon),
+            title: Text(vehicle.kind.label(l10n)),
+            subtitle: Text(l10n.fieldKind),
+          ),
+          if (vehicle.make case final make?)
+            DetailField(label: l10n.fieldMake, value: make),
+          if (vehicle.model case final model?)
+            DetailField(label: l10n.fieldModel, value: model),
+          if (vehicle.modelYear case final year?)
+            DetailField(label: l10n.fieldModelYear, value: '$year'),
+          if (vehicle.version case final version?)
+            DetailField(label: l10n.fieldVersion, value: version),
           DetailField(label: l10n.fieldPlate, value: vehicle.plate),
           if (vehicle.nickname case final nickname?)
             DetailField(label: l10n.fieldNickname, value: nickname),

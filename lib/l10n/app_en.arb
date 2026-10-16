@@ -355,5 +355,121 @@
         "type": "String"
       }
     }
+  },
+  "fieldKind": "Type",
+  "@fieldKind": {
+    "description": "Label of the vehicle kind choice (car, van, motorcycle, moped)."
+  },
+  "kindCar": "Car",
+  "@kindCar": {
+    "description": "Vehicle kind: passenger car."
+  },
+  "kindVan": "Van",
+  "@kindVan": {
+    "description": "Vehicle kind: light commercial van."
+  },
+  "kindMotorcycle": "Motorcycle",
+  "@kindMotorcycle": {
+    "description": "Vehicle kind: motorcycle (including large scooters)."
+  },
+  "kindMoped": "Moped",
+  "@kindMoped": {
+    "description": "Vehicle kind: moped or small scooter."
+  },
+  "fieldMake": "Make",
+  "@fieldMake": {
+    "description": "Label of the vehicle make field, e.g. Fiat."
+  },
+  "fieldModel": "Model",
+  "@fieldModel": {
+    "description": "Label of the vehicle model field, e.g. Punto."
+  },
+  "fieldModelYear": "Year",
+  "@fieldModelYear": {
+    "description": "Label of the optional model year field."
+  },
+  "fieldVersion": "Version / trim",
+  "@fieldVersion": {
+    "description": "Label of the optional free-text version field (engine and trim level)."
+  },
+  "fieldVersionHint": "e.g. 1.2 69 hp Lounge",
+  "@fieldVersionHint": {
+    "description": "Example shown inside the empty version field."
+  },
+  "pickerSearchHint": "Search",
+  "@pickerSearchHint": {
+    "description": "Hint of the search box at the top of the make, model and nationality pickers."
+  },
+  "pickerNoResults": "No matches. Use the last option to type it.",
+  "@pickerNoResults": {
+    "description": "Shown in a picker when the search matches nothing; the last option lets the user type the value."
+  },
+  "pickerPopularMakes": "Most popular",
+  "@pickerPopularMakes": {
+    "description": "Section header above the most popular makes in the make picker."
+  },
+  "pickerAllMakes": "All makes",
+  "@pickerAllMakes": {
+    "description": "Section header above the alphabetical list of the remaining makes."
+  },
+  "makePickerTitle": "Choose the make",
+  "@makePickerTitle": {
+    "description": "Title of the full-screen make picker."
+  },
+  "modelPickerTitle": "Choose the model",
+  "@modelPickerTitle": {
+    "description": "Title of the full-screen model picker."
+  },
+  "countryPickerTitle": "Choose the nationality",
+  "@countryPickerTitle": {
+    "description": "Title of the full-screen nationality picker."
+  },
+  "otherMake": "Other make…",
+  "@otherMake": {
+    "description": "Last option of the make picker: type a make that is not in the list."
+  },
+  "otherModel": "Other model…",
+  "@otherModel": {
+    "description": "Last option of the model picker: type a model that is not in the list."
+  },
+  "otherCountry": "Other…",
+  "@otherCountry": {
+    "description": "Last option of the nationality picker: type a nationality that is not in the list."
+  },
+  "chooseMakeFirst": "Choose the make first",
+  "@chooseMakeFirst": {
+    "description": "Shown in the model field while no make is chosen."
+  },
+  "validationMakeRequired": "Choose the make",
+  "@validationMakeRequired": {
+    "description": "Validation error when no make is chosen."
+  },
+  "validationModelRequired": "Enter the model",
+  "@validationModelRequired": {
+    "description": "Validation error when no model is chosen or typed."
+  },
+  "validationModelYearInvalid": "Enter a year between {min} and {max}",
+  "@validationModelYearInvalid": {
+    "description": "Validation error for a model year outside the allowed range.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutAction": "About",
+  "@aboutAction": {
+    "description": "Overflow menu entry that opens the About dialog with credits and licences."
+  },
+  "aboutVehicleData": "Vehicle data by VehiclesDB (CC BY 4.0), built from official public registers.",
+  "@aboutVehicleData": {
+    "description": "Credit for the bundled make and model catalogue, required by its CC BY 4.0 licence. Keep \"VehiclesDB\" and \"CC BY 4.0\" untranslated."
+  },
+  "aboutCountryData": "Country names from Unicode CLDR (Unicode License v3).",
+  "@aboutCountryData": {
+    "description": "Credit for the bundled country names. Keep \"Unicode CLDR\" untranslated."
   }
 }

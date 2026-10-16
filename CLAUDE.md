@@ -57,7 +57,8 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
+Settled for the database (schema v2: `owners`, `vehicles`, `audit_log`; v2
+added the vehicle kind, make / model, model year and version):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -94,7 +95,14 @@ Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
   backup step. A deliberate decision, open to revision.
 - **CHECK constraints** are written in the table's `customConstraints`, not
   with `Column.check`, whose self-referencing getter trips the
-  `recursive_getters` lint.
+  `recursive_getters` lint. Exception: a column added by
+  `ALTER TABLE … ADD COLUMN` carries its CHECK as the column's
+  `customConstraint('NULL CHECK (…)')` (e.g. `vehicles.model_year`), since a
+  table constraint cannot be added without recreating the table.
+- **Make and model** are stored as the display name (always) plus an
+  optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
+  hand). The name is the source of truth for display; the slug only matches
+  the catalogue.
 
 ### Upgrade safety
 
@@ -129,6 +137,38 @@ What `runSafeUpgrade` guarantees:
   and the copy is kept.
 - **Downgrade refused.** A file newer than the app (`from > to`) throws
   `DatabaseNewerThanAppException` and is left untouched, never "fixed".
+
+### Bundled reference data
+
+Two read-only data sets ship as committed assets, built by scripts in `tool/`
+and never fetched at runtime. Each script pins its source release; refreshing
+means running it with a newer tag that is **at least two weeks old**, then
+updating the pin in the script, the spot-check test and this section.
+
+- **Vehicle catalogue** — `assets/catalog/vehicle_catalog.json`, from
+  [VehiclesDB](https://github.com/vehiclesdb/vehiclesdb) release
+  **`v2026.09.1`** (CC BY 4.0), built by
+  `fvm dart run tool/build_vehicle_catalog.dart [tag]`. Kinds `car`, `van`,
+  `motorcycle`, `moped`; per make: `slug`, `name`, a popularity score, and
+  models as `[slug, name, globalDecile?]`. `VehicleCatalog`
+  (`lib/data/catalog/`) does the ordering (20 most popular makes, then
+  alphabetical; models by decile, then alphabetical) and the case- and
+  accent-insensitive search. The script also writes `ATTRIBUTION.md` and
+  `LICENSE.md` next to the asset; CC BY requires the visible credit, which
+  is in About (`showAppAboutDialog`) and on the licence page
+  (`registerDataLicenses`, `lib/app/data_licenses.dart`). Never edit the
+  asset by hand: a missing model is covered by "Other model…".
+- **Country names** — `assets/countries/country_names.json`, from
+  [Unicode CLDR](https://github.com/unicode-org/cldr-json) release
+  **`48.2.3`** (Unicode License v3), built by
+  `fvm dart run tool/build_country_names.dart [tag]`: the 249 ISO 3166-1
+  alpha-2 codes with names in `en`, `es`, `it`. Read through `CountryNames`.
+  The owner's nationality is stored as the code, or as typed text through
+  "Other…".
+
+Tests use small fixtures (`test/support/catalog_fixtures.dart`) through
+`vehicleCatalogProvider` / `countryNamesProvider` overrides; only the
+spot-check tests read the real assets.
 
 Releases: the Android `versionCode` (the build number after `+` in
 `pubspec.yaml`) must increase with every release, and release builds are
@@ -277,6 +317,12 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
   `shared/widgets/feedback.dart`: short snackbar on save, Undo snackbar
   after a delete (shown on the app-wide `ScaffoldMessenger`), long errors
   with a close button, dialogs for confirmations and blocking explanations.
+- Pickers inside a form (make, model, nationality) are full-screen dialogs
+  (`showSearchablePicker`, `shared/widgets/searchable_picker.dart`), not
+  routes: a transient choice with nothing to deep-link to. They always end
+  with a pinned "Other…" option for free text: the list helps, never blocks.
+- Long forms use `SingleChildScrollView` + `Column`, not a lazy `ListView`:
+  `Form.validate` only checks fields that are built.
 
 ---
 

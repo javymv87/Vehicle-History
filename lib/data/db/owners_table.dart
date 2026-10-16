@@ -16,7 +16,7 @@ class Owners extends Table with TechnicalColumns {
   TextColumn get birthDate =>
       text().map(const CalendarDateConverter()).nullable()();
 
-  /// Nationality, free text.
+  /// Nationality: ISO 3166-1 alpha-2 code, or free text typed by the user.
   TextColumn get nationality => text().nullable()();
 
   /// Phone number, as typed.

@@ -43,12 +43,19 @@ Ficha de la persona propietaria de uno o varios vehículos.
 
 - Nombre (**obligatorio**), apellidos
 - Fecha de nacimiento (fecha de calendario, sin hora ni zona horaria)
-- Nacionalidad (texto libre)
+- Nacionalidad: se elige de la lista de países (ISO 3166-1) o se escribe a
+  mano con "Otra…" (ver `03_features.md`)
 - Foto
 - Contactos: teléfono, email
 - Notas libres
 
-Todo es opcional salvo el nombre. Teléfono y email se guardan tal como se
+Todo es opcional salvo el nombre. La nacionalidad elegida de la lista se
+guarda como **código ISO 3166-1 alfa-2** (`IT`, `CU`, …); la escrita a mano,
+**tal como se escribe**. Se muestra con el nombre del país en el idioma de la
+app cuando el valor es un código conocido, y tal cual en cualquier otro caso
+(así siguen siendo legibles los valores de texto libre guardados antes de la
+lista). Los nombres de los países vienen de Unicode CLDR, incluidos en la app.
+Teléfono y email se guardan tal como se
 escriben (sin espacios al principio ni al final), sin validar el formato.
 La foto es una ruta opcional **relativa** a la carpeta de soporte de la app
 (*application support*, la misma en la que vive la base de datos; ver
@@ -81,6 +88,11 @@ Un Owner puede tener varios OwnerDocument.
 
 El vehículo. Es la entidad central: casi todo lo demás está vinculado a ella.
 
+- **Tipo de vehículo** (**obligatorio**): coche, furgoneta, moto o ciclomotor
+- **Marca** y **modelo** (**obligatorios** en el formulario; ver las reglas)
+- Año del modelo (opcional)
+- Versión / acabado (opcional, texto libre: motorización y acabado, p. ej.
+  "1.2 69 CV Lounge")
 - Matrícula (identificador principal, **obligatoria**)
 - Nombre común (opcional)
 - Foto de perfil (opcional, ruta relativa como la del Owner)
@@ -103,6 +115,22 @@ Reglas:
   gasolina + GLP, gasolina + GNC (metano), híbrido, híbrido enchufable,
   eléctrico, otro. Los bifuel GLP / GNC son comunes en Italia.
 - Aceite de motor recomendado y notas del fabricante: texto libre opcional.
+- **Tipo de vehículo**: uno de coche, furgoneta, moto, ciclomotor (camiones y
+  autobuses quedan fuera). Decide qué marcas y modelos ofrece el catálogo y,
+  en el futuro, qué tipos de mantenimiento aplican (ver
+  `04_maintenance_logic.md`). Los vehículos creados antes de existir este
+  campo son coches.
+- **Marca y modelo**: se guardan siempre como **nombre mostrado** (p. ej.
+  "Fiat", "Punto") más un **identificador de catálogo opcional** (el *slug*
+  de VehiclesDB, p. ej. `fiat`, `punto`), vacío cuando el valor se escribió a
+  mano. El nombre guardado es lo que se muestra: si un catálogo futuro
+  renombra una marca, lo que el usuario vio no cambia; el identificador solo
+  sirve para emparejar con el catálogo. En la base de datos son opcionales,
+  porque los vehículos creados antes no los tienen; el formulario los pide al
+  crear **y** al editar.
+- **Año del modelo**: número entero entre 1886 y 2100 en la base de datos; el
+  formulario acepta como máximo el año siguiente al actual.
+- **Nombre común**: opcional; en el formulario va al final.
 
 ### LogEntry (entrada del historial) — núcleo de la app
 

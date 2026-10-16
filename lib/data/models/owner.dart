@@ -34,7 +34,8 @@ class Owner {
   /// Birth date, as a calendar day with no timezone.
   final CalendarDate? birthDate;
 
-  /// Nationality, as free text.
+  /// Nationality: an ISO 3166-1 alpha-2 code (e.g. `IT`) when picked from
+  /// the country list, otherwise the text the user typed.
   final String? nationality;
 
   /// Phone number, stored as typed (trimmed). Not validated.

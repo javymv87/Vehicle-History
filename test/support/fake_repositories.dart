@@ -5,6 +5,7 @@ import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
+import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/owner_repository.dart';
 import 'package:vehicle_history/data/repositories/repository_exceptions.dart';
 import 'package:vehicle_history/data/repositories/vehicle_repository.dart';
@@ -71,11 +72,12 @@ class FakeStore {
   DateTime get now => _now;
 
   /// Adds a live owner directly, for test setup.
-  Owner addOwner(String firstName, {String? lastName}) {
+  Owner addOwner(String firstName, {String? lastName, String? nationality}) {
     final owner = Owner(
       id: newId('owner'),
       firstName: firstName,
       lastName: lastName,
+      nationality: nationality,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -91,10 +93,20 @@ class FakeStore {
     int km = 1000,
     FuelType fuelType = FuelType.petrol,
     String? nickname,
+    VehicleKind kind = VehicleKind.car,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
   }) {
     final vehicle = Vehicle(
       id: newId('vehicle'),
       plate: plate,
+      kind: kind,
+      make: make,
+      makeSlug: makeSlug,
+      model: model,
+      modelSlug: modelSlug,
       nickname: nickname,
       ownerId: ownerId,
       currentOdometerKm: km,
@@ -238,6 +250,13 @@ class FakeVehicleRepository implements VehicleRepository {
   @override
   Future<Vehicle> create({
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required int currentOdometerKm,
@@ -250,6 +269,13 @@ class FakeVehicleRepository implements VehicleRepository {
         final vehicle = Vehicle(
           id: store.newId('vehicle'),
           plate: plate.trim().toUpperCase(),
+          kind: kind,
+          make: _clean(make),
+          makeSlug: makeSlug,
+          model: _clean(model),
+          modelSlug: modelSlug,
+          modelYear: modelYear,
+          version: _clean(version),
           nickname: _clean(nickname),
           ownerId: ownerId,
           currentOdometerKm: currentOdometerKm,
@@ -269,6 +295,13 @@ class FakeVehicleRepository implements VehicleRepository {
   Future<Vehicle> update(
     String id, {
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required FuelType fuelType,
@@ -283,6 +316,13 @@ class FakeVehicleRepository implements VehicleRepository {
         }
         final updated = current.copyWith(
           plate: plate.trim().toUpperCase(),
+          kind: kind,
+          make: _clean(make),
+          makeSlug: makeSlug,
+          model: _clean(model),
+          modelSlug: modelSlug,
+          modelYear: modelYear,
+          version: _clean(version),
           nickname: _clean(nickname),
           ownerId: ownerId,
           fuelType: fuelType,
