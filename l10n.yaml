@@ -1,0 +1,17 @@
+# Configuration for `gen_l10n`, Flutter's localisation code generator.
+# See https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization
+
+# Folder holding the .arb translation files.
+arb-dir: lib/l10n
+# English is the template: it defines every key and its @description.
+template-arb-file: app_en.arb
+# Generated Dart code is written next to the .arb files, inside the source
+# tree (the old synthetic `package:flutter_gen` is no longer supported).
+output-dir: lib/l10n
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# `AppLocalizations.of(context)` returns a non-null value: the delegate is
+# always registered on the root MaterialApp, so a null check would be noise.
+nullable-getter: false
+# Run `dart format` on the output so it passes the CI formatting gate.
+format: true

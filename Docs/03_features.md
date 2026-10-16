@@ -29,7 +29,8 @@ Dos orígenes de recordatorios:
    umbral de km).
 2. **Automáticos** — derivados de las `MaintenanceRule` del vehículo y de los
    vencimientos de los documentos (impuesto de circulación, inspección técnica
-   obligatoria, seguro, permiso de conducir, permiso...).
+   obligatoria, seguro y los documentos del propietario: permiso de conducir,
+   documento de identidad, permiso de residencia).
 
 Comportamiento de los avisos:
 

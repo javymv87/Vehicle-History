@@ -25,6 +25,10 @@ La app admite tres idiomas, seleccionables por el usuario:
 - **Español** (es)
 - **Inglés** (en)
 
+El **inglés** es el idioma de la plantilla ARB (`app_en.arb`, el archivo que
+define todas las claves) y el **idioma de respaldo**: si el idioma del
+dispositivo no es ninguno de los tres, la app se muestra en inglés.
+
 ### Reglas técnicas para la localización
 
 - Todos los textos mostrados al usuario deben estar **fuera del código**, en

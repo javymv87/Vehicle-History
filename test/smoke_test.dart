@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vehicle_history/main.dart';
+import 'package:vehicle_history/app/app.dart';
 
 void main() {
   testWidgets('VehicleHistoryApp builds without throwing', (tester) async {

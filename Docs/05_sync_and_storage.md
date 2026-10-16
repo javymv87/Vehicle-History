@@ -71,14 +71,16 @@ antigua."
 
 ### Nota administrativa (Google Cloud Console)
 
-El flujo OAuth (Modalidad 2, y en parte también la 1) requiere que la app esté
-registrada en la **Google Cloud Console** con credenciales OAuth y pantalla de
-consentimiento. El acceso a Drive conlleva un proceso de **verificación de la
-app** por parte de Google. Mientras la app no esté verificada funciona igual,
-pero muestra un aviso de "app no verificada" y tiene un límite de usuarios de
-prueba — aceptable para uso personal / pocos usuarios. La verificación solo se
-vuelve necesaria en caso de distribución amplia. Es un paso administrativo, no
-de código, pero hay que planificarlo.
+Ambas modalidades requieren que la app esté registrada en la **Google Cloud
+Console** con la pantalla de consentimiento configurada para el ámbito (*scope*)
+de Drive. La Modalidad 1 necesita además un ID de cliente OAuth para Android
+(nombre del paquete + SHA-1 del certificado de firma); la Modalidad 2 utiliza,
+además, el flujo a través del navegador con PKCE. El acceso a Drive conlleva un
+proceso de **verificación de la app** por parte de Google. Mientras la app no
+esté verificada funciona igual, pero muestra un aviso de "app no verificada" y
+tiene un límite de usuarios de prueba — aceptable para uso personal / pocos
+usuarios. La verificación solo se vuelve necesaria en caso de distribución
+amplia. Es un paso administrativo, no de código, pero hay que planificarlo.
 
 ## Estrategia elegida: "Strada A" (vía A) — copia de seguridad/restauración con control de versión
 

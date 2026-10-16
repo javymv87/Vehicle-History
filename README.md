@@ -66,11 +66,11 @@ conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 
 Concept documented and Flutter project scaffolded: folder structure, strict
 lint rules, CI and the conceptual documentation in `Docs/` are all in place.
-The application code has not been written yet.
+The Material 3 theme (single seed, light/dark, status colours) and the
+`gen_l10n` localisation skeleton (IT / ES / EN) are done.
 
-Next steps, in order: the data layer (Drift database, models, repositories),
-the Material 3 theme and the `gen_l10n` localisation setup, then the first
-vertical feature (vehicles) end to end.
+Next steps, in order: the Drift database with only the `vehicles` and `owners`
+tables, then the first vertical feature (vehicles) end to end.
 
 ## License
 

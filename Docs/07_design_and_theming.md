@@ -31,10 +31,10 @@ desperdiciado para una app utilitaria como esta.
   genere a partir de él ambas paletas (clara y oscura), automáticamente
   armoniosas y con contrastes correctos. No se eligen decenas de colores a
   mano.
-- La semilla aporta carácter sin ser invasiva. Direcciones adecuadas al
-  contexto "vehículos/taller": azul profundo, verde azulado (teal), o bien
-  ámbar/naranja como acento. Es una cuestión de gusto, fácilmente modificable
-  porque todo deriva de la semilla.
+- La semilla aporta carácter sin ser invasiva. Elegida: **azul profundo**,
+  valor inicial `#1F4E8C` (`Color(0xFF1F4E8C)`), definido una sola vez como
+  constante documentada. Es fácilmente modificable porque todo deriva de la
+  semilla.
 
 ## Principios de diseño específicos de la app
 
@@ -53,7 +53,7 @@ El color se reserva para los **estados**, en particular los vencimientos:
 
 - vencimiento vencido → rojo
 - vencimiento próximo → ámbar
-- todo en orden → verde / neutro
+- todo en orden → verde
 
 Coherente con la lógica de resaltado de los vencimientos por km descrita en
 `03_features.md` y `04_maintenance_logic.md`.

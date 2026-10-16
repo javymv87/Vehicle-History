@@ -37,9 +37,9 @@ copia de seguridad manual en Google Drive e informes exportables a PDF.
 ## Estado
 
 Concepto completo y proyecto Flutter configurado: la estructura de carpetas, las
-reglas de lint, la CI y esta documentación ya están en el repositorio. El código
-de la aplicación todavía no se ha escrito.
+reglas de lint, la CI y esta documentación ya están en el repositorio. El tema
+Material 3 (semilla única, claro/oscuro, colores de estado) y el esqueleto de
+localización con `gen_l10n` (IT / ES / EN) ya están hechos.
 
-Próximos pasos, en orden: la capa de datos (base de datos Drift, modelos,
-repositorios), el tema Material 3 y la localización con `gen_l10n`, y después la
-primera funcionalidad vertical (vehículos) completa.
+Próximos pasos, en orden: la base de datos Drift con solo las tablas `vehicles`
+y `owners`, y después la primera funcionalidad vertical (vehículos) completa.
