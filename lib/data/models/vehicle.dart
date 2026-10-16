@@ -1,5 +1,6 @@
 import 'copy_with_sentinel.dart';
 import 'fuel_type.dart';
+import 'vehicle_kind.dart';
 
 /// A vehicle: the central entity almost everything else links to.
 ///
@@ -11,6 +12,13 @@ class Vehicle {
   const Vehicle({
     required this.id,
     required this.plate,
+    required this.kind,
+    this.make,
+    this.makeSlug,
+    this.model,
+    this.modelSlug,
+    this.modelYear,
+    this.version,
     this.nickname,
     required this.ownerId,
     required this.currentOdometerKm,
@@ -27,6 +35,29 @@ class Vehicle {
 
   /// Licence plate, trimmed and upper-case. Unique among live vehicles.
   final String plate;
+
+  /// Kind of vehicle; it selects the catalogue the make and model come from.
+  final VehicleKind kind;
+
+  /// Make as shown to the user, e.g. "Fiat". `null` only for vehicles
+  /// created before makes were recorded (schema v1).
+  final String? make;
+
+  /// Catalogue (VehiclesDB) id of [make]; `null` for a make typed by hand.
+  final String? makeSlug;
+
+  /// Model as shown to the user, e.g. "Punto". `null` only for vehicles
+  /// created before models were recorded (schema v1).
+  final String? model;
+
+  /// Catalogue (VehiclesDB) id of [model]; `null` for a model typed by hand.
+  final String? modelSlug;
+
+  /// Model year, between 1886 and 2100.
+  final int? modelYear;
+
+  /// Version and trim as free text, e.g. "1.2 69 CV Lounge".
+  final String? version;
 
   /// Optional friendly name, such as "Dad's Punto".
   final String? nickname;
@@ -58,6 +89,13 @@ class Vehicle {
   /// When the vehicle was last modified, in UTC.
   final DateTime updatedAt;
 
+  /// Make and model joined for display, e.g. "Fiat Punto", or `null` when
+  /// neither is known (vehicles created at schema v1).
+  String? get makeAndModel {
+    final parts = [make, model].nonNulls;
+    return parts.isEmpty ? null : parts.join(' ');
+  }
+
   /// Returns a copy with the given fields replaced.
   ///
   /// Nullable fields can be cleared by passing `null` explicitly; omitting a
@@ -65,6 +103,13 @@ class Vehicle {
   Vehicle copyWith({
     String? id,
     String? plate,
+    VehicleKind? kind,
+    Object? make = unset,
+    Object? makeSlug = unset,
+    Object? model = unset,
+    Object? modelSlug = unset,
+    Object? modelYear = unset,
+    Object? version = unset,
     Object? nickname = unset,
     String? ownerId,
     int? currentOdometerKm,
@@ -78,6 +123,16 @@ class Vehicle {
     return Vehicle(
       id: id ?? this.id,
       plate: plate ?? this.plate,
+      kind: kind ?? this.kind,
+      make: identical(make, unset) ? this.make : make as String?,
+      makeSlug:
+          identical(makeSlug, unset) ? this.makeSlug : makeSlug as String?,
+      model: identical(model, unset) ? this.model : model as String?,
+      modelSlug:
+          identical(modelSlug, unset) ? this.modelSlug : modelSlug as String?,
+      modelYear:
+          identical(modelYear, unset) ? this.modelYear : modelYear as int?,
+      version: identical(version, unset) ? this.version : version as String?,
       nickname:
           identical(nickname, unset) ? this.nickname : nickname as String?,
       ownerId: ownerId ?? this.ownerId,
@@ -101,6 +156,13 @@ class Vehicle {
       other is Vehicle &&
       other.id == id &&
       other.plate == plate &&
+      other.kind == kind &&
+      other.make == make &&
+      other.makeSlug == makeSlug &&
+      other.model == model &&
+      other.modelSlug == modelSlug &&
+      other.modelYear == modelYear &&
+      other.version == version &&
       other.nickname == nickname &&
       other.ownerId == ownerId &&
       other.currentOdometerKm == currentOdometerKm &&
@@ -112,9 +174,16 @@ class Vehicle {
       other.updatedAt == updatedAt;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         id,
         plate,
+        kind,
+        make,
+        makeSlug,
+        model,
+        modelSlug,
+        modelYear,
+        version,
         nickname,
         ownerId,
         currentOdometerKm,
@@ -124,9 +193,10 @@ class Vehicle {
         photoPath,
         createdAt,
         updatedAt,
-      );
+      ]);
 
   @override
-  String toString() => 'Vehicle(id: $id, plate: $plate, ownerId: $ownerId, '
+  String toString() => 'Vehicle(id: $id, plate: $plate, kind: ${kind.name}, '
+      'make: $make, model: $model, ownerId: $ownerId, '
       'currentOdometerKm: $currentOdometerKm, fuelType: ${fuelType.name})';
 }

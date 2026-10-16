@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/catalog/country_names.dart';
+import '../../../data/data_providers.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/owner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -11,6 +13,9 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/picker_form_field.dart';
+import '../../../shared/widgets/searchable_picker.dart';
+import '../../../shared/widgets/text_input_dialog.dart';
 import '../controllers/owner_form_controller.dart';
 import '../widgets/birth_date_field.dart';
 
@@ -67,12 +72,14 @@ class _OwnerFormState extends ConsumerState<_OwnerForm> {
   late final _firstName =
       TextEditingController(text: widget.initial?.firstName);
   late final _lastName = TextEditingController(text: widget.initial?.lastName);
-  late final _nationality =
-      TextEditingController(text: widget.initial?.nationality);
   late final _phone = TextEditingController(text: widget.initial?.phone);
   late final _email = TextEditingController(text: widget.initial?.email);
   late final _notes = TextEditingController(text: widget.initial?.notes);
   late CalendarDate? _birthDate = widget.initial?.birthDate;
+
+  /// Nationality as stored: an ISO 3166-1 alpha-2 code picked from the list,
+  /// or free text typed through "Other…".
+  late String? _nationality = widget.initial?.nationality;
 
   /// Whether a save is running; the save button is disabled meanwhile.
   bool _saving = false;
@@ -82,7 +89,6 @@ class _OwnerFormState extends ConsumerState<_OwnerForm> {
     for (final controller in [
       _firstName,
       _lastName,
-      _nationality,
       _phone,
       _email,
       _notes,
@@ -90,6 +96,46 @@ class _OwnerFormState extends ConsumerState<_OwnerForm> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  /// Opens the nationality picker: a country from the list (stored as its
+  /// ISO code) or, through "Other…", any text.
+  Future<void> _pickNationality() async {
+    final l10n = AppLocalizations.of(context);
+    final language = Localizations.localeOf(context).languageCode;
+    CountryNames? countries;
+    try {
+      countries = await ref.read(countryNamesProvider.future);
+    } on Exception {
+      // The list helps, it never blocks: without it, only "Other…" remains.
+      countries = null;
+    }
+    if (!mounted) return;
+    final result = await showSearchablePicker<Country>(
+      context: context,
+      title: l10n.countryPickerTitle,
+      search: (query) => countries?.search(query, language) ?? const [],
+      labelOf: (country) => country.name,
+      otherLabel: l10n.otherCountry,
+    );
+    if (!mounted || result == null) return;
+    switch (result) {
+      case Picked(:final value):
+        setState(() => _nationality = value.code);
+      case PickedOther(:final query):
+        final current = _nationality;
+        final typed = await showTextInputDialog(
+          context,
+          title: l10n.fieldNationality,
+          initialText: query.isNotEmpty
+              ? query
+              : (current != null && countries?.nameOf(current, language) == null
+                  ? current
+                  : ''),
+        );
+        if (!mounted || typed == null) return;
+        setState(() => _nationality = typed);
+    }
   }
 
   /// Validates the fields and saves through the controller.
@@ -105,7 +151,7 @@ class _OwnerFormState extends ConsumerState<_OwnerForm> {
             firstName: _firstName.text,
             lastName: _lastName.text,
             birthDate: _birthDate,
-            nationality: _nationality.text,
+            nationality: _nationality,
             phone: _phone.text,
             email: _email.text,
             notes: _notes.text,
@@ -164,11 +210,20 @@ class _OwnerFormState extends ConsumerState<_OwnerForm> {
               onChanged: (date) => setState(() => _birthDate = date),
             ),
             gap,
-            TextFormField(
-              controller: _nationality,
-              decoration: _decoration(l10n.fieldNationality),
-              textCapitalization: TextCapitalization.sentences,
-              textInputAction: TextInputAction.next,
+            PickerFormField(
+              key: const ValueKey('nationality-field'),
+              label: l10n.fieldNationality,
+              value: switch (_nationality) {
+                null => null,
+                final stored =>
+                  ref.watch(countryNamesProvider).value?.displayNationality(
+                            stored,
+                            Localizations.localeOf(context).languageCode,
+                          ) ??
+                      stored,
+              },
+              onTap: _pickNationality,
+              onClear: () => setState(() => _nationality = null),
             ),
             gap,
             TextFormField(

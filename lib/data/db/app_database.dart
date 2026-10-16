@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
+import '../models/vehicle_kind.dart';
+import 'app_database.steps.dart';
 import 'audit_log_table.dart';
 import 'converters.dart';
 import 'daos/audit_log_dao.dart';
@@ -60,14 +62,28 @@ class AppDatabase extends _$AppDatabase {
   })  : _upgradeSteps = upgradeSteps ?? _schemaSteps,
         _copier = copier;
 
-  /// Schema changes from one version to the next.
-  ///
-  /// At v1 there is nothing to upgrade from. With v2, replace this with the
-  /// `stepByStep(...)` helper that `make-migrations` generates in
+  /// Schema changes from one version to the next, one step per version,
+  /// built on the versioned schemas `make-migrations` generates in
   /// `app_database.steps.dart` (see CLAUDE.md §2, "Upgrade safety").
-  static Future<void> _schemaSteps(Migrator m, int from, int to) async {
-    throw StateError('No migration step from v$from to v$to');
-  }
+  static final OnUpgrade _schemaSteps = stepByStep(
+    // v2: vehicle kind, make / model (name + catalogue slug), model year and
+    // version. Only new columns, all nullable or with a default: no existing
+    // value is touched, and every v1 vehicle becomes a car.
+    from1To2: (m, schema) async {
+      final vehicles = schema.vehicles;
+      for (final column in [
+        vehicles.kind,
+        vehicles.make,
+        vehicles.makeSlug,
+        vehicles.model,
+        vehicles.modelSlug,
+        vehicles.modelYear,
+        vehicles.version,
+      ]) {
+        await m.addColumn(vehicles, column);
+      }
+    },
+  );
 
   /// Steps run by [runSafeUpgrade] when the file is older than the app.
   final OnUpgrade _upgradeSteps;
@@ -76,7 +92,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   /// Opens the connection now, running any pending migration.
   ///

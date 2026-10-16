@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
+import '../models/vehicle_kind.dart';
 
 /// Stores a [CalendarDate] as ISO-8601 `yyyy-MM-dd` text.
 ///
@@ -51,6 +52,33 @@ class FuelTypeConverter extends TypeConverter<FuelType, String> {
         FuelType.pluginHybrid => 'pluginHybrid',
         FuelType.electric => 'electric',
         FuelType.other => 'other',
+      };
+}
+
+/// Stores a [VehicleKind] as a stable text code.
+///
+/// The codes match the VehiclesDB kind codes, so the catalogue can be looked
+/// up with the stored value.
+class VehicleKindConverter extends TypeConverter<VehicleKind, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const VehicleKindConverter();
+
+  @override
+  VehicleKind fromSql(String fromDb) => switch (fromDb) {
+        'car' => VehicleKind.car,
+        'van' => VehicleKind.van,
+        'motorcycle' => VehicleKind.motorcycle,
+        'moped' => VehicleKind.moped,
+        // Only reachable with a corrupted or foreign database file.
+        _ => throw StateError('Unknown vehicle kind code in database: $fromDb'),
+      };
+
+  @override
+  String toSql(VehicleKind value) => switch (value) {
+        VehicleKind.car => 'car',
+        VehicleKind.van => 'van',
+        VehicleKind.motorcycle => 'motorcycle',
+        VehicleKind.moped => 'moped',
       };
 }
 

@@ -1,5 +1,13 @@
 import '../models/fuel_type.dart';
 import '../models/vehicle.dart';
+import '../models/vehicle_kind.dart';
+
+/// Lowest model year the database accepts: the first automobile (1886).
+const int minModelYear = 1886;
+
+/// Highest model year the database accepts. The form is stricter (at most
+/// next year); this bound only stops nonsense from reaching the disk.
+const int maxModelYear = 2100;
 
 /// The only access path to persisted vehicles.
 ///
@@ -27,12 +35,25 @@ abstract interface class VehicleRepository {
   /// [plate] is stored trimmed and upper-case; other text fields are trimmed,
   /// and optional ones left blank are stored as `null`.
   ///
-  /// Throws `InvalidFieldException` when [plate] is blank or
-  /// [currentOdometerKm] is negative, `DuplicatePlateException` when another
+  /// [make] and [model] are the names shown to the user; [makeSlug] and
+  /// [modelSlug] are their catalogue ids, `null` when typed by hand. A slug
+  /// is meaningful only next to its name. The repository does not require a
+  /// make or model (vehicles from schema v1 have none); the form does.
+  ///
+  /// Throws `InvalidFieldException` when [plate] is blank,
+  /// [currentOdometerKm] is negative, [modelYear] is outside 1886–2100, or a
+  /// slug is given without its name, `DuplicatePlateException` when another
   /// live vehicle has the same plate, and `EntityNotFoundException` when the
   /// owner is missing or deleted.
   Future<Vehicle> create({
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required int currentOdometerKm,
@@ -53,6 +74,13 @@ abstract interface class VehicleRepository {
   Future<Vehicle> update(
     String id, {
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required FuelType fuelType,

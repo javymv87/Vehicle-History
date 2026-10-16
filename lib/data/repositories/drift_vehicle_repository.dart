@@ -3,6 +3,7 @@ import '../db/daos/vehicles_dao.dart';
 import '../models/audit_entry.dart';
 import '../models/fuel_type.dart';
 import '../models/vehicle.dart';
+import '../models/vehicle_kind.dart';
 import 'repository_exceptions.dart';
 import 'repository_support.dart';
 import 'vehicle_repository.dart';
@@ -47,6 +48,13 @@ class DriftVehicleRepository implements VehicleRepository {
   @override
   Future<Vehicle> create({
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required int currentOdometerKm,
@@ -61,10 +69,25 @@ class DriftVehicleRepository implements VehicleRepository {
         'must not be negative',
       );
     }
+    final identity = _Identity.clean(
+      make: make,
+      makeSlug: makeSlug,
+      model: model,
+      modelSlug: modelSlug,
+      modelYear: modelYear,
+      version: version,
+    );
     final now = utcNow(_clock);
     final vehicle = Vehicle(
       id: newId(),
       plate: normalisePlate(plate),
+      kind: kind,
+      make: identity.make,
+      makeSlug: identity.makeSlug,
+      model: identity.model,
+      modelSlug: identity.modelSlug,
+      modelYear: identity.modelYear,
+      version: identity.version,
       nickname: trimToNull(nickname),
       ownerId: ownerId,
       currentOdometerKm: currentOdometerKm,
@@ -87,6 +110,13 @@ class DriftVehicleRepository implements VehicleRepository {
   Future<Vehicle> update(
     String id, {
     required String plate,
+    required VehicleKind kind,
+    String? make,
+    String? makeSlug,
+    String? model,
+    String? modelSlug,
+    int? modelYear,
+    String? version,
     String? nickname,
     required String ownerId,
     required FuelType fuelType,
@@ -95,11 +125,26 @@ class DriftVehicleRepository implements VehicleRepository {
     String? photoPath,
   }) async {
     final cleanPlate = normalisePlate(plate);
+    final identity = _Identity.clean(
+      make: make,
+      makeSlug: makeSlug,
+      model: model,
+      modelSlug: modelSlug,
+      modelYear: modelYear,
+      version: version,
+    );
     final now = utcNow(_clock);
     return _vehicles.transaction(() async {
       final current = await _requireLive(id);
       final updated = current.copyWith(
         plate: cleanPlate,
+        kind: kind,
+        make: identity.make,
+        makeSlug: identity.makeSlug,
+        model: identity.model,
+        modelSlug: identity.modelSlug,
+        modelYear: identity.modelYear,
+        version: identity.version,
         nickname: trimToNull(nickname),
         ownerId: ownerId,
         fuelType: fuelType,
@@ -180,4 +225,59 @@ class DriftVehicleRepository implements VehicleRepository {
       ),
     );
   }
+}
+
+/// The make / model fields of a vehicle, validated and trimmed.
+class _Identity {
+  const _Identity._({
+    required this.make,
+    required this.makeSlug,
+    required this.model,
+    required this.modelSlug,
+    required this.modelYear,
+    required this.version,
+  });
+
+  /// Trims the text fields (blank becomes `null`) and checks the rules that
+  /// span them: a slug needs its name, and the year must be plausible.
+  ///
+  /// Throws [InvalidFieldException] when a rule is broken.
+  factory _Identity.clean({
+    required String? make,
+    required String? makeSlug,
+    required String? model,
+    required String? modelSlug,
+    required int? modelYear,
+    required String? version,
+  }) {
+    final identity = _Identity._(
+      make: trimToNull(make),
+      makeSlug: trimToNull(makeSlug),
+      model: trimToNull(model),
+      modelSlug: trimToNull(modelSlug),
+      modelYear: modelYear,
+      version: trimToNull(version),
+    );
+    if (identity.makeSlug != null && identity.make == null) {
+      throw const InvalidFieldException('makeSlug', 'needs a make name');
+    }
+    if (identity.modelSlug != null && identity.model == null) {
+      throw const InvalidFieldException('modelSlug', 'needs a model name');
+    }
+    if (modelYear != null &&
+        (modelYear < minModelYear || modelYear > maxModelYear)) {
+      throw const InvalidFieldException(
+        'modelYear',
+        'must be between $minModelYear and $maxModelYear',
+      );
+    }
+    return identity;
+  }
+
+  final String? make;
+  final String? makeSlug;
+  final String? model;
+  final String? modelSlug;
+  final int? modelYear;
+  final String? version;
 }

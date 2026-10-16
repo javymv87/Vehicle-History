@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
+import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
 
@@ -94,6 +95,29 @@ void main() {
     });
   });
 
+  group('model_year check', () {
+    /// Sets model_year of the raw vehicle `v1` to [year].
+    Future<void> setYear(int? year) => db.customStatement(
+          'UPDATE vehicles SET model_year = ? WHERE id = ?',
+          [year, 'v1'],
+        );
+
+    test('accepts 1886 to 2100 and NULL', () async {
+      final owner = await owners.create(firstName: 'Mario');
+      await _rawInsertVehicle(db, id: 'v1', ownerId: owner.id);
+      await setYear(1886);
+      await setYear(2100);
+      await setYear(null);
+    });
+
+    test('refuses a year outside 1886 to 2100', () async {
+      final owner = await owners.create(firstName: 'Mario');
+      await _rawInsertVehicle(db, id: 'v1', ownerId: owner.id);
+      await expectLater(setYear(1885), throwsA(anything));
+      await expectLater(setYear(2101), throwsA(anything));
+    });
+  });
+
   group('partial unique index on plate', () {
     test('two live vehicles cannot share a plate', () async {
       final owner = await owners.create(firstName: 'Mario');
@@ -143,6 +167,7 @@ void main() {
       final owner = await owners.create(firstName: 'Mario');
       final v = await vehicles.create(
         plate: 'AB123CD',
+        kind: VehicleKind.car,
         ownerId: owner.id,
         currentOdometerKm: 0,
         fuelType: FuelType.pluginHybrid,

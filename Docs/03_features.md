@@ -6,31 +6,41 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
 
 - **Inicio = lista de vehículos.** Una barra de navegación inferior con dos
   destinos: **Vehículos** y **Propietarios**.
-- **Fila de la lista de vehículos:** matrícula, nombre común (si lo hay),
-  nombre del propietario, km actual (con el formato del idioma) y tipo de
-  combustible. Ordenada por matrícula. Si no hay vehículos, solo un texto
+- **Fila de la lista de vehículos:** icono del tipo de vehículo, marca +
+  modelo como línea principal (p. ej. "Fiat Punto"), matrícula, nombre común
+  (si lo hay), nombre del propietario, km actual (con el formato del idioma)
+  y tipo de combustible. Un vehículo sin marca ni modelo (creado antes de
+  existir esos campos) muestra la matrícula como línea principal. Ordenada
+  por matrícula. Si no hay vehículos, solo un texto
   breve: para añadir se usa el botón flotante, que nunca se duplica.
 - **Añadir siempre a mano:** un botón flotante (FAB) en las dos listas (ver
   `07_design_and_theming.md`).
-- **Formulario del vehículo:** matrícula, nombre común, propietario, tipo de
-  combustible, km actual (**solo al crearlo**), aceite recomendado y notas del
-  fabricante. El propietario se elige entre los existentes **o con "Nuevo
+- **Formulario del vehículo:** tipo de vehículo (primer campo), marca,
+  modelo, año, versión / acabado, matrícula, propietario, tipo de
+  combustible, km actual (**solo al crearlo**), aceite recomendado, notas del
+  fabricante y, al final, el nombre común (opcional). El tipo es una
+  elección segmentada con icono y texto (coche, furgoneta, moto,
+  ciclomotor); al crear empieza en coche. Marca y modelo se eligen con los
+  selectores descritos abajo. El propietario se elige entre los existentes **o con "Nuevo
   propietario"**, que abre el formulario del propietario y vuelve con el
   nuevo propietario ya elegido. Si todavía no existe ningún propietario, el
   campo ofrece directamente "Nuevo propietario".
-- **Editar un vehículo:** el mismo formulario sin el km actual. La ficha del
+- **Editar un vehículo:** el mismo formulario sin el km actual. Un vehículo
+  creado antes de existir marca y modelo se abre y se ve normalmente, pero al
+  guardarlo el formulario pide marca y modelo. La ficha del
   vehículo muestra el km en solo lectura, con una nota breve: se cambia solo
   desde la función de cuentakilómetros (paso 5).
 - **Formulario del propietario:** nombre (obligatorio), apellidos, fecha de
   nacimiento (selector de fecha de Material; fecha de calendario sin hora),
-  nacionalidad, teléfono, email y notas.
+  nacionalidad (selector de países, abajo), teléfono, email y notas.
 - **Ficha del propietario:** muestra sus vehículos; al tocar uno se abre su
   ficha.
 - **Validación** en línea bajo cada campo y traducida: matrícula
   obligatoria; matrícula duplicada (otro vehículo no borrado ya la usa)
   señalada en el propio campo; km obligatorio, número entero ≥ 0; nombre del
-  propietario obligatorio. También son obligatorios el propietario y el tipo
-  de combustible del vehículo.
+  propietario obligatorio. También son obligatorios la marca, el modelo, el
+  propietario y el tipo de combustible del vehículo. El año, si se escribe,
+  va de 1886 al año siguiente al actual.
 - **Mensajes** (reglas de abajo): toast breve al guardar; al borrar, toast
   **con Deshacer** durante unos segundos; errores explícitos y lo bastante
   persistentes para leerlos. Borrar un propietario que todavía tiene
@@ -41,7 +51,42 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   borrado, el deshacer se rechaza con un mensaje y no cambia nada.
 - **Confirmación** con un diálogo antes de borrar (además del Deshacer),
   porque un vehículo lleva consigo todo su historial.
-- Los **tipos de combustible** se muestran traducidos en los tres idiomas.
+- Los **tipos de combustible** y los **tipos de vehículo** se muestran
+  traducidos en los tres idiomas.
+- **Información:** el menú de la barra superior de las dos listas tiene
+  "Información", con los créditos de los datos incluidos (VehiclesDB, Unicode
+  CLDR) y la página de licencias.
+
+### Selectores de marca, modelo y nacionalidad
+
+Regla común: **la lista ayuda, nunca bloquea.** Siempre se puede escribir un
+valor que no esté en la lista.
+
+- **Primero el tipo:** cambiar el tipo de vehículo borra marca y modelo,
+  porque las listas del catálogo son distintas para cada tipo.
+- **Marca:** selector a pantalla completa con búsqueda, con las marcas **del
+  tipo elegido**. La búsqueda no distingue mayúsculas ni acentos y encuentra
+  el texto en cualquier parte del nombre. Primero las marcas más populares
+  (las 20 primeras, con un encabezado), después todas las demás en orden
+  alfabético. Última opción, **siempre visible** (fija abajo): **"Otra
+  marca…"**, que abre un campo de texto libre (con lo que se había buscado
+  como punto de partida).
+- **Modelo:** tras elegir una marca del catálogo, selector con búsqueda de
+  **los modelos de esa marca** (y de ese tipo), los más populares primero y
+  luego en orden alfabético, con **"Otro modelo…"** siempre visible para
+  escribirlo a mano. Con una marca escrita a mano, el modelo es directamente
+  un campo de texto libre. Cambiar la marca borra el modelo. Sin marca, el
+  modelo no se puede elegir ("Elige primero la marca").
+- **Nacionalidad (propietario):** selector con búsqueda de todos los países
+  ISO 3166-1, con el nombre en el idioma del teléfono (IT / ES / EN), más
+  **"Otra…"** para escribirla a mano. Se guarda el código ISO del país (o el
+  texto escrito); se muestra con el nombre del país en el idioma de la app,
+  o tal cual si no es un código conocido. Se puede borrar con el botón de
+  vaciar del campo, porque es opcional.
+- **Origen de los datos:** el catálogo de marcas y modelos es de
+  **VehiclesDB** (CC BY 4.0, elaborado a partir de registros públicos
+  oficiales) y los nombres de países de **Unicode CLDR**. Los dos van
+  incluidos en la app: no se consulta nada en internet.
 
 ## Historial de entradas
 

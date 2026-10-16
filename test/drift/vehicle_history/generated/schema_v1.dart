@@ -4,7 +4,7 @@
 //
 import 'package:drift/drift.dart';
 
-class Owners extends Table with TableInfo {
+class Owners extends Table with TableInfo<Owners, OwnersData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -93,8 +93,34 @@ class Owners extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  OwnersData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OwnersData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}updated_at'])!,
+      deleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}deleted'])!,
+      firstName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}first_name'])!,
+      lastName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_name']),
+      birthDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}birth_date']),
+      nationality: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nationality']),
+      phone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}phone']),
+      email: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}email']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      photoPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}photo_path']),
+    );
   }
 
   @override
@@ -109,7 +135,391 @@ class Owners extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Vehicles extends Table with TableInfo {
+class OwnersData extends DataClass implements Insertable<OwnersData> {
+  final String id;
+  final String createdAt;
+  final String updatedAt;
+  final int deleted;
+  final String firstName;
+  final String? lastName;
+  final String? birthDate;
+  final String? nationality;
+  final String? phone;
+  final String? email;
+  final String? notes;
+  final String? photoPath;
+  const OwnersData(
+      {required this.id,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.deleted,
+      required this.firstName,
+      this.lastName,
+      this.birthDate,
+      this.nationality,
+      this.phone,
+      this.email,
+      this.notes,
+      this.photoPath});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['deleted'] = Variable<int>(deleted);
+    map['first_name'] = Variable<String>(firstName);
+    if (!nullToAbsent || lastName != null) {
+      map['last_name'] = Variable<String>(lastName);
+    }
+    if (!nullToAbsent || birthDate != null) {
+      map['birth_date'] = Variable<String>(birthDate);
+    }
+    if (!nullToAbsent || nationality != null) {
+      map['nationality'] = Variable<String>(nationality);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || email != null) {
+      map['email'] = Variable<String>(email);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || photoPath != null) {
+      map['photo_path'] = Variable<String>(photoPath);
+    }
+    return map;
+  }
+
+  OwnersCompanion toCompanion(bool nullToAbsent) {
+    return OwnersCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deleted: Value(deleted),
+      firstName: Value(firstName),
+      lastName: lastName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastName),
+      birthDate: birthDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(birthDate),
+      nationality: nationality == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nationality),
+      phone:
+          phone == null && nullToAbsent ? const Value.absent() : Value(phone),
+      email:
+          email == null && nullToAbsent ? const Value.absent() : Value(email),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      photoPath: photoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photoPath),
+    );
+  }
+
+  factory OwnersData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OwnersData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      deleted: serializer.fromJson<int>(json['deleted']),
+      firstName: serializer.fromJson<String>(json['firstName']),
+      lastName: serializer.fromJson<String?>(json['lastName']),
+      birthDate: serializer.fromJson<String?>(json['birthDate']),
+      nationality: serializer.fromJson<String?>(json['nationality']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      email: serializer.fromJson<String?>(json['email']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      photoPath: serializer.fromJson<String?>(json['photoPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'deleted': serializer.toJson<int>(deleted),
+      'firstName': serializer.toJson<String>(firstName),
+      'lastName': serializer.toJson<String?>(lastName),
+      'birthDate': serializer.toJson<String?>(birthDate),
+      'nationality': serializer.toJson<String?>(nationality),
+      'phone': serializer.toJson<String?>(phone),
+      'email': serializer.toJson<String?>(email),
+      'notes': serializer.toJson<String?>(notes),
+      'photoPath': serializer.toJson<String?>(photoPath),
+    };
+  }
+
+  OwnersData copyWith(
+          {String? id,
+          String? createdAt,
+          String? updatedAt,
+          int? deleted,
+          String? firstName,
+          Value<String?> lastName = const Value.absent(),
+          Value<String?> birthDate = const Value.absent(),
+          Value<String?> nationality = const Value.absent(),
+          Value<String?> phone = const Value.absent(),
+          Value<String?> email = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          Value<String?> photoPath = const Value.absent()}) =>
+      OwnersData(
+        id: id ?? this.id,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        deleted: deleted ?? this.deleted,
+        firstName: firstName ?? this.firstName,
+        lastName: lastName.present ? lastName.value : this.lastName,
+        birthDate: birthDate.present ? birthDate.value : this.birthDate,
+        nationality: nationality.present ? nationality.value : this.nationality,
+        phone: phone.present ? phone.value : this.phone,
+        email: email.present ? email.value : this.email,
+        notes: notes.present ? notes.value : this.notes,
+        photoPath: photoPath.present ? photoPath.value : this.photoPath,
+      );
+  OwnersData copyWithCompanion(OwnersCompanion data) {
+    return OwnersData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      firstName: data.firstName.present ? data.firstName.value : this.firstName,
+      lastName: data.lastName.present ? data.lastName.value : this.lastName,
+      birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
+      nationality:
+          data.nationality.present ? data.nationality.value : this.nationality,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      email: data.email.present ? data.email.value : this.email,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      photoPath: data.photoPath.present ? data.photoPath.value : this.photoPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OwnersData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('firstName: $firstName, ')
+          ..write('lastName: $lastName, ')
+          ..write('birthDate: $birthDate, ')
+          ..write('nationality: $nationality, ')
+          ..write('phone: $phone, ')
+          ..write('email: $email, ')
+          ..write('notes: $notes, ')
+          ..write('photoPath: $photoPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, createdAt, updatedAt, deleted, firstName,
+      lastName, birthDate, nationality, phone, email, notes, photoPath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OwnersData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deleted == this.deleted &&
+          other.firstName == this.firstName &&
+          other.lastName == this.lastName &&
+          other.birthDate == this.birthDate &&
+          other.nationality == this.nationality &&
+          other.phone == this.phone &&
+          other.email == this.email &&
+          other.notes == this.notes &&
+          other.photoPath == this.photoPath);
+}
+
+class OwnersCompanion extends UpdateCompanion<OwnersData> {
+  final Value<String> id;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> deleted;
+  final Value<String> firstName;
+  final Value<String?> lastName;
+  final Value<String?> birthDate;
+  final Value<String?> nationality;
+  final Value<String?> phone;
+  final Value<String?> email;
+  final Value<String?> notes;
+  final Value<String?> photoPath;
+  final Value<int> rowid;
+  const OwnersCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.firstName = const Value.absent(),
+    this.lastName = const Value.absent(),
+    this.birthDate = const Value.absent(),
+    this.nationality = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.email = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.photoPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OwnersCompanion.insert({
+    required String id,
+    required String createdAt,
+    required String updatedAt,
+    this.deleted = const Value.absent(),
+    required String firstName,
+    this.lastName = const Value.absent(),
+    this.birthDate = const Value.absent(),
+    this.nationality = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.email = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.photoPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt),
+        firstName = Value(firstName);
+  static Insertable<OwnersData> custom({
+    Expression<String>? id,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? deleted,
+    Expression<String>? firstName,
+    Expression<String>? lastName,
+    Expression<String>? birthDate,
+    Expression<String>? nationality,
+    Expression<String>? phone,
+    Expression<String>? email,
+    Expression<String>? notes,
+    Expression<String>? photoPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deleted != null) 'deleted': deleted,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+      if (birthDate != null) 'birth_date': birthDate,
+      if (nationality != null) 'nationality': nationality,
+      if (phone != null) 'phone': phone,
+      if (email != null) 'email': email,
+      if (notes != null) 'notes': notes,
+      if (photoPath != null) 'photo_path': photoPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OwnersCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? createdAt,
+      Value<String>? updatedAt,
+      Value<int>? deleted,
+      Value<String>? firstName,
+      Value<String?>? lastName,
+      Value<String?>? birthDate,
+      Value<String?>? nationality,
+      Value<String?>? phone,
+      Value<String?>? email,
+      Value<String?>? notes,
+      Value<String?>? photoPath,
+      Value<int>? rowid}) {
+    return OwnersCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      birthDate: birthDate ?? this.birthDate,
+      nationality: nationality ?? this.nationality,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      notes: notes ?? this.notes,
+      photoPath: photoPath ?? this.photoPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<int>(deleted.value);
+    }
+    if (firstName.present) {
+      map['first_name'] = Variable<String>(firstName.value);
+    }
+    if (lastName.present) {
+      map['last_name'] = Variable<String>(lastName.value);
+    }
+    if (birthDate.present) {
+      map['birth_date'] = Variable<String>(birthDate.value);
+    }
+    if (nationality.present) {
+      map['nationality'] = Variable<String>(nationality.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (photoPath.present) {
+      map['photo_path'] = Variable<String>(photoPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OwnersCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('firstName: $firstName, ')
+          ..write('lastName: $lastName, ')
+          ..write('birthDate: $birthDate, ')
+          ..write('nationality: $nationality, ')
+          ..write('phone: $phone, ')
+          ..write('email: $email, ')
+          ..write('notes: $notes, ')
+          ..write('photoPath: $photoPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Vehicles extends Table with TableInfo<Vehicles, VehiclesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -198,8 +608,35 @@ class Vehicles extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  VehiclesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehiclesData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}updated_at'])!,
+      deleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}deleted'])!,
+      plate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plate'])!,
+      nickname: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nickname']),
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id'])!,
+      currentOdometerKm: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}current_odometer_km'])!,
+      fuelType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}fuel_type'])!,
+      recommendedEngineOil: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}recommended_engine_oil']),
+      manufacturerNotes: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}manufacturer_notes']),
+      photoPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}photo_path']),
+    );
   }
 
   @override
@@ -217,7 +654,409 @@ class Vehicles extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class AuditLog extends Table with TableInfo {
+class VehiclesData extends DataClass implements Insertable<VehiclesData> {
+  final String id;
+  final String createdAt;
+  final String updatedAt;
+  final int deleted;
+  final String plate;
+  final String? nickname;
+  final String ownerId;
+  final int currentOdometerKm;
+  final String fuelType;
+  final String? recommendedEngineOil;
+  final String? manufacturerNotes;
+  final String? photoPath;
+  const VehiclesData(
+      {required this.id,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.deleted,
+      required this.plate,
+      this.nickname,
+      required this.ownerId,
+      required this.currentOdometerKm,
+      required this.fuelType,
+      this.recommendedEngineOil,
+      this.manufacturerNotes,
+      this.photoPath});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['deleted'] = Variable<int>(deleted);
+    map['plate'] = Variable<String>(plate);
+    if (!nullToAbsent || nickname != null) {
+      map['nickname'] = Variable<String>(nickname);
+    }
+    map['owner_id'] = Variable<String>(ownerId);
+    map['current_odometer_km'] = Variable<int>(currentOdometerKm);
+    map['fuel_type'] = Variable<String>(fuelType);
+    if (!nullToAbsent || recommendedEngineOil != null) {
+      map['recommended_engine_oil'] = Variable<String>(recommendedEngineOil);
+    }
+    if (!nullToAbsent || manufacturerNotes != null) {
+      map['manufacturer_notes'] = Variable<String>(manufacturerNotes);
+    }
+    if (!nullToAbsent || photoPath != null) {
+      map['photo_path'] = Variable<String>(photoPath);
+    }
+    return map;
+  }
+
+  VehiclesCompanion toCompanion(bool nullToAbsent) {
+    return VehiclesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deleted: Value(deleted),
+      plate: Value(plate),
+      nickname: nickname == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nickname),
+      ownerId: Value(ownerId),
+      currentOdometerKm: Value(currentOdometerKm),
+      fuelType: Value(fuelType),
+      recommendedEngineOil: recommendedEngineOil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recommendedEngineOil),
+      manufacturerNotes: manufacturerNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturerNotes),
+      photoPath: photoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photoPath),
+    );
+  }
+
+  factory VehiclesData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehiclesData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      deleted: serializer.fromJson<int>(json['deleted']),
+      plate: serializer.fromJson<String>(json['plate']),
+      nickname: serializer.fromJson<String?>(json['nickname']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      currentOdometerKm: serializer.fromJson<int>(json['currentOdometerKm']),
+      fuelType: serializer.fromJson<String>(json['fuelType']),
+      recommendedEngineOil:
+          serializer.fromJson<String?>(json['recommendedEngineOil']),
+      manufacturerNotes:
+          serializer.fromJson<String?>(json['manufacturerNotes']),
+      photoPath: serializer.fromJson<String?>(json['photoPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'deleted': serializer.toJson<int>(deleted),
+      'plate': serializer.toJson<String>(plate),
+      'nickname': serializer.toJson<String?>(nickname),
+      'ownerId': serializer.toJson<String>(ownerId),
+      'currentOdometerKm': serializer.toJson<int>(currentOdometerKm),
+      'fuelType': serializer.toJson<String>(fuelType),
+      'recommendedEngineOil': serializer.toJson<String?>(recommendedEngineOil),
+      'manufacturerNotes': serializer.toJson<String?>(manufacturerNotes),
+      'photoPath': serializer.toJson<String?>(photoPath),
+    };
+  }
+
+  VehiclesData copyWith(
+          {String? id,
+          String? createdAt,
+          String? updatedAt,
+          int? deleted,
+          String? plate,
+          Value<String?> nickname = const Value.absent(),
+          String? ownerId,
+          int? currentOdometerKm,
+          String? fuelType,
+          Value<String?> recommendedEngineOil = const Value.absent(),
+          Value<String?> manufacturerNotes = const Value.absent(),
+          Value<String?> photoPath = const Value.absent()}) =>
+      VehiclesData(
+        id: id ?? this.id,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        deleted: deleted ?? this.deleted,
+        plate: plate ?? this.plate,
+        nickname: nickname.present ? nickname.value : this.nickname,
+        ownerId: ownerId ?? this.ownerId,
+        currentOdometerKm: currentOdometerKm ?? this.currentOdometerKm,
+        fuelType: fuelType ?? this.fuelType,
+        recommendedEngineOil: recommendedEngineOil.present
+            ? recommendedEngineOil.value
+            : this.recommendedEngineOil,
+        manufacturerNotes: manufacturerNotes.present
+            ? manufacturerNotes.value
+            : this.manufacturerNotes,
+        photoPath: photoPath.present ? photoPath.value : this.photoPath,
+      );
+  VehiclesData copyWithCompanion(VehiclesCompanion data) {
+    return VehiclesData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      plate: data.plate.present ? data.plate.value : this.plate,
+      nickname: data.nickname.present ? data.nickname.value : this.nickname,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      currentOdometerKm: data.currentOdometerKm.present
+          ? data.currentOdometerKm.value
+          : this.currentOdometerKm,
+      fuelType: data.fuelType.present ? data.fuelType.value : this.fuelType,
+      recommendedEngineOil: data.recommendedEngineOil.present
+          ? data.recommendedEngineOil.value
+          : this.recommendedEngineOil,
+      manufacturerNotes: data.manufacturerNotes.present
+          ? data.manufacturerNotes.value
+          : this.manufacturerNotes,
+      photoPath: data.photoPath.present ? data.photoPath.value : this.photoPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiclesData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('plate: $plate, ')
+          ..write('nickname: $nickname, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('currentOdometerKm: $currentOdometerKm, ')
+          ..write('fuelType: $fuelType, ')
+          ..write('recommendedEngineOil: $recommendedEngineOil, ')
+          ..write('manufacturerNotes: $manufacturerNotes, ')
+          ..write('photoPath: $photoPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      createdAt,
+      updatedAt,
+      deleted,
+      plate,
+      nickname,
+      ownerId,
+      currentOdometerKm,
+      fuelType,
+      recommendedEngineOil,
+      manufacturerNotes,
+      photoPath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehiclesData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deleted == this.deleted &&
+          other.plate == this.plate &&
+          other.nickname == this.nickname &&
+          other.ownerId == this.ownerId &&
+          other.currentOdometerKm == this.currentOdometerKm &&
+          other.fuelType == this.fuelType &&
+          other.recommendedEngineOil == this.recommendedEngineOil &&
+          other.manufacturerNotes == this.manufacturerNotes &&
+          other.photoPath == this.photoPath);
+}
+
+class VehiclesCompanion extends UpdateCompanion<VehiclesData> {
+  final Value<String> id;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> deleted;
+  final Value<String> plate;
+  final Value<String?> nickname;
+  final Value<String> ownerId;
+  final Value<int> currentOdometerKm;
+  final Value<String> fuelType;
+  final Value<String?> recommendedEngineOil;
+  final Value<String?> manufacturerNotes;
+  final Value<String?> photoPath;
+  final Value<int> rowid;
+  const VehiclesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.plate = const Value.absent(),
+    this.nickname = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.currentOdometerKm = const Value.absent(),
+    this.fuelType = const Value.absent(),
+    this.recommendedEngineOil = const Value.absent(),
+    this.manufacturerNotes = const Value.absent(),
+    this.photoPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehiclesCompanion.insert({
+    required String id,
+    required String createdAt,
+    required String updatedAt,
+    this.deleted = const Value.absent(),
+    required String plate,
+    this.nickname = const Value.absent(),
+    required String ownerId,
+    required int currentOdometerKm,
+    required String fuelType,
+    this.recommendedEngineOil = const Value.absent(),
+    this.manufacturerNotes = const Value.absent(),
+    this.photoPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt),
+        plate = Value(plate),
+        ownerId = Value(ownerId),
+        currentOdometerKm = Value(currentOdometerKm),
+        fuelType = Value(fuelType);
+  static Insertable<VehiclesData> custom({
+    Expression<String>? id,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? deleted,
+    Expression<String>? plate,
+    Expression<String>? nickname,
+    Expression<String>? ownerId,
+    Expression<int>? currentOdometerKm,
+    Expression<String>? fuelType,
+    Expression<String>? recommendedEngineOil,
+    Expression<String>? manufacturerNotes,
+    Expression<String>? photoPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deleted != null) 'deleted': deleted,
+      if (plate != null) 'plate': plate,
+      if (nickname != null) 'nickname': nickname,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (currentOdometerKm != null) 'current_odometer_km': currentOdometerKm,
+      if (fuelType != null) 'fuel_type': fuelType,
+      if (recommendedEngineOil != null)
+        'recommended_engine_oil': recommendedEngineOil,
+      if (manufacturerNotes != null) 'manufacturer_notes': manufacturerNotes,
+      if (photoPath != null) 'photo_path': photoPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehiclesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? createdAt,
+      Value<String>? updatedAt,
+      Value<int>? deleted,
+      Value<String>? plate,
+      Value<String?>? nickname,
+      Value<String>? ownerId,
+      Value<int>? currentOdometerKm,
+      Value<String>? fuelType,
+      Value<String?>? recommendedEngineOil,
+      Value<String?>? manufacturerNotes,
+      Value<String?>? photoPath,
+      Value<int>? rowid}) {
+    return VehiclesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
+      plate: plate ?? this.plate,
+      nickname: nickname ?? this.nickname,
+      ownerId: ownerId ?? this.ownerId,
+      currentOdometerKm: currentOdometerKm ?? this.currentOdometerKm,
+      fuelType: fuelType ?? this.fuelType,
+      recommendedEngineOil: recommendedEngineOil ?? this.recommendedEngineOil,
+      manufacturerNotes: manufacturerNotes ?? this.manufacturerNotes,
+      photoPath: photoPath ?? this.photoPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<int>(deleted.value);
+    }
+    if (plate.present) {
+      map['plate'] = Variable<String>(plate.value);
+    }
+    if (nickname.present) {
+      map['nickname'] = Variable<String>(nickname.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (currentOdometerKm.present) {
+      map['current_odometer_km'] = Variable<int>(currentOdometerKm.value);
+    }
+    if (fuelType.present) {
+      map['fuel_type'] = Variable<String>(fuelType.value);
+    }
+    if (recommendedEngineOil.present) {
+      map['recommended_engine_oil'] =
+          Variable<String>(recommendedEngineOil.value);
+    }
+    if (manufacturerNotes.present) {
+      map['manufacturer_notes'] = Variable<String>(manufacturerNotes.value);
+    }
+    if (photoPath.present) {
+      map['photo_path'] = Variable<String>(photoPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehiclesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('plate: $plate, ')
+          ..write('nickname: $nickname, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('currentOdometerKm: $currentOdometerKm, ')
+          ..write('fuelType: $fuelType, ')
+          ..write('recommendedEngineOil: $recommendedEngineOil, ')
+          ..write('manufacturerNotes: $manufacturerNotes, ')
+          ..write('photoPath: $photoPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class AuditLog extends Table with TableInfo<AuditLog, AuditLogData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -258,8 +1097,20 @@ class AuditLog extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  AuditLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuditLogData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      entityType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_type'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_id'])!,
+      operation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operation'])!,
+      at: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}at'])!,
+    );
   }
 
   @override
@@ -271,6 +1122,211 @@ class AuditLog extends Table with TableInfo {
   List<String> get customConstraints => const ['PRIMARY KEY(id)'];
   @override
   bool get dontWriteConstraints => true;
+}
+
+class AuditLogData extends DataClass implements Insertable<AuditLogData> {
+  final String id;
+  final String entityType;
+  final String entityId;
+  final String operation;
+  final String at;
+  const AuditLogData(
+      {required this.id,
+      required this.entityType,
+      required this.entityId,
+      required this.operation,
+      required this.at});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['operation'] = Variable<String>(operation);
+    map['at'] = Variable<String>(at);
+    return map;
+  }
+
+  AuditLogCompanion toCompanion(bool nullToAbsent) {
+    return AuditLogCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      operation: Value(operation),
+      at: Value(at),
+    );
+  }
+
+  factory AuditLogData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuditLogData(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      operation: serializer.fromJson<String>(json['operation']),
+      at: serializer.fromJson<String>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'operation': serializer.toJson<String>(operation),
+      'at': serializer.toJson<String>(at),
+    };
+  }
+
+  AuditLogData copyWith(
+          {String? id,
+          String? entityType,
+          String? entityId,
+          String? operation,
+          String? at}) =>
+      AuditLogData(
+        id: id ?? this.id,
+        entityType: entityType ?? this.entityType,
+        entityId: entityId ?? this.entityId,
+        operation: operation ?? this.operation,
+        at: at ?? this.at,
+      );
+  AuditLogData copyWithCompanion(AuditLogCompanion data) {
+    return AuditLogData(
+      id: data.id.present ? data.id.value : this.id,
+      entityType:
+          data.entityType.present ? data.entityType.value : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLogData(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, entityType, entityId, operation, at);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuditLogData &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.operation == this.operation &&
+          other.at == this.at);
+}
+
+class AuditLogCompanion extends UpdateCompanion<AuditLogData> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<String> operation;
+  final Value<String> at;
+  final Value<int> rowid;
+  const AuditLogCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.at = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AuditLogCompanion.insert({
+    required String id,
+    required String entityType,
+    required String entityId,
+    required String operation,
+    required String at,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        entityType = Value(entityType),
+        entityId = Value(entityId),
+        operation = Value(operation),
+        at = Value(at);
+  static Insertable<AuditLogData> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<String>? operation,
+    Expression<String>? at,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (operation != null) 'operation': operation,
+      if (at != null) 'at': at,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AuditLogCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? entityType,
+      Value<String>? entityId,
+      Value<String>? operation,
+      Value<String>? at,
+      Value<int>? rowid}) {
+    return AuditLogCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      operation: operation ?? this.operation,
+      at: at ?? this.at,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (operation.present) {
+      map['operation'] = Variable<String>(operation.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<String>(at.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLogCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('at: $at, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
 }
 
 class DatabaseAtV1 extends GeneratedDatabase {

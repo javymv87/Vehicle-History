@@ -107,4 +107,100 @@ void main() {
     expect(store.liveOwners, [owner]);
     expect(find.text('Mario'), findsOneWidget);
   });
+
+  group('nationality', () {
+    testWidgets('searching "cub" in Spanish picks Cuba and stores its code',
+        (tester) async {
+      final owner = store.addOwner('Ana');
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.editOwner(owner.id),
+        locale: const Locale('es'),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('nationality-field')));
+      await tester.pumpAndSettle();
+      expect(find.text('Elige la nacionalidad'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar'), 'cub');
+      await tester.pumpAndSettle();
+      final dialog = find.byType(Dialog);
+      expect(
+        find.descendant(of: dialog, matching: find.text('Curazao')),
+        findsNothing,
+      );
+      await tester
+          .tap(find.descendant(of: dialog, matching: find.text('Cuba')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(store.owners[owner.id]!.nationality, 'CU');
+      expect(find.byType(OwnerDetailPage), findsOneWidget);
+      expect(find.text('Cuba'), findsOneWidget);
+    });
+
+    testWidgets('a known code is shown in the app language', (tester) async {
+      final owner = store.addOwner('Ana', nationality: 'ES');
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.owner(owner.id),
+        locale: const Locale('it'),
+      );
+      expect(find.text('Spagna'), findsOneWidget);
+    });
+
+    testWidgets('free text is shown as typed', (tester) async {
+      final owner = store.addOwner('Luis', nationality: 'Cubana');
+      await pumpApp(tester, store, location: AppRoutes.owner(owner.id));
+      expect(find.text('Cubana'), findsOneWidget);
+    });
+
+    testWidgets('"Other…" stores the typed text', (tester) async {
+      final owner = store.addOwner('Ana');
+      await pumpApp(tester, store, location: AppRoutes.editOwner(owner.id));
+
+      await tester.tap(find.byKey(const ValueKey('nationality-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Other…'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Kosovar',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(store.owners[owner.id]!.nationality, 'Kosovar');
+    });
+  });
+
+  testWidgets('About shows the data credits and opens the licences',
+      (tester) async {
+    await pumpApp(tester, store, location: AppRoutes.owners);
+
+    await tester.tap(find.byType(PopupMenuButton<VoidCallback>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Vehicle data by VehiclesDB (CC BY 4.0), built from official public '
+        'registers.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Unicode CLDR'), findsOneWidget);
+    await tester.tap(find.text('View licenses'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LicensePage), findsOneWidget);
+  });
 }

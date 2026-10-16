@@ -15,8 +15,10 @@ device and can be backed up to Google Drive to move between phones.
 
 ## Key features
 
-- Multiple vehicles, each linked to an owner (with owner documents: licence, ID,
-  residence permit — with expiry reminders)
+- Multiple vehicles — cars, vans, motorcycles and mopeds — each linked to an
+  owner (with owner documents: licence, ID, residence permit — with expiry
+  reminders)
+- Make and model picked from a bundled offline catalogue, or typed by hand
 - Unified log of dated entries: maintenance, repairs, refuelling, expenses,
   inspections, legal deadlines, notes — each with mileage, cost, photos and
   optional reminders
@@ -70,14 +72,17 @@ The Material 3 theme (single seed, light/dark, status colours) and the
 `gen_l10n` localisation skeleton (IT / ES / EN) are done, and so is the Drift
 data layer for owners and vehicles (with the audit log, schema migrations from
 v1 and repositories) and the vehicle and owner screens (Riverpod +
-`go_router`: lists, details, forms, delete with confirmation and Undo). Next
-is step 4.
+`go_router`: lists, details, forms, delete with confirmation and Undo).
+Step 3b added the vehicle kind (car, van, motorcycle, moped), the make / model
+catalogue, model year, version and the nationality picker, with the first real
+schema migration (v1 → v2). Next is step 4.
 
 Roadmap to the first usable version:
 
 | Step | Content |
 | --- | --- |
 | 3 | ~~Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner~~ — done |
+| 3b | ~~Vehicle kind, make / model catalogue, year, version, nationality picker (schema v2)~~ — done |
 | 4 | Basic log entries: date, km, type, cost, notes; list, filters, undo on delete |
 | 5 | Odometer: update current km + `MileageReading` history with its rules |
 | 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
@@ -87,6 +92,20 @@ refuelling, documents, photos, reminders, PDF reports, Google Drive backup.
 
 Why the signing key matters: each PC has its own debug key, so installing
 from another PC forces an uninstall, which deletes the data.
+
+## Credits
+
+- **Vehicle data by [VehiclesDB](https://vehiclesdb.com) (CC BY 4.0), built
+  from official public registers.** The make / model catalogue in
+  `assets/catalog/` is a projection of a pinned VehiclesDB release; its
+  licence and the upstream register notices are in
+  `assets/catalog/LICENSE.md` and `assets/catalog/ATTRIBUTION.md`, and are
+  shown in the app under About → licences.
+- **Country names from [Unicode CLDR](https://cldr.unicode.org)**, under the
+  Unicode License v3 (`assets/countries/LICENSE.md`).
+
+These data files keep their own licences; the "all rights reserved" notice
+below covers the rest of the repository.
 
 ## License
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/widgets/app_menu_button.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../controllers/owner_list_controller.dart';
 import '../widgets/owner_tile.dart';
@@ -20,7 +21,10 @@ class OwnerListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.ownersTitle)),
+      appBar: AppBar(
+        title: Text(l10n.ownersTitle),
+        actions: const [AppMenuButton()],
+      ),
       body: AsyncValueView(
         value: ref.watch(ownerListProvider),
         data: (owners) => owners.isEmpty

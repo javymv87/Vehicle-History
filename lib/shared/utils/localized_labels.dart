@@ -1,4 +1,5 @@
 import '../../data/models/fuel_type.dart';
+import '../../data/models/vehicle_kind.dart';
 import '../../l10n/app_localizations.dart';
 import 'action_result.dart';
 
@@ -14,6 +15,17 @@ extension FuelTypeLabel on FuelType {
         FuelType.pluginHybrid => l10n.fuelPluginHybrid,
         FuelType.electric => l10n.fuelElectric,
         FuelType.other => l10n.fuelOther,
+      };
+}
+
+/// Localised label of a [VehicleKind].
+extension VehicleKindLabel on VehicleKind {
+  /// The name of this vehicle kind in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        VehicleKind.car => l10n.kindCar,
+        VehicleKind.van => l10n.kindVan,
+        VehicleKind.motorcycle => l10n.kindMotorcycle,
+        VehicleKind.moped => l10n.kindMoped,
       };
 }
 

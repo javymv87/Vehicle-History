@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/data_providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
@@ -12,6 +13,7 @@ import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../controllers/owner_deletion_controller.dart';
 import '../controllers/owner_detail_controller.dart';
 
@@ -142,7 +144,16 @@ class _OwnerDetailView extends ConsumerWidget {
               value: l10n.dateValue(birthDate.toLocalDateTime()),
             ),
           if (owner.nationality case final nationality?)
-            DetailField(label: l10n.fieldNationality, value: nationality),
+            DetailField(
+              label: l10n.fieldNationality,
+              // A known ISO code shows the country name in the app language;
+              // anything else (typed by hand) is shown as typed.
+              value: ref.watch(countryNamesProvider).value?.displayNationality(
+                        nationality,
+                        Localizations.localeOf(context).languageCode,
+                      ) ??
+                  nationality,
+            ),
           if (owner.phone case final phone?)
             DetailField(label: l10n.fieldPhone, value: phone),
           if (owner.email case final email?)
@@ -159,10 +170,12 @@ class _OwnerDetailView extends ConsumerWidget {
           else
             for (final vehicle in detail.vehicles)
               ListTile(
-                leading: const Icon(Icons.directions_car),
-                title: Text(vehicle.plate),
+                leading: Icon(vehicle.kind.icon),
+                title: Text(vehicle.makeAndModel ?? vehicle.plate),
                 subtitle: Text(
-                  vehicle.nickname ?? vehicle.fuelType.label(l10n),
+                  vehicle.makeAndModel != null
+                      ? vehicle.plate
+                      : vehicle.nickname ?? vehicle.fuelType.label(l10n),
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(AppRoutes.vehicle(vehicle.id)),

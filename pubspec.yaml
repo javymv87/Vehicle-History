@@ -86,6 +86,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Bundled reference data, built by the scripts in tool/ and committed so
+  # builds are offline and reproducible. The licence and attribution files
+  # are bundled too: the About screen shows them (CC BY 4.0, Unicode v3).
+  assets:
+    - assets/catalog/
+    - assets/countries/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

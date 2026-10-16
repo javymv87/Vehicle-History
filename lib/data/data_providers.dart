@@ -1,5 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'catalog/country_names.dart';
+import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
 import 'repositories/drift_owner_repository.dart';
 import 'repositories/drift_vehicle_repository.dart';
@@ -39,3 +42,23 @@ final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DriftVehicleRepository(db.vehiclesDao, db.auditLogDao);
 });
+
+/// Asset holding the make / model catalogue (see `tool/`).
+const String vehicleCatalogAsset = 'assets/catalog/vehicle_catalog.json';
+
+/// Asset holding the country names (see `tool/`).
+const String countryNamesAsset = 'assets/countries/country_names.json';
+
+/// The bundled make / model catalogue, loaded once on first use and kept
+/// for the life of the app. Tests override it with a small fixture.
+final vehicleCatalogProvider = FutureProvider<VehicleCatalog>(
+  (ref) async =>
+      VehicleCatalog.fromJson(await rootBundle.loadString(vehicleCatalogAsset)),
+);
+
+/// The bundled country names, loaded once on first use and kept for the
+/// life of the app. Tests override it with a small fixture.
+final countryNamesProvider = FutureProvider<CountryNames>(
+  (ref) async =>
+      CountryNames.fromJson(await rootBundle.loadString(countryNamesAsset)),
+);

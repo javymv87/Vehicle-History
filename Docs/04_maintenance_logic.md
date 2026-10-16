@@ -21,6 +21,15 @@ Precargada con las entradas más comunes, y modificable por el usuario.
 - **Frenos**: frenos delanteros, frenos traseros (ver sección dedicada)
 - **Otro**: entradas libres añadidas por el usuario
 
+**Motos y ciclomotores tienen su propio camino.** El vehículo tiene un tipo
+(coche, furgoneta, moto, ciclomotor; ver `02_data_model.md`), y el futuro
+catálogo de mantenimiento marcará cada tipo de mantenimiento con los tipos de
+vehículo a los que se aplica: por ejemplo la cadena de transmisión o el
+reglaje de válvulas para las motos, y no para los coches. La lógica de frenos
+por eje sigue valiendo en las motos como delantero / trasero. Esto aún no está
+implementado: hoy el tipo de vehículo solo filtra el catálogo de marcas y
+modelos.
+
 Los dos manuales confirman la estructura: el Punto usa intervalos por km **y**
 por tiempo con la regla "vence el primero de los dos" (p. ej. aceite de motor
 en cada servicio de mantenimiento *o bien* cada 24 meses, 12 meses si pocos

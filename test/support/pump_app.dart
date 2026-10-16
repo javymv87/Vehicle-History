@@ -6,6 +6,7 @@ import 'package:vehicle_history/app/app.dart';
 import 'package:vehicle_history/app/router/app_router.dart';
 import 'package:vehicle_history/data/data_providers.dart';
 
+import 'catalog_fixtures.dart';
 import 'fake_repositories.dart';
 
 /// Provider overrides that run the app on [store] instead of a database.
@@ -13,6 +14,9 @@ List<Override> fakeDataOverrides(FakeStore store) => [
       databaseReadyProvider.overrideWith((ref) async {}),
       ownerRepositoryProvider.overrideWithValue(FakeOwnerRepository(store)),
       vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
+      vehicleCatalogProvider
+          .overrideWith((ref) async => vehicleCatalogFixture()),
+      countryNamesProvider.overrideWith((ref) async => countryNamesFixture()),
     ];
 
 /// Pumps the whole app on [store], starting at [location], in English.

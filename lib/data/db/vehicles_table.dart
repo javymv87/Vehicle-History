@@ -18,6 +18,38 @@ class Vehicles extends Table with TechnicalColumns {
   /// Licence plate, trimmed and upper-case. Required and never blank.
   TextColumn get plate => text()();
 
+  /// Vehicle kind as a stable text code (see [VehicleKindConverter]).
+  ///
+  /// Added in schema v2 with a default, so every v1 vehicle became a car.
+  TextColumn get kind => text()
+      .map(const VehicleKindConverter())
+      .withDefault(const Constant('car'))();
+
+  /// Make as shown to the user, e.g. "Fiat". Always the source of truth for
+  /// display, also when [makeSlug] is set. Nullable only for v1 rows.
+  TextColumn get make => text().nullable()();
+
+  /// VehiclesDB make slug, e.g. `fiat`; `null` for a make typed by hand.
+  TextColumn get makeSlug => text().nullable()();
+
+  /// Model as shown to the user, e.g. "Punto". Nullable only for v1 rows.
+  TextColumn get model => text().nullable()();
+
+  /// VehiclesDB model slug, e.g. `punto`; `null` for a model typed by hand.
+  TextColumn get modelSlug => text().nullable()();
+
+  /// Model year, e.g. 2012.
+  ///
+  /// The range CHECK is a column constraint, not one of [customConstraints]:
+  /// the column was added by `ALTER TABLE ... ADD COLUMN` in v2, which cannot
+  /// add a table constraint without recreating the table.
+  IntColumn get modelYear => integer()
+      .nullable()
+      .customConstraint('NULL CHECK (model_year BETWEEN 1886 AND 2100)')();
+
+  /// Version and trim as free text, e.g. "1.2 69 CV Lounge".
+  TextColumn get version => text().nullable()();
+
   /// Optional friendly name.
   TextColumn get nickname => text().nullable()();
 

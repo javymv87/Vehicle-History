@@ -1,9 +1,111 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../data/catalog/vehicle_catalog.dart';
 import '../../../data/data_providers.dart';
 import '../../../data/models/fuel_type.dart';
 import '../../../data/models/vehicle.dart';
+import '../../../data/models/vehicle_kind.dart';
 import '../../../shared/utils/action_result.dart';
+
+/// What the vehicle is: kind, make and model, as chosen in the form.
+///
+/// Immutable; every change returns a new value and applies the picker rules
+/// of `Docs/03_features.md`: changing the kind clears make and model (the
+/// catalogue lists differ per kind), and changing the make clears the model.
+/// A make or model typed by hand has no slug.
+class VehicleIdentity {
+  /// Creates an identity. Normally built by [VehicleIdentity.of] and the
+  /// `with…` methods.
+  const VehicleIdentity({
+    required this.kind,
+    this.make,
+    this.makeSlug,
+    this.model,
+    this.modelSlug,
+  });
+
+  /// The identity of [vehicle], or an empty car when creating.
+  factory VehicleIdentity.of(Vehicle? vehicle) => vehicle == null
+      ? const VehicleIdentity(kind: VehicleKind.car)
+      : VehicleIdentity(
+          kind: vehicle.kind,
+          make: vehicle.make,
+          makeSlug: vehicle.makeSlug,
+          model: vehicle.model,
+          modelSlug: vehicle.modelSlug,
+        );
+
+  /// The vehicle kind.
+  final VehicleKind kind;
+
+  /// Make name as shown; `null` until chosen.
+  final String? make;
+
+  /// Catalogue id of [make]; `null` when typed by hand or not chosen.
+  final String? makeSlug;
+
+  /// Model name as shown; `null` until chosen.
+  final String? model;
+
+  /// Catalogue id of [model]; `null` when typed by hand or not chosen.
+  final String? modelSlug;
+
+  /// Whether the make comes from the catalogue, so the model can be picked
+  /// from that make's list. With a typed make, the model is typed too.
+  bool get hasCatalogMake => makeSlug != null;
+
+  /// Switches to [kind]. A different kind clears make and model.
+  VehicleIdentity withKind(VehicleKind kind) =>
+      kind == this.kind ? this : VehicleIdentity(kind: kind);
+
+  /// Picks [make] from the catalogue. A different make clears the model.
+  VehicleIdentity withCatalogMake(CatalogMake make) => make.slug == makeSlug
+      ? this
+      : VehicleIdentity(kind: kind, make: make.name, makeSlug: make.slug);
+
+  /// Sets a make typed by hand. A different make clears the model.
+  VehicleIdentity withCustomMake(String name) {
+    final clean = name.trim();
+    if (makeSlug == null && clean == make) return this;
+    return VehicleIdentity(kind: kind, make: clean);
+  }
+
+  /// Picks [model] from the catalogue list of the current make.
+  VehicleIdentity withCatalogModel(CatalogModel model) => VehicleIdentity(
+        kind: kind,
+        make: make,
+        makeSlug: makeSlug,
+        model: model.name,
+        modelSlug: model.slug,
+      );
+
+  /// Sets a model typed by hand; blank clears it.
+  VehicleIdentity withCustomModel(String name) {
+    final clean = name.trim();
+    return VehicleIdentity(
+      kind: kind,
+      make: make,
+      makeSlug: makeSlug,
+      model: clean.isEmpty ? null : clean,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is VehicleIdentity &&
+      other.kind == kind &&
+      other.make == make &&
+      other.makeSlug == makeSlug &&
+      other.model == model &&
+      other.modelSlug == modelSlug;
+
+  @override
+  int get hashCode => Object.hash(kind, make, makeSlug, model, modelSlug);
+
+  @override
+  String toString() => 'VehicleIdentity(${kind.name}, $make [$makeSlug], '
+      '$model [$modelSlug])';
+}
 
 /// The values typed into the vehicle form, before they are saved.
 ///
@@ -13,6 +115,9 @@ class VehicleDraft {
   /// Creates a draft from the form fields.
   const VehicleDraft({
     required this.plate,
+    required this.identity,
+    this.modelYear,
+    this.version,
     this.nickname,
     required this.ownerId,
     required this.fuelType,
@@ -23,6 +128,15 @@ class VehicleDraft {
 
   /// Licence plate. Required.
   final String plate;
+
+  /// Kind, make and model.
+  final VehicleIdentity identity;
+
+  /// Optional model year.
+  final int? modelYear;
+
+  /// Optional version and trim.
+  final String? version;
 
   /// Optional friendly name.
   final String? nickname;
@@ -72,11 +186,19 @@ class VehicleFormController extends AsyncNotifier<Vehicle?> {
   Future<ActionResult<Vehicle>> save(VehicleDraft draft) {
     final repository = ref.read(vehicleRepositoryProvider);
     final id = vehicleId;
+    final identity = draft.identity;
     return runAction(() {
       if (id != null) {
         return repository.update(
           id,
           plate: draft.plate,
+          kind: identity.kind,
+          make: identity.make,
+          makeSlug: identity.makeSlug,
+          model: identity.model,
+          modelSlug: identity.modelSlug,
+          modelYear: draft.modelYear,
+          version: draft.version,
           nickname: draft.nickname,
           ownerId: draft.ownerId,
           fuelType: draft.fuelType,
@@ -92,6 +214,13 @@ class VehicleFormController extends AsyncNotifier<Vehicle?> {
       }
       return repository.create(
         plate: draft.plate,
+        kind: identity.kind,
+        make: identity.make,
+        makeSlug: identity.makeSlug,
+        model: identity.model,
+        modelSlug: identity.modelSlug,
+        modelYear: draft.modelYear,
+        version: draft.version,
         nickname: draft.nickname,
         ownerId: draft.ownerId,
         currentOdometerKm: km,
