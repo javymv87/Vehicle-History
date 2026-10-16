@@ -39,7 +39,9 @@ copia de seguridad manual en Google Drive e informes exportables a PDF.
 Concepto completo y proyecto Flutter configurado: la estructura de carpetas, las
 reglas de lint, la CI y esta documentación ya están en el repositorio. El tema
 Material 3 (semilla única, claro/oscuro, colores de estado) y el esqueleto de
-localización con `gen_l10n` (IT / ES / EN) ya están hechos.
+localización con `gen_l10n` (IT / ES / EN) ya están hechos, igual que la capa
+de datos Drift para propietarios y vehículos (con el historial de operaciones,
+migraciones de esquema desde la v1 y repositorios).
 
-Próximos pasos, en orden: la base de datos Drift con solo las tablas `vehicles`
-y `owners`, y después la primera funcionalidad vertical (vehículos) completa.
+Próximo paso: la funcionalidad de vehículos (Riverpod + `go_router` +
+pantallas).

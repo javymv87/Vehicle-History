@@ -57,6 +57,35 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
+Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
+
+- **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
+  `schema_dir: drift_schemas/`, `test_dir: test/drift/`). After a schema change:
+  bump `schemaVersion`, run `dart run drift_dev make-migrations`, wire the
+  generated `stepByStep` from `app_database.steps.dart` into `onUpgrade`, and
+  commit the dump plus every non-`.g.dart` file the command writes. At v1 the
+  command only writes the dump (steps file and `migration_test.dart` appear
+  from v2); the verifier helpers under `test/drift/vehicle_history/generated/`
+  come from `dart run drift_dev schema generate`.
+- **Timestamps as text.** `store_date_time_values_as_text: true` in
+  `build.yaml`, set from v1: changing it later is a data migration.
+- **Foreign keys** are enabled with `PRAGMA foreign_keys = ON` in
+  `beforeOpen` (SQLite leaves them off). `vehicles.owner_id` →
+  `owners.id`, `ON DELETE RESTRICT`.
+- **Soft delete.** Main tables carry `deleted` (default `false`), shared with
+  `id`, `created_at`, `updated_at` through the `TechnicalColumns` mixin.
+  Every read filters `deleted = 0` unless the method name says otherwise;
+  delete means soft delete. The audit log is append-only and has no flag.
+- **Audit log from v1.** Every repository write adds its `audit_log` row in
+  the same transaction.
+- **No SQLCipher.** The database lives in the app sandbox, protected by
+  Android file-based encryption. Owner data leaves the device only through
+  the Drive backup, so encrypting the **backup file** is evaluated in the
+  backup step. A deliberate decision, open to revision.
+- **CHECK constraints** are written in the table's `customConstraints`, not
+  with `Column.check`, whose self-referencing getter trips the
+  `recursive_getters` lint.
+
 ---
 
 ## 3. Non-negotiable rules
@@ -140,6 +169,16 @@ talks to the database directly — always through a repository.
 the state of one screen, or of one screen-sized piece of UI, and exposing the
 actions that screen can perform. It calls repositories; it never touches Drift,
 `googleapis` or any plugin directly. It contains no widgets.
+
+**Data layer.** Drift-generated classes (`…Row`, `…Companion`) never leave
+`lib/data/db/`: DAOs (`@DriftAccessor`) are the only code that builds
+queries, and they accept and return the immutable domain models of
+`lib/data/models/` (mapping in `db/row_mappers.dart`). Repositories are plain
+Dart — an abstract interface plus a Drift implementation that receives its
+DAOs and a UTC clock (`DateTime Function()`, default
+`() => DateTime.now().toUtc()`) through the constructor — and report failures
+as typed `RepositoryException`s, never raw SQLite errors. Domain models use no
+code generation (`freezed` and similar are not used).
 
 **Riverpod conventions.**
 
@@ -355,4 +394,15 @@ string by hand.
 ### Identifiers
 
 Primary keys are device-generated UUIDs, as required by
-`Docs/02_data_model.md`, not auto-increment integers.
+`Docs/02_data_model.md`, not auto-increment integers: UUID v4 from the `uuid`
+package, stored as a `TEXT` primary key.
+
+### Storage of dates and enums
+
+- **Technical timestamps** are `DateTime` in UTC, stored as ISO-8601 text.
+  Repositories take their time from the injected UTC clock.
+- **Calendar dates** are the `CalendarDate` value type (year, month, day),
+  stored as `yyyy-MM-dd` text through a `TypeConverter`. Never a `DateTime`.
+- **Enums** are stored as text through a `TypeConverter` with explicit codes,
+  never through `Enum.name` or the index, so renaming a Dart value cannot
+  change what is on disk.

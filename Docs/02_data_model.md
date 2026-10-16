@@ -41,14 +41,22 @@ inglés.
 
 Ficha de la persona propietaria de uno o varios vehículos.
 
-- Nombre, apellidos
-- Fecha de nacimiento
-- Nacionalidad
+- Nombre (**obligatorio**), apellidos
+- Fecha de nacimiento (fecha de calendario, sin hora ni zona horaria)
+- Nacionalidad (texto libre)
 - Foto
 - Contactos: teléfono, email
 - Notas libres
 
+Todo es opcional salvo el nombre. Teléfono y email se guardan tal como se
+escriben (sin espacios al principio ni al final), sin validar el formato.
+La foto es una ruta opcional **relativa** a la carpeta de documentos de la app
+(elegir, copiar y mostrar imágenes llegará más adelante).
+
 Un Owner puede tener **varios vehículos**. Un vehículo tiene **un** Owner.
+
+**Borrar un Owner** no se permite mientras tenga vehículos no borrados: la app
+lo rechaza y no escribe nada. Primero hay que borrar o reasignar sus vehículos.
 
 ### OwnerDocument (documento del propietario)
 
@@ -71,14 +79,28 @@ Un Owner puede tener varios OwnerDocument.
 
 El vehículo. Es la entidad central: casi todo lo demás está vinculado a ella.
 
-- Matrícula (identificador principal)
+- Matrícula (identificador principal, **obligatoria**)
 - Nombre común (opcional)
-- Foto de perfil
-- Referencia al Owner
+- Foto de perfil (opcional, ruta relativa como la del Owner)
+- Referencia al Owner (**obligatoria**: todo vehículo tiene exactamente uno)
 - **Km actual** (el último valor conocido del cuentakilómetros total)
 - Especificaciones de fábrica: tipo de combustible, aceite de motor
   recomendado, y cualquier nota útil del fabricante (ver
   `04_maintenance_logic.md`)
+
+Reglas:
+
+- **Matrícula**: se guarda sin espacios al principio ni al final y en
+  mayúsculas. Es **única entre los vehículos no borrados**: la matrícula de un
+  vehículo borrado se puede volver a usar.
+- **Km actual**: obligatorio al crear el vehículo, número entero, nunca
+  negativo. **No se modifica desde el formulario del vehículo**: cambiarlo
+  corresponde a la futura función de kilometraje, con las reglas de
+  `MileageReading` (ver `04_maintenance_logic.md`).
+- **Tipo de combustible**: obligatorio, uno de: gasolina, diésel,
+  gasolina + GLP, gasolina + GNC (metano), híbrido, híbrido enchufable,
+  eléctrico, otro. Los bifuel GLP / GNC son comunes en Italia.
+- Aceite de motor recomendado y notas del fabricante: texto libre opcional.
 
 ### LogEntry (entrada del historial) — núcleo de la app
 
@@ -204,7 +226,10 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 ### AuditLog (historial de operaciones)
 
 Registro ligero de todas las operaciones realizadas sobre las entradas,
-consultable y útil también en el futuro.
+consultable y útil también en el futuro. Existe **desde la primera versión
+del esquema**: cada creación, modificación y borrado de un Owner o un Vehicle
+añade su fila en la misma transacción. Es solo de añadir: sus filas no se
+modifican ni se borran.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
 - Operación: creación / modificación / eliminación

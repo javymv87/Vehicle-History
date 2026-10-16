@@ -67,10 +67,11 @@ conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 Concept documented and Flutter project scaffolded: folder structure, strict
 lint rules, CI and the conceptual documentation in `Docs/` are all in place.
 The Material 3 theme (single seed, light/dark, status colours) and the
-`gen_l10n` localisation skeleton (IT / ES / EN) are done.
+`gen_l10n` localisation skeleton (IT / ES / EN) are done, and so is the Drift
+data layer for owners and vehicles (with the audit log, schema migrations from
+v1 and repositories).
 
-Next steps, in order: the Drift database with only the `vehicles` and `owners`
-tables, then the first vertical feature (vehicles) end to end.
+Next step: the vehicles feature (Riverpod + `go_router` + screens).
 
 ## License
 

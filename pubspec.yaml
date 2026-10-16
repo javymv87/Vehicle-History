@@ -41,6 +41,13 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
+  # Local SQLite database (the only live store), with type-safe queries.
+  drift: ^2.35.1
+  # Opens the Drift database on Flutter platforms and bundles sqlite3.
+  drift_flutter: ^0.3.1
+  # Device-generated UUID v4 primary keys.
+  uuid: ^4.6.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -51,6 +58,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Drift code generator, schema dumps and migration test helpers.
+  drift_dev: ^2.35.1
+  # Runs the Drift code generator. 2.15.1 is the newest release whose
+  # analyzer accepts the `meta` version pinned by the Flutter SDK.
+  build_runner: ^2.15.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
