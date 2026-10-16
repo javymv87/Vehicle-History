@@ -3,7 +3,7 @@
 This file is the operating manual for any AI assistant or developer working on
 this repository. Read it **before** writing or changing code.
 
-The conceptual documentation in [`Docs/`](Docs/) (Italian) is the **source of
+The conceptual documentation in [`Docs/`](Docs/) (Spanish) is the **source of
 truth** for product decisions. This file is the source of truth for **technical
 rules and conventions**. If code and `Docs/` disagree, `Docs/` wins — report the
 discrepancy instead of silently choosing.
@@ -119,7 +119,7 @@ assets/
   images/
   icons/
 
-Docs/                    # Italian conceptual documentation (source of truth)
+Docs/                    # Spanish conceptual documentation (source of truth)
 CLAUDE.md                # this file
 README.md                # public project description
 ```

@@ -1,66 +1,73 @@
-# 01 — Visione generale
+# 01 — Visión general
 
-## Cos'è
+## Qué es
 
-Applicazione mobile (Android in prima battuta, costruita con Flutter e quindi
-predisposta anche per iOS in futuro) per tenere lo **storico completo di uno o
-più veicoli**: manutenzioni, riparazioni, rifornimenti, controlli, spese,
-scadenze legali e documenti.
+Aplicación móvil (Android en primer lugar, construida con Flutter y por tanto
+preparada también para iOS en el futuro) para llevar el **historial completo de
+uno o varios vehículos**: mantenimientos, reparaciones, repostajes, controles,
+gastos, vencimientos legales y documentos.
 
-Non è un'app "collegata al veicolo" (nessun OBD, nessuna diagnostica): è un
-**registro digitale** curato a mano, pensato per sostituire il classico
-quaderno delle manutenzioni e la scatola di ricevute.
+No es una app "conectada al vehículo" (sin OBD, sin diagnóstico): es un
+**registro digital** llevado a mano, pensado para sustituir el clásico
+cuaderno de mantenimiento y la caja de recibos.
 
-## A chi serve
+## A quién sirve
 
-- Un **singolo utente** (l'app è mono-utente) che usa l'app dal proprio
-  telefono.
-- Quell'utente può gestire **più veicoli**, non solo il proprio: anche auto di
-  familiari o di persone di cui tiene i conti. Per questo ogni veicolo è
-  collegato a un **proprietario** (anagrafica dedicata).
+- A un **único usuario** (la app es monousuario) que usa la app desde su propio
+  teléfono.
+- Ese usuario puede gestionar **varios vehículos**, no solo el suyo: también
+  coches de familiares o de personas cuyas cuentas lleva. Por eso cada vehículo
+  está vinculado a un **propietario** (ficha propia).
 
-## Che problema risolve
+## Qué problema resuelve
 
-- Sapere sempre **cosa è stato fatto** su un veicolo e **quando** (data + km).
-- Sapere **cosa va fatto** e **quando scade** (manutenzione programmata,
-  bollo, revisione, assicurazione, documenti personali).
-- Sapere **quanto si è speso** (per veicolo, per tipo, per periodo).
-- Poter **dimostrare** la storia manutentiva del veicolo — utile per la
-  rivendita o il passaggio di proprietà — tramite un report completo
-  esportabile.
-- Avere tutto **al sicuro**: i dati vivono sul telefono e possono essere
-  copiati sul cloud (Google Drive) per recuperarli su un altro telefono.
+- Saber siempre **qué se ha hecho** en un vehículo y **cuándo** (fecha + km).
+- Saber **qué hay que hacer** y **cuándo vence** (mantenimiento programado,
+  impuesto de circulación, inspección técnica obligatoria, seguro, documentos
+  personales).
+- Saber **cuánto se ha gastado** (por vehículo, por tipo, por periodo).
+- Poder **demostrar** el historial de mantenimiento del vehículo — útil para la
+  reventa o el cambio de titularidad — mediante un informe completo
+  exportable.
+- Tenerlo todo **a salvo**: los datos viven en el teléfono y pueden copiarse
+  en la nube (Google Drive) para recuperarlos en otro teléfono.
 
-## Principio guida (il più importante)
+## Principio guía (el más importante)
 
-**Velocità d'uso prima di tutto.** Le app di questo tipo vengono abbandonate
-in fretta quando l'inserimento è lento o macchinoso. Ogni funzione potente
-(consumi, scadenze automatiche, controlli-misura) deve restare *opzionale* e
-non appesantire l'inserimento quotidiano di una voce. Registrare un
-rifornimento o una manutenzione deve richiedere pochi tocchi; i dettagli
-avanzati stanno in sezioni espandibili, mai obbligatorie dove non hanno senso.
+**La rapidez de uso ante todo.** Las apps de este tipo se abandonan
+rápidamente cuando la introducción de datos es lenta o engorrosa. Cada función
+potente (consumos, vencimientos automáticos, controles con medición) debe
+seguir siendo *opcional* y no hacer más pesada la introducción diaria de una
+entrada. Registrar un repostaje o un mantenimiento debe requerir pocos toques;
+los detalles avanzados están en secciones desplegables, nunca obligatorias
+donde no tienen sentido.
 
-## Confini della versione 1 (cosa NON facciamo)
+## Límites de la versión 1 (lo que NO hacemos)
 
-Per restare semplici e non dipendere da servizi esterni, la prima versione
-**esclude**:
+Para mantener la simplicidad y no depender de servicios externos, la primera
+versión **excluye**:
 
-- Richiami di sicurezza / recall del costruttore (richiedono database
-  commerciali, spesso solo per il mercato USA).
-- Stima costi di riparazione e ricerca officine vicine (servizi di terzi).
-- Diagnostica OBD / collegamento alla centralina.
-- Veicoli elettrici (per ora si ragiona su motori termici benzina/diesel; la
-  struttura non va però resa rigida al punto da impedirlo in futuro).
+- Llamadas a revisión de seguridad / recall del fabricante (requieren bases de
+  datos comerciales, a menudo solo para el mercado de EE. UU.).
+- Estimación de costes de reparación y búsqueda de talleres cercanos (servicios
+  de terceros).
+- Diagnóstico OBD / conexión a la centralita.
+- Vehículos eléctricos (por ahora se razona sobre motores térmicos de
+  gasolina/diésel; sin embargo, la estructura no debe hacerse tan rígida que lo
+  impida en el futuro).
 
-## Le sezioni dell'app
+## Las secciones de la app
 
-1. **Elenco veicoli** — con foto, nome/targa.
-2. **Scheda veicolo** — anagrafica, specifiche di fabbrica, km attuale.
-3. **Storico voci** — l'elenco scorrevole di tutto ciò che è successo.
-4. **Documenti** — libretto, assicurazione, ecc. (stato attuale, non eventi).
-5. **Scadenze / promemoria** — manuali e automatici dai dati di fabbrica.
-6. **Report** — spese, per tipo, consumi, generale.
-7. **Impostazioni** — lingua, cloud/backup.
-8. **Anagrafica proprietari** — persone e loro documenti personali.
+1. **Lista de vehículos** — con foto, nombre/matrícula.
+2. **Ficha del vehículo** — datos generales, especificaciones de fábrica, km
+   actual.
+3. **Historial de entradas** — la lista desplazable de todo lo que ha sucedido.
+4. **Documentos** — permiso de circulación, seguro, etc. (estado actual, no
+   eventos).
+5. **Vencimientos / recordatorios** — manuales y automáticos a partir de los
+   datos de fábrica.
+6. **Informes** — gastos, por tipo, consumos, general.
+7. **Ajustes** — idioma, nube/copia de seguridad.
+8. **Registro de propietarios** — personas y sus documentos personales.
 
-Il dettaglio di ciascuna sezione è nei documenti successivi.
+El detalle de cada sección está en los documentos siguientes.

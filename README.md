@@ -46,13 +46,13 @@ flutter_appauth · flutter_secure_storage · flutter_local_notifications · gen_
 
 ```
 lib/            # application code (see CLAUDE.md for the full layout)
-Docs/           # Italian conceptual documentation (source of truth)
+Docs/           # Spanish conceptual documentation (source of truth)
 CLAUDE.md       # development guide and rules (English)
 ```
 
 ## Documentation
 
-The full concept and design decisions live in [`Docs/`](Docs/) (in Italian).
+The full concept and design decisions live in [`Docs/`](Docs/) (in Spanish).
 Start from [`Docs/00_README.md`](Docs/00_README.md). Development rules and
 conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 
@@ -60,7 +60,7 @@ conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 
 - Code, identifiers and comments: **English**
 - User-facing strings: **externalised** (IT / ES / EN)
-- Conceptual documentation (`Docs/`): **Italian**
+- Conceptual documentation (`Docs/`): **Spanish**
 
 ## Status
 

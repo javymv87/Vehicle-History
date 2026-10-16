@@ -1,217 +1,227 @@
-# 02 — Modello dati
+# 02 — Modelo de datos
 
-Questo documento descrive le tabelle del database **locale** (SQLite tramite
-Drift, sul telefono) e le loro relazioni. Il backup su Google Drive è un piano
-separato, trattato in `05_sync_and_storage.md`: non confondere lo schema locale
-con il file di backup.
+Este documento describe las tablas de la base de datos **local** (SQLite a
+través de Drift, en el teléfono) y sus relaciones. La copia de seguridad en
+Google Drive es un plano separado, tratado en `05_sync_and_storage.md`: no hay
+que confundir el esquema local con el archivo de copia de seguridad.
 
-Tutti i nomi di tabella e campo qui sono in italiano per chiarezza concettuale.
-Nel **codice** i nomi reali saranno in inglese (vedi `CLAUDE.md`); accanto a
-ogni tabella indico il nome inglese suggerito.
+Todos los nombres de tabla y campo aquí están en español por claridad
+conceptual. En el **código** los nombres reales estarán en inglés (ver
+`CLAUDE.md`); junto a cada tabla indico el nombre en inglés sugerido.
 
-## Campi tecnici comuni a (quasi) tutte le tabelle
+## Campos técnicos comunes a (casi) todas las tablas
 
-Per rendere possibile la sincronizzazione e lo storico delle operazioni, ogni
-record principale porta con sé:
+Para hacer posible la sincronización y el historial de operaciones, cada
+registro principal lleva consigo:
 
-- `id` — identificativo univoco (UUID, non un semplice numero incrementale, per
-  evitare collisioni tra dispositivi diversi).
-- `created_at` — data/ora di creazione.
-- `updated_at` — data/ora dell'ultima modifica.
-- `deleted` — flag di **cancellazione logica**. Una voce cancellata non viene
-  distrutta subito: viene marcata come cancellata. Serve a poter recuperare
-  errori e a far sapere al backup che l'elemento è stato rimosso di proposito.
+- `id` — identificador único (UUID, no un simple número incremental, para
+  evitar colisiones entre dispositivos distintos).
+- `created_at` — fecha/hora de creación.
+- `updated_at` — fecha/hora de la última modificación.
+- `deleted` — indicador de **borrado lógico**. Una entrada borrada no se
+  destruye de inmediato: se marca como borrada. Sirve para poder recuperar
+  errores y para que la copia de seguridad sepa que el elemento se eliminó a
+  propósito.
 
-## Valuta e importi
+## Moneda e importes
 
-Tutti gli importi sono in **euro**. La valuta è fissa: non esiste un campo
-valuta nello schema e non è configurabile dall'utente. L'app è pensata per uso
-personale in area euro, e supportare più valute richiederebbe anche i tassi di
-cambio storici per rendere sensati i report — complessità che non vale il
-beneficio.
+Todos los importes están en **euros**. La moneda es fija: no existe un campo
+de moneda en el esquema y no es configurable por el usuario. La app está
+pensada para uso personal en la zona euro, y admitir varias monedas requeriría
+también los tipos de cambio históricos para que los informes tuvieran sentido
+— una complejidad que no compensa el beneficio.
 
-La *formattazione* segue comunque la lingua scelta (vedi doc 06): lo stesso
-importo appare come `1.234,56 €` in italiano e spagnolo e come `€1,234.56` in
-inglese.
+El *formato*, en cualquier caso, sigue el idioma elegido (ver doc 06): el mismo
+importe aparece como `1.234,56 €` en italiano y español y como `€1,234.56` en
+inglés.
 
-## Tabelle
+## Tablas
 
-### Owner (proprietario)
+### Owner (propietario)
 
-Anagrafica della persona proprietaria di uno o più veicoli.
+Ficha de la persona propietaria de uno o varios vehículos.
 
-- Nome, cognome
-- Data di nascita
-- Nazionalità
+- Nombre, apellidos
+- Fecha de nacimiento
+- Nacionalidad
 - Foto
-- Contatti: telefono, email
-- Note libere
+- Contactos: teléfono, email
+- Notas libres
 
-Un Owner può avere **più veicoli**. Un veicolo ha **un** Owner.
+Un Owner puede tener **varios vehículos**. Un vehículo tiene **un** Owner.
 
-### OwnerDocument (documento del proprietario)
+### OwnerDocument (documento del propietario)
 
-Documenti personali legati a un Owner. Ognuno è un file (foto/scansione) con
-i suoi dati e la sua scadenza, così può generare promemoria.
+Documentos personales vinculados a un Owner. Cada uno es un archivo
+(foto/escaneo) con sus datos y su vencimiento, de modo que puede generar
+recordatorios.
 
-- Tipo: patente, carta d'identità, permesso di soggiorno, altro
-- Numero documento
-- Data di rilascio
-- Data di scadenza
-- Categorie (per la patente: B, A, C, ecc.)
-- File/foto
-- Note
+- Tipo: permiso de conducir, documento de identidad, permiso de residencia,
+  otro
+- Número de documento
+- Fecha de expedición
+- Fecha de vencimiento
+- Categorías (para el permiso de conducir: B, A, C, etc.)
+- Archivo/foto
+- Notas
 
-Un Owner può avere più OwnerDocument.
+Un Owner puede tener varios OwnerDocument.
 
-### Vehicle (veicolo)
+### Vehicle (vehículo)
 
-Il veicolo. È l'entità centrale: quasi tutto il resto vi è collegato.
+El vehículo. Es la entidad central: casi todo lo demás está vinculado a ella.
 
-- Targa (identificativo principale)
-- Nome comune (opzionale)
-- Foto profilo
-- Riferimento all'Owner
-- **Km attuale** (l'ultimo valore noto del totalizzatore)
-- Specifiche di fabbrica: tipo di carburante, olio motore raccomandato, e
-  qualsiasi nota utile del costruttore (vedi `04_maintenance_logic.md`)
+- Matrícula (identificador principal)
+- Nombre común (opcional)
+- Foto de perfil
+- Referencia al Owner
+- **Km actual** (el último valor conocido del cuentakilómetros total)
+- Especificaciones de fábrica: tipo de combustible, aceite de motor
+  recomendado, y cualquier nota útil del fabricante (ver
+  `04_maintenance_logic.md`)
 
-### LogEntry (voce di storico) — cuore dell'app
+### LogEntry (entrada del historial) — núcleo de la app
 
-La "voce base" uguale per ogni tipo di evento. Ogni riga dello storico è un
-LogEntry. I campi extra specifici di alcuni tipi stanno in tabelle collegate
-(EntryImage, Measurement) o in campi opzionali, così questa tabella resta
-pulita.
+La "entrada base", igual para todo tipo de evento. Cada fila del historial es
+una LogEntry. Los campos extra específicos de algunos tipos están en tablas
+vinculadas (EntryImage, Measurement) o en campos opcionales, para que esta
+tabla se mantenga limpia.
 
-Campi sempre presenti:
+Campos siempre presentes:
 
-- Riferimento al Vehicle
-- **Data**
-- **Km** (chilometraggio al momento dell'evento; obbligatorio dove ha senso,
-  omesso dove non ne ha — es. pagamento bollo). **Nota importante:** questo km
-  resta *dentro la voce* e NON alimenta lo storico chilometraggio
-  (`MileageReading`). I due registri sono indipendenti.
-- **Tipo** di voce (vedi elenco sotto)
-- **Testo** / descrizione libera
-- **Costo** totale (opzionale), in euro
-- **Promemoria** opzionale (data futura + eventuale soglia km) che genera una
-  notifica
+- Referencia al Vehicle
+- **Fecha**
+- **Km** (kilometraje en el momento del evento; obligatorio donde tiene
+  sentido, omitido donde no lo tiene — p. ej. pago del impuesto de
+  circulación). **Nota importante:** este km se queda *dentro de la entrada* y
+  NO alimenta el historial de kilometraje (`MileageReading`). Los dos
+  registros son independientes.
+- **Tipo** de entrada (ver lista abajo)
+- **Texto** / descripción libre
+- **Coste** total (opcional), en euros
+- **Recordatorio** opcional (fecha futura + eventual umbral de km) que genera
+  una notificación
 
-Tipi di voce previsti:
+Tipos de entrada previstos:
 
-- Manutenzione ordinaria
-- Riparazione / straordinaria
-- Scadenza legale (bollo, revisione, assicurazione)
-- Rifornimento (campi extra: litri, prezzo/litro, km percorsi — vedi doc 04)
-- Spesa generica (pedaggi, lavaggio, accessori...)
-- Controllo con misura (campi extra in Measurement)
-- Controllo generico non classificato (nota libera)
-- Nota / evento (incidenti, multe, promemoria liberi)
+- Mantenimiento ordinario
+- Reparación / extraordinario
+- Vencimiento legal (impuesto de circulación, inspección técnica obligatoria,
+  seguro)
+- Repostaje (campos extra: litros, precio/litro, km recorridos — ver doc 04)
+- Gasto genérico (peajes, lavado, accesorios...)
+- Control con medición (campos extra en Measurement)
+- Control genérico no clasificado (nota libre)
+- Nota / evento (accidentes, multas, recordatorios libres)
 
-### EntryImage (immagine di una voce)
+### EntryImage (imagen de una entrada)
 
-Le foto allegate a una LogEntry. Una voce può avere **più** immagini.
+Las fotos adjuntas a una LogEntry. Una entrada puede tener **varias** imágenes.
 
-- Riferimento alla LogEntry
-- File immagine
-- Didascalia opzionale
+- Referencia a la LogEntry
+- Archivo de imagen
+- Pie de foto opcional
 
-### Measurement (controllo con misura)
+### Measurement (control con medición)
 
-Campo extra per le voci di tipo "controllo con misura". Registra un valore
-numerico ispezionato, alimentando lo storico dei valori nel tempo.
+Campo extra para las entradas de tipo "control con medición". Registra un valor
+numérico inspeccionado, alimentando el historial de valores a lo largo del
+tiempo.
 
-- Riferimento alla LogEntry
-- Grandezza misurata (es. battistrada, spessore pastiglie, tensione batteria)
-- Valore numerico
-- Unità di misura (mm, V, ...)
-- **Soglia di allarme** opzionale: se il valore scende sotto la soglia, l'app
-  avvisa.
+- Referencia a la LogEntry
+- Magnitud medida (p. ej. dibujo del neumático, grosor de las pastillas,
+  tensión de la batería)
+- Valor numérico
+- Unidad de medida (mm, V, ...)
+- **Umbral de alarma** opcional: si el valor baja del umbral, la app avisa.
 
-### Document (documento del veicolo)
+### Document (documento del vehículo)
 
-Documenti del veicolo che rappresentano uno **stato attuale**, distinti dagli
-eventi dello storico.
+Documentos del vehículo que representan un **estado actual**, distintos de los
+eventos del historial.
 
-- Riferimento al Vehicle
-- Tipo: libretto, assicurazione attiva, altro
-- File/foto
-- Data di scadenza (opzionale, per i promemoria)
-- Note
+- Referencia al Vehicle
+- Tipo: permiso de circulación, seguro en vigor, otro
+- Archivo/foto
+- Fecha de vencimiento (opcional, para los recordatorios)
+- Notas
 
-### MaintenanceType (catalogo tipi di manutenzione)
+### MaintenanceType (catálogo de tipos de mantenimiento)
 
-Catalogo **comune** e modificabile dei tipi di manutenzione disponibili,
-raggruppati per famiglia. È condiviso tra tutti i veicoli.
+Catálogo **común** y modificable de los tipos de mantenimiento disponibles,
+agrupados por familia. Se comparte entre todos los vehículos.
 
-- Nome (es. "Olio motore", "Freni anteriori", "Rotazione gomme")
-- Gruppo/famiglia: Fluidi, Filtri, Gomme, Batteria, Motore, Freni, Altro
-- Natura dell'intervento: controllo / sostituzione (può valere entrambe)
-- Precaricato dal sistema oppure creato dall'utente
+- Nombre (p. ej. "Aceite de motor", "Frenos delanteros", "Rotación de
+  neumáticos")
+- Grupo/familia: Fluidos, Filtros, Neumáticos, Batería, Motor, Frenos, Otro
+- Naturaleza de la intervención: control / sustitución (puede valer ambas)
+- Precargado por el sistema o creado por el usuario
 
-### MaintenanceRule (criterio di manutenzione per veicolo)
+### MaintenanceRule (criterio de mantenimiento por vehículo)
 
-Il criterio di manutenzione **configurato per uno specifico veicolo**,
-pescando un tipo dal catalogo e assegnandogli gli intervalli di quel veicolo.
-Un tipo già assegnato a un veicolo non ricompare tra le scelte per lo stesso
-veicolo (ma resta disponibile per gli altri).
+El criterio de mantenimiento **configurado para un vehículo concreto**,
+tomando un tipo del catálogo y asignándole los intervalos de ese vehículo.
+Un tipo ya asignado a un vehículo no vuelve a aparecer entre las opciones para
+el mismo vehículo (pero sigue disponible para los demás).
 
-- Riferimento al Vehicle
-- Riferimento al MaintenanceType
-- **Scadenza in km** (opzionale)
-- **Scadenza in tempo** (opzionale, in mesi)
-- Regola "scatta il primo dei due" quando sono presenti entrambe
-- Ultimo intervento noto (data + km) per calcolare la prossima scadenza
-- Note
+- Referencia al Vehicle
+- Referencia al MaintenanceType
+- **Vencimiento en km** (opcional)
+- **Vencimiento en tiempo** (opcional, en meses)
+- Regla "vence el primero de los dos" cuando están presentes ambos
+- Última intervención conocida (fecha + km) para calcular el próximo
+  vencimiento
+- Notas
 
-**Caso freni** (vedi dettaglio in `04_maintenance_logic.md`): per i tipi
-"Freni anteriori" / "Freni posteriori" la regola porta con sé il tipo di
-impianto (disco+pastiglie oppure tamburo+ganasce) e **due sotto-scadenze
-indipendenti**: elemento che si consuma (pastiglia/ganascia) ed elemento che
-lo contiene (disco/tamburo), ciascuno con la propria scadenza km e/o tempo.
-Questo è modellato come struttura interna alla regola, non come nuova tabella.
+**Caso frenos** (ver detalle en `04_maintenance_logic.md`): para los tipos
+"Frenos delanteros" / "Frenos traseros" la regla lleva consigo el tipo de
+sistema (disco+pastillas o tambor+zapatas) y **dos subvencimientos
+independientes**: el elemento que se desgasta (pastilla/zapata) y el elemento
+que lo contiene (disco/tambor), cada uno con su propio vencimiento en km y/o
+tiempo. Esto se modela como estructura interna de la regla, no como una tabla
+nueva.
 
-### MileageReading (storico chilometraggio)
+### MileageReading (historial de kilometraje)
 
-Registro **indipendente** delle letture del totalizzatore nel tempo. Serve al
-report "km percorsi vs tempo".
+Registro **independiente** de las lecturas del cuentakilómetros total a lo
+largo del tiempo. Sirve para el informe "km recorridos frente a tiempo".
 
-- Riferimento al Vehicle
-- Data
-- Km (valore del totalizzatore)
+- Referencia al Vehicle
+- Fecha
+- Km (valor del cuentakilómetros total)
 
-Regole logiche (dettaglio in `04_maintenance_logic.md`):
+Reglas lógicas (detalle en `04_maintenance_logic.md`):
 
-- Una nuova lettura **non può essere inferiore** all'ultima valida.
-- Un valore enormemente più alto (probabile refuso) chiede conferma, non viene
-  vietato.
-- Si può cancellare **solo l'ultima** lettura; poi la penultima diventa
-  l'ultima e diventa a sua volta cancellabile (comportamento "annulla a
-  ritroso"). Mai cancellare letture in mezzo alla serie.
-- Si aggiorna **solo** quando l'utente aggiorna il totalizzatore in modo
-  esplicito. Il km scritto sulle singole voci NON entra qui.
+- Una nueva lectura **no puede ser inferior** a la última válida.
+- Un valor enormemente más alto (probable error tipográfico) pide
+  confirmación, no se prohíbe.
+- Solo se puede borrar **la última** lectura; después la penúltima pasa a ser
+  la última y a su vez se puede borrar (comportamiento "deshacer hacia
+  atrás"). Nunca borrar lecturas en medio de la serie.
+- Se actualiza **solo** cuando el usuario actualiza el cuentakilómetros total
+  de forma explícita. El km escrito en cada entrada NO entra aquí.
 
-### AuditLog (storico delle operazioni)
+### AuditLog (historial de operaciones)
 
-Registro leggero di tutte le operazioni fatte sulle voci, consultabile e utile
-anche in futuro.
+Registro ligero de todas las operaciones realizadas sobre las entradas,
+consultable y útil también en el futuro.
 
-- Cosa: riferimento all'entità (quale voce/veicolo)
-- Operazione: creazione / modifica / eliminazione
-- Quando: data e ora
+- Qué: referencia a la entidad (qué entrada/vehículo)
+- Operación: creación / modificación / eliminación
+- Cuándo: fecha y hora
 
-### Settings (impostazioni)
+### Settings (ajustes)
 
-Configurazione dell'app, non legata a un veicolo.
+Configuración de la app, no vinculada a un vehículo.
 
-- Lingua (IT / ES / EN)
-- Tema (Sistema / Chiaro / Scuro)
-- Configurazione cloud / Google Drive (account, attivo sì/no)
-- Metadati del backup: **numero di versione** del database e **data
-  dell'ultima modifica**, usati per la guardia di versione all'apertura (vedi
-  `05_sync_and_storage.md`).
+- Idioma (IT / ES / EN)
+- Tema (Sistema / Claro / Oscuro)
+- Configuración de la nube / Google Drive (cuenta, activo sí/no)
+- Metadatos de la copia de seguridad: **número de versión** de la base de datos
+  y **fecha de la última modificación**, usados para el control de versión al
+  abrir la app (ver `05_sync_and_storage.md`).
 
-## Riepilogo relazioni
+## Resumen de relaciones
 
 - Owner 1 — N Vehicle
 - Owner 1 — N OwnerDocument
@@ -220,6 +230,6 @@ Configurazione dell'app, non legata a un veicolo.
 - Vehicle 1 — N MaintenanceRule
 - Vehicle 1 — N MileageReading
 - LogEntry 1 — N EntryImage
-- LogEntry 1 — 1 Measurement (solo per il tipo "controllo con misura")
-- MaintenanceType 1 — N MaintenanceRule (il catalogo alimenta le regole)
-- AuditLog e Settings sono trasversali / globali
+- LogEntry 1 — 1 Measurement (solo para el tipo "control con medición")
+- MaintenanceType 1 — N MaintenanceRule (el catálogo alimenta las reglas)
+- AuditLog y Settings son transversales / globales

@@ -1,42 +1,43 @@
-# 06 — Impostazioni e lingue
+# 06 — Ajustes e idiomas
 
-## Schermata Impostazioni
+## Pantalla de Ajustes
 
-Contiene le configurazioni generali dell'app (tabella `Settings`, doc 02):
+Contiene las configuraciones generales de la app (tabla `Settings`, doc 02):
 
-- **Lingua** dell'interfaccia (vedi sotto)
-- **Tema**: Sistema / Chiaro / Scuro (default: Sistema — vedi
+- **Idioma** de la interfaz (ver abajo)
+- **Tema**: Sistema / Claro / Oscuro (predeterminado: Sistema — ver
   `07_design_and_theming.md`)
-- **Cloud / Google Drive**:
-  - collega / scollega account Google
-  - stato dell'ultimo backup (versione + data)
-  - azioni: Carica su cloud / Scarica da cloud
-  - attiva/disattiva l'uso del cloud
-- Eventuali preferenze future (unità di misura, formato data, ecc.)
+- **Nube / Google Drive**:
+  - vincular / desvincular cuenta de Google
+  - estado de la última copia de seguridad (versión + fecha)
+  - acciones: Subir a la nube / Descargar de la nube
+  - activar/desactivar el uso de la nube
+- Posibles preferencias futuras (unidades de medida, formato de fecha, etc.)
 
-**La valuta non è configurabile**: è sempre l'euro (vedi doc 02). Della lingua
-scelta dipende solo il *formato* con cui l'importo viene mostrato.
+**La moneda no es configurable**: es siempre el euro (ver doc 02). Del idioma
+elegido solo depende el *formato* con el que se muestra el importe.
 
-## Lingue
+## Idiomas
 
-L'app supporta tre lingue, selezionabili dall'utente:
+La app admite tres idiomas, seleccionables por el usuario:
 
 - **Italiano** (it)
-- **Spagnolo** (es)
-- **Inglese** (en)
+- **Español** (es)
+- **Inglés** (en)
 
-### Regole tecniche per la localizzazione
+### Reglas técnicas para la localización
 
-- Tutti i testi mostrati all'utente devono essere **esterni al codice**, in
-  file di traduzione (approccio ARB + `flutter_localizations` / gen_l10n). Mai
-  stringhe visibili "cablate" nel codice.
-- Il codice, i nomi di variabili e i commenti restano in **inglese** (vedi
-  `CLAUDE.md`); la localizzazione riguarda solo i testi rivolti all'utente.
-- Attenzione a numeri, date, valute e unità: vanno formattati secondo la lingua
-  scelta.
+- Todos los textos mostrados al usuario deben estar **fuera del código**, en
+  archivos de traducción (enfoque ARB + `flutter_localizations` / gen_l10n).
+  Nunca cadenas visibles "escritas a fuego" en el código.
+- El código, los nombres de variables y los comentarios se mantienen en
+  **inglés** (ver `CLAUDE.md`); la localización afecta solo a los textos
+  dirigidos al usuario.
+- Atención a números, fechas, monedas y unidades: deben formatearse según el
+  idioma elegido.
 
 ## Nota
 
-La documentazione di progetto (questa cartella `Docs/`) è in **italiano**. I
-testi dell'interfaccia sono tradotti nelle tre lingue. Il codice è in inglese.
-Sono tre piani distinti e non vanno confusi.
+La documentación del proyecto (esta carpeta `Docs/`) está en **español**. Los
+textos de la interfaz se traducen a los tres idiomas (IT / ES / EN). El código
+está en inglés. Son tres planos distintos y no deben confundirse.
