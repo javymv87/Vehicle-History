@@ -1,0 +1,21 @@
+# Code generation settings for `build_runner`.
+#
+# Only the Drift generator is configured here. Every option below affects the
+# on-disk format of the database or its migration tooling, so changing one
+# after release is a schema decision, not a tidy-up (see CLAUDE.md §2).
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Store DateTime values as ISO-8601 text instead of Unix integers.
+          # Text keeps the UTC offset and is readable in a raw dump. Set from
+          # schema v1: switching it later would require a data migration.
+          store_date_time_values_as_text: true
+          # Databases tracked by `dart run drift_dev make-migrations`.
+          databases:
+            vehicle_history: lib/data/db/app_database.dart
+          # Committed JSON schema dumps, one per schema version.
+          schema_dir: drift_schemas/
+          # Generated migration tests and per-version schema helpers.
+          test_dir: test/drift/

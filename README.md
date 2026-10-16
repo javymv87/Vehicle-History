@@ -67,10 +67,24 @@ conventions are in [`CLAUDE.md`](CLAUDE.md) (in English).
 Concept documented and Flutter project scaffolded: folder structure, strict
 lint rules, CI and the conceptual documentation in `Docs/` are all in place.
 The Material 3 theme (single seed, light/dark, status colours) and the
-`gen_l10n` localisation skeleton (IT / ES / EN) are done.
+`gen_l10n` localisation skeleton (IT / ES / EN) are done, and so is the Drift
+data layer for owners and vehicles (with the audit log, schema migrations from
+v1 and repositories).
 
-Next steps, in order: the Drift database with only the `vehicles` and `owners`
-tables, then the first vertical feature (vehicles) end to end.
+Roadmap to the first usable version:
+
+| Step | Content |
+| --- | --- |
+| 3 | Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner |
+| 4 | Basic log entries: date, km, type, cost, notes; list, filters, undo on delete |
+| 5 | Odometer: update current km + `MileageReading` history with its rules |
+| 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
+
+Then, in an order decided while using the app: settings, maintenance,
+refuelling, documents, photos, reminders, PDF reports, Google Drive backup.
+
+Why the signing key matters: each PC has its own debug key, so installing
+from another PC forces an uninstall, which deletes the data.
 
 ## License
 
