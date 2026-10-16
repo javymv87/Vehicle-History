@@ -1,134 +1,142 @@
-# 05 — Archiviazione e sincronizzazione
+# 05 — Almacenamiento y sincronización
 
-## Due piani distinti
+## Dos planos distintos
 
-1. **Archiviazione locale** — il database vero e proprio, sul telefono, in
-   SQLite (tramite Drift). È qui che l'app legge e scrive normalmente. Le foto
-   sono file salvati localmente, referenziati dal database.
-2. **Backup su cloud** — una copia dell'intero database + le immagini,
-   impacchettata e caricata su Google Drive, per poter recuperare tutto su un
-   altro telefono. NON è una sincronizzazione continua: è un backup/restore
-   manuale con qualche protezione.
+1. **Almacenamiento local** — la base de datos propiamente dicha, en el
+   teléfono, en SQLite (a través de Drift). Es aquí donde la app lee y escribe
+   normalmente. Las fotos son archivos guardados localmente, referenciados por
+   la base de datos.
+2. **Copia de seguridad en la nube** — una copia de toda la base de datos + las
+   imágenes, empaquetada y subida a Google Drive, para poder recuperarlo todo en
+   otro teléfono. NO es una sincronización continua: es una copia de seguridad
+   (backup) / restauración manual con alguna protección.
 
-Non confondere lo schema del database locale (doc 02) con il file di backup:
-sono cose diverse.
+No hay que confundir el esquema de la base de datos local (doc 02) con el
+archivo de copia de seguridad: son cosas distintas.
 
 ## Google Drive
 
-- Il backup è pensato come **un unico file** (o pacchetto) sul Drive
-  dell'account collegato, che contiene tutto: dati + impostazioni + immagini.
-- Cambio telefono / reinstallazione: ci si collega allo stesso account, si
-  scarica il backup, e si recupera tutto — incluse le impostazioni generali.
+- La copia de seguridad está pensada como **un único archivo** (o paquete) en
+  el Drive de la cuenta vinculada, que lo contiene todo: datos + ajustes +
+  imágenes.
+- Cambio de teléfono / reinstalación: se vincula la misma cuenta, se descarga
+  la copia de seguridad y se recupera todo — incluidos los ajustes generales.
 
-## Collegamento dell'account (due modalità)
+## Vinculación de la cuenta (dos modalidades)
 
-L'app supporta **due modi** per collegare l'account Google usato per il backup.
-L'utente sceglie; entrambi portano allo stesso risultato (un token che autorizza
-l'accesso a Drive), ma con flussi diversi.
+La app admite **dos formas** de vincular la cuenta de Google usada para la
+copia de seguridad. El usuario elige; ambas llevan al mismo resultado (un token
+que autoriza el acceso a Drive), pero con flujos distintos.
 
-### Modalità 1 — Account del telefono (semplice, predefinita)
+### Modalidad 1 — Cuenta del teléfono (sencilla, predeterminada)
 
-- Usa il **selettore di account di sistema** (`google_sign_in`).
-- Android mostra la lista degli account Google già presenti sul telefono
-  (principale **e** account aggiunti in Impostazioni → Account): l'utente ne
-  sceglie uno. Non è obbligato a usare il principale.
-- È il percorso comodo per la maggior parte dei casi.
+- Usa el **selector de cuentas del sistema** (`google_sign_in`).
+- Android muestra la lista de cuentas de Google ya presentes en el teléfono
+  (la principal **y** las cuentas añadidas en Ajustes → Cuentas): el usuario
+  elige una. No está obligado a usar la principal.
+- Es el camino cómodo para la mayoría de los casos.
 
-### Modalità 2 — Collega un account manualmente (avanzata)
+### Modalidad 2 — Vincular una cuenta manualmente (avanzada)
 
-Per usare un account che **non è** (e non deve diventare) un account del
-telefono: resta usato **solo dall'app**.
+Para usar una cuenta que **no es** (y no debe pasar a ser) una cuenta del
+teléfono: la usa **solo la app**.
 
-- Flusso **OAuth 2.0 Authorization Code + PKCE**, tramite `flutter_appauth`.
-- Il login avviene nel **browser di sistema** (Android Custom Tab), sulla vera
-  pagina di Google: l'utente digita email e password lì. Anche la verifica in
-  due passaggi è gestita da Google.
-- **L'app non vede mai la password**: riceve solo, alla fine, i token di
-  accesso/refresh.
-- L'account **non** viene aggiunto a livello Android: rimane interno all'app.
+- Flujo **OAuth 2.0 Authorization Code + PKCE**, a través de `flutter_appauth`.
+- El inicio de sesión tiene lugar en el **navegador del sistema** (Android
+  Custom Tab), en la página real de Google: el usuario escribe allí el email y
+  la contraseña. También la verificación en dos pasos la gestiona Google.
+- **La app nunca ve la contraseña**: solo recibe, al final, los tokens de
+  acceso/refresh.
+- La cuenta **no** se añade a nivel de Android: permanece interna a la app.
 
-### Regole di sicurezza (valide per entrambe le modalità)
+### Reglas de seguridad (válidas para ambas modalidades)
 
-- **Mai una WebView interna** per il login Google: solo browser di
-  sistema/Custom Tab. Una WebView è meno sicura ed è comunque bloccata da
-  Google.
-- I **token** si conservano nell'**archivio cifrato del sistema** (Android
-  Keystore, via `flutter_secure_storage`), mai in file o preferenze in chiaro.
-- L'app mostra sempre chiaramente **quale account è collegato** al backup (es.
-  "Backup collegato a: utente@gmail.com") con un pulsante per **cambiare
-  account**.
+- **Nunca una WebView interna** para el inicio de sesión de Google: solo
+  navegador del sistema/Custom Tab. Una WebView es menos segura y, en
+  cualquier caso, Google la bloquea.
+- Los **tokens** se guardan en el **almacén cifrado del sistema** (Android
+  Keystore, a través de `flutter_secure_storage`), nunca en archivos o
+  preferencias en claro.
+- La app muestra siempre con claridad **qué cuenta está vinculada** a la copia
+  de seguridad (p. ej. "Copia de seguridad vinculada a: usuario@gmail.com") con
+  un botón para **cambiar de cuenta**.
 
-### Cambio account = backup separati
+### Cambio de cuenta = copias de seguridad separadas
 
-Il backup di un account e quello di un altro sono **file distinti su Drive
-diversi**: non si parlano. Il cambio account va trattato come operazione
-consapevole, con avviso esplicito: "Stai cambiando l'account di backup; il
-backup precedente resta sull'account vecchio."
+La copia de seguridad de una cuenta y la de otra son **archivos distintos en
+Drives distintos**: no se comunican. El cambio de cuenta debe tratarse como una
+operación consciente, con un aviso explícito: "Estás cambiando la cuenta de la
+copia de seguridad; la copia de seguridad anterior se queda en la cuenta
+antigua."
 
-### Nota amministrativa (Google Cloud Console)
+### Nota administrativa (Google Cloud Console)
 
-Il flusso OAuth (Modalità 2, e in parte anche la 1) richiede che l'app sia
-registrata nella **Google Cloud Console** con credenziali OAuth e schermata di
-consenso. L'accesso a Drive comporta un processo di **verifica dell'app** da
-parte di Google. Finché l'app non è verificata funziona lo stesso ma mostra un
-avviso "app non verificata" e ha un limite di utenti di test — accettabile per
-uso personale / pochi utenti. La verifica diventa necessaria solo in caso di
-distribuzione ampia. È un passaggio amministrativo, non di codice, ma va
-pianificato.
+El flujo OAuth (Modalidad 2, y en parte también la 1) requiere que la app esté
+registrada en la **Google Cloud Console** con credenciales OAuth y pantalla de
+consentimiento. El acceso a Drive conlleva un proceso de **verificación de la
+app** por parte de Google. Mientras la app no esté verificada funciona igual,
+pero muestra un aviso de "app no verificada" y tiene un límite de usuarios de
+prueba — aceptable para uso personal / pocos usuarios. La verificación solo se
+vuelve necesaria en caso de distribución amplia. Es un paso administrativo, no
+de código, pero hay que planificarlo.
 
-## Strategia scelta: "Strada A" — backup/restore con guardia di versione
+## Estrategia elegida: "Strada A" (vía A) — copia de seguridad/restauración con control de versión
 
-Scelta consapevole di semplicità (l'app è mono-utente). Non c'è fusione
-automatica dei dati: **una copia comanda**. Per evitare che "facile" diventi
-"pericoloso", si aggiunge una guardia di versione leggera.
+Elección consciente de simplicidad (la app es monousuario). No hay fusión
+automática de los datos: **una copia manda**. Para evitar que "fácil" se
+convierta en "peligroso", se añade un control de versión (version guard)
+ligero.
 
-### Metadati di versione
+### Metadatos de versión
 
-Sia il database locale sia il backup su Drive portano due informazioni leggere:
+Tanto la base de datos local como la copia de seguridad en Drive llevan dos
+datos ligeros:
 
-- un **numero di versione** che cresce di 1 a ogni modifica del database;
-- la **data/ora dell'ultima modifica**.
+- un **número de versión** que aumenta en 1 con cada modificación de la base de
+  datos;
+- la **fecha/hora de la última modificación**.
 
-### Controllo all'apertura dell'app
+### Comprobación al abrir la app
 
-All'avvio, l'app legge **solo questi due metadati** dal cloud (non scarica
-l'intero database) e li confronta con quelli locali. Quattro casi:
+Al arrancar, la app lee **solo estos dos metadatos** de la nube (no descarga
+toda la base de datos) y los compara con los locales. Cuatro casos:
 
-1. **Uguali** → allineato, nessuna azione.
-2. **Cloud più recente del locale** → messaggio: "Sul cloud c'è una versione
-   più recente. Vuoi scaricarla?" Se sì, il locale viene **sostituito**.
-3. **Locale più recente del cloud** → messaggio: "Hai modifiche non ancora
-   caricate. Vuoi caricarle?" Se sì, il cloud viene **sostituito**.
-4. **Divergenza** (sia locale sia cloud modificati rispetto all'ultimo punto in
-   comune) → l'app **avvisa onestamente**: "Attenzione: sia questo telefono sia
-   il cloud sono cambiati. Se scarichi perdi le modifiche locali; se carichi
-   sovrascrivi quelle sul cloud." Decide l'utente. Nessuna sovrascrittura
-   silenziosa, nessuna perdita di dati di nascosto.
+1. **Iguales** → sincronizado, ninguna acción.
+2. **Nube más reciente que local** → mensaje: "En la nube hay una versión
+   más reciente. ¿Quieres descargarla?" Si sí, la local se **sustituye**.
+3. **Local más reciente que la nube** → mensaje: "Tienes cambios todavía no
+   subidos. ¿Quieres subirlos?" Si sí, la nube se **sustituye**.
+4. **Divergencia** (tanto la local como la nube modificadas respecto al último
+   punto en común) → la app **avisa con honestidad**: "Atención: tanto este
+   teléfono como la nube han cambiado. Si descargas pierdes los cambios
+   locales; si subes sobrescribes los de la nube." Decide el usuario. Ninguna
+   sobrescritura silenciosa, ninguna pérdida de datos a escondidas.
 
-### Operazioni manuali
+### Operaciones manuales
 
-Oltre al controllo all'avvio, l'utente può in qualsiasi momento:
+Además de la comprobación al arrancar, el usuario puede en cualquier momento:
 
-- **Carica su cloud** (backup)
-- **Scarica da cloud** (restore)
+- **Subir a la nube** (copia de seguridad)
+- **Descargar de la nube** (restauración)
 
-sempre con le stesse protezioni di cui sopra.
+siempre con las mismas protecciones descritas arriba.
 
-## Predisposizione per il futuro (senza implementarla ora)
+## Preparación para el futuro (sin implementarla ahora)
 
-Il modello dati è già predisposto per una futura sincronizzazione a fusione
-(merge per singola voce), **anche se ora NON la implementiamo**:
+El modelo de datos ya está preparado para una futura sincronización con fusión
+(merge por entrada individual), **aunque ahora NO la implementamos**:
 
-- ogni record ha un `id` univoco (UUID) e `updated_at`;
-- la cancellazione è **logica** (flag `deleted`), non fisica immediata — così
-  una futura sync saprebbe distinguere "cancellato di proposito" da "mai
-  esistito".
+- cada registro tiene un `id` único (UUID) y `updated_at`;
+- el borrado es **lógico** (indicador `deleted`), no físico inmediato — así
+  una futura sincronización sabría distinguir "borrado a propósito" de "nunca
+  existió".
 
-Questo costa pochissimo adesso e non chiude la porta a un'evoluzione, ma il
-comportamento della versione 1 resta la Strada A.
+Esto cuesta muy poco ahora y no cierra la puerta a una evolución, pero el
+comportamiento de la versión 1 sigue siendo la Strada A.
 
-## Cancellazione fisica / pulizia
+## Borrado físico / limpieza
 
-Poiché la cancellazione è logica, servirà (in futuro, non urgente) una
-strategia di pulizia periodica dei record marcati `deleted` da tempo, per non
-far crescere il database all'infinito. Per la versione 1 è sufficiente tenerli.
+Como el borrado es lógico, hará falta (en el futuro, no es urgente) una
+estrategia de limpieza periódica de los registros marcados como `deleted` desde
+hace tiempo, para no hacer crecer la base de datos indefinidamente. Para la
+versión 1 basta con conservarlos.

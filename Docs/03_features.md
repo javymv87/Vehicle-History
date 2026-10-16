@@ -1,97 +1,101 @@
-# 03 — Funzionalità
+# 03 — Funcionalidades
 
-## Storico voci
+## Historial de entradas
 
-Ogni veicolo ha un elenco scorrevole di LogEntry ordinate per data (le più
-recenti in alto). Ogni riga mostra a colpo d'occhio: tipo, data, km, un
-estratto del testo, il costo (se presente) e un'icona se ci sono foto o un
-promemoria.
+Cada vehículo tiene una lista desplazable de LogEntry ordenadas por fecha (las
+más recientes arriba). Cada fila muestra de un vistazo: tipo, fecha, km, un
+extracto del texto, el coste (si lo hay) y un icono si hay fotos o un
+recordatorio.
 
-Toccando una voce se ne vede il dettaglio completo e la si può modificare o
-cancellare.
+Al tocar una entrada se ve su detalle completo y se puede modificar o
+borrar.
 
-## Filtri e ricerca
+## Filtros y búsqueda
 
-Sullo storico si può filtrare per:
+En el historial se puede filtrar por:
 
-- **Data** (intervallo da–a)
-- **Tipo** di voce (una o più categorie)
-- **Testo** (ricerca libera nella descrizione)
+- **Fecha** (intervalo desde–hasta)
+- **Tipo** de entrada (una o varias categorías)
+- **Texto** (búsqueda libre en la descripción)
 
-I filtri sono combinabili. Devono restare rapidi da attivare e da azzerare.
+Los filtros son combinables. Deben poder activarse y restablecerse
+rápidamente.
 
-## Promemoria e notifiche
+## Recordatorios y notificaciones
 
-Due sorgenti di promemoria:
+Dos orígenes de recordatorios:
 
-1. **Manuali** — impostati su una singola voce (una data futura e/o una soglia
-   km).
-2. **Automatici** — derivati dalle `MaintenanceRule` del veicolo e dalle
-   scadenze dei documenti (bollo, revisione, assicurazione, patente,
-   permesso...).
+1. **Manuales** — configurados en una sola entrada (una fecha futura y/o un
+   umbral de km).
+2. **Automáticos** — derivados de las `MaintenanceRule` del vehículo y de los
+   vencimientos de los documentos (impuesto de circulación, inspección técnica
+   obligatoria, seguro, permiso de conducir, permiso...).
 
-Comportamento degli avvisi:
+Comportamiento de los avisos:
 
-- Le scadenze **a tempo** generano una **notifica** del telefono alla data
-  prevista (anche ad app chiusa).
-- Le scadenze **a km** non possono "scattare" da sole nel tempo (l'app non
-  conosce i km in tempo reale): vengono **segnalate visivamente** — le voci di
-  manutenzione vicine o oltre la soglia km sono evidenziate quando apri l'app e
-  quando aggiorni il totalizzatore.
-- I controlli-misura con **soglia** avvisano quando l'ultimo valore registrato
-  scende sotto la soglia impostata.
+- Los vencimientos **por tiempo** generan una **notificación** del teléfono en
+  la fecha prevista (incluso con la app cerrada).
+- Los vencimientos **por km** no pueden "saltar" por sí solos en el tiempo (la
+  app no conoce los km en tiempo real): se **señalan visualmente** — las
+  entradas de mantenimiento próximas al umbral de km o que lo superan se
+  resaltan cuando abres la app y cuando actualizas el cuentakilómetros total.
+- Los controles con medición con **umbral** avisan cuando el último valor
+  registrado baja del umbral configurado.
 
-## Report
+## Informes
 
-Tutti i report offrono l'opzione **includi / escludi immagini** e, dove
-pertinente, **includi / escludi importi**. L'esportazione di riferimento è in
-**PDF** (adatto a stampa, invio, o consegna a un acquirente).
+Todos los informes ofrecen la opción **incluir / excluir imágenes** y, donde
+corresponda, **incluir / excluir importes**. La exportación de referencia es
+en **PDF** (adecuado para imprimir, enviar o entregar a un comprador).
 
-Report previsti:
+Informes previstos:
 
-- **Spese** — per veicolo, per periodo, con totali. Include le spese delle
-  manutenzioni (vedi sotto) e le spese generiche.
-- **Voci per tipo** — solo manutenzioni, solo rifornimenti, ecc.; con opzione
-  di includere o meno gli importi.
-- **Consumi carburante** — consumo medio (totale o per periodo) e spesa totale
-  in carburante per periodo (dettaglio del calcolo in `04_maintenance_logic.md`).
-- **Km percorsi vs tempo** — basato sullo storico chilometraggio
+- **Gastos** — por vehículo, por periodo, con totales. Incluye los gastos de
+  los mantenimientos (ver abajo) y los gastos genéricos.
+- **Entradas por tipo** — solo mantenimientos, solo repostajes, etc.; con la
+  opción de incluir o no los importes.
+- **Consumo de combustible** — consumo medio (total o por periodo) y gasto
+  total en combustible por periodo (detalle del cálculo en
+  `04_maintenance_logic.md`).
+- **Km recorridos frente a tiempo** — basado en el historial de kilometraje
   (`MileageReading`).
-- **Generale** — TUTTA l'informazione di un veicolo in un unico documento.
-  Pensato come record completo per la rivendita / passaggio di proprietà. È un
-  punto di forza dell'app.
+- **General** — TODA la información de un vehículo en un único documento.
+  Pensado como registro completo para la reventa / cambio de titularidad. Es
+  un punto fuerte de la app.
 
-I report possono essere generati per **un** veicolo o per **più** veicoli.
+Los informes pueden generarse para **un** vehículo o para **varios**
+vehículos.
 
-## Spese dentro la manutenzione
+## Gastos dentro del mantenimiento
 
-Il costo è già un campo della voce base (`LogEntry`). In più, dentro una voce
-di manutenzione si possono elencare le **singole voci di spesa** (es.
-"pastiglie — 45 €", "manodopera — 60 €"), la cui somma dà il costo totale
-della manutenzione. Si inseriscono in una **sezione espandibile** all'interno
-della voce, non in una schermata separata, e sono facoltative (coerente col
-principio "velocità d'uso prima di tutto").
+El coste ya es un campo de la entrada base (`LogEntry`). Además, dentro de una
+entrada de mantenimiento se pueden enumerar las **partidas de gasto
+individuales** (p. ej. "pastillas — 45 €", "mano de obra — 60 €"), cuya suma da
+el coste total del mantenimiento. Se introducen en una **sección desplegable**
+dentro de la entrada, no en una pantalla separada, y son opcionales (coherente
+con el principio "la rapidez de uso ante todo").
 
-## Regole UX dei messaggi di esito (toast)
+## Reglas UX de los mensajes de resultado (toast)
 
-Gradazione da rispettare:
+Gradación que se debe respetar:
 
-- **Salvataggio / modifica riusciti** — toast breve e discreto (es. "Voce
-  salvata"). Se la schermata torna già indietro e la voce compare in lista, il
-  toast può anche essere minimo per non risultare ridondante.
-- **Eliminazione** — toast con **azione di annullo** ("Voce eliminata —
-  Annulla"). È l'azione più rischiosa se involontaria, quindi l'annullo è
-  importante. (Reso possibile dalla cancellazione logica: vedi `02_data_model.md`.)
-- **Errore** (salvataggio fallito, spazio esaurito, sync non riuscita) —
-  messaggio **esplicito e persistente** abbastanza da essere letto, non un
-  lampo.
+- **Guardado / modificación correctos** — toast breve y discreto (p. ej.
+  "Entrada guardada"). Si la pantalla ya vuelve atrás y la entrada aparece en
+  la lista, el toast puede ser incluso mínimo para no resultar redundante.
+- **Eliminación** — toast con **acción de deshacer** ("Entrada eliminada —
+  Deshacer"). Es la acción más arriesgada si es involuntaria, por lo que el
+  deshacer es importante. (Posible gracias al borrado lógico: ver
+  `02_data_model.md`.)
+- **Error** (guardado fallido, espacio agotado, sincronización fallida) —
+  mensaje **explícito y lo bastante persistente** para poder leerlo, no un
+  destello.
 
-## Foto
+## Fotos
 
-- Foto profilo del veicolo (una).
-- Foto del proprietario (una).
-- Foto/scansioni dei documenti (veicolo e proprietario).
-- Una o più immagini per ogni voce di storico.
+- Foto de perfil del vehículo (una).
+- Foto del propietario (una).
+- Fotos/escaneos de los documentos (vehículo y propietario).
+- Una o varias imágenes por cada entrada del historial.
 
-Le immagini si acquisiscono da fotocamera o galleria e si salvano localmente;
-rientrano nel backup su cloud.
+Las imágenes se obtienen de la cámara o de la galería y se guardan localmente;
+se incluyen en la copia de seguridad en la nube.

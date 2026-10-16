@@ -1,79 +1,82 @@
-# 07 — Design e temi
+# 07 — Diseño y temas
 
-Questo documento fissa le scelte di aspetto e di interazione dell'app, prima
-del codice, coerentemente con gli altri documenti. Il principio guida resta
-quello del concept: **velocità d'uso prima di tutto** (vedi
+Este documento fija las decisiones de aspecto y de interacción de la app, antes
+del código, de forma coherente con los demás documentos. El principio guía
+sigue siendo el del concepto: **la rapidez de uso ante todo** (ver
 `01_concept_overview.md`).
 
-## Design system: Material 3
+## Sistema de diseño: Material 3
 
-L'app adotta **Material 3** (Material You), il design system nativo di Flutter.
-Scelta motivata dal tipo di app — un registro con molte liste, form di
-inserimento e dati — per cui Material 3 offre gratuitamente componenti coerenti
-(liste, campi, date picker, dialog, evidenziazioni) e una gestione integrata e
-ben studiata dei temi chiaro/scuro. Non si costruisce un design system da zero:
-sarebbe lavoro sprecato per un'app utilitaria come questa.
+La app adopta **Material 3** (Material You), el sistema de diseño nativo de
+Flutter. Elección motivada por el tipo de app — un registro con muchas listas,
+formularios de introducción de datos y datos — para el que Material 3 ofrece
+gratuitamente componentes coherentes (listas, campos, selectores de fecha,
+diálogos, resaltados) y una gestión integrada y bien estudiada de los temas
+claro/oscuro. No se construye un sistema de diseño desde cero: sería trabajo
+desperdiciado para una app utilitaria como esta.
 
-## Tema chiaro / scuro
+## Tema claro / oscuro
 
-- Si definiscono due temi: **chiaro** e **scuro**.
-- Il **default segue il sistema operativo** (modalità "Sistema").
-- Nelle Impostazioni l'utente può scegliere tra tre opzioni: **Sistema**,
-  **Chiaro**, **Scuro**. Anche se il default segue l'OS, la scelta manuale deve
-  essere sempre disponibile.
-- La preferenza si salva tra le impostazioni dell'app (vedi
+- Se definen dos temas: **claro** y **oscuro**.
+- El **predeterminado sigue al sistema operativo** (modo "Sistema").
+- En los Ajustes el usuario puede elegir entre tres opciones: **Sistema**,
+  **Claro**, **Oscuro**. Aunque el predeterminado siga al SO, la elección
+  manual debe estar siempre disponible.
+- La preferencia se guarda entre los ajustes de la app (ver
   `06_settings_and_i18n.md`).
 
-## Colore
+## Color
 
-- Si definisce **un solo colore "seme" (seed color)** e si lascia che Material
-  3 generi da lì entrambe le palette (chiara e scura), automaticamente
-  armoniose e con contrasti corretti. Non si scelgono decine di colori a mano.
-- Il seme dà carattere senza essere invadente. Direzioni adatte al contesto
-  "veicoli/officina": blu profondo, teal, oppure ambra/arancione come accento.
-  È una scelta di gusto, facilmente modificabile perché tutto discende dal seme.
+- Se define **un único color "semilla" (seed color)** y se deja que Material 3
+  genere a partir de él ambas paletas (clara y oscura), automáticamente
+  armoniosas y con contrastes correctos. No se eligen decenas de colores a
+  mano.
+- La semilla aporta carácter sin ser invasiva. Direcciones adecuadas al
+  contexto "vehículos/taller": azul profundo, verde azulado (teal), o bien
+  ámbar/naranja como acento. Es una cuestión de gusto, fácilmente modificable
+  porque todo deriva de la semilla.
 
-## Principi di design specifici dell'app
+## Principios de diseño específicos de la app
 
-Contano più della scelta dei colori:
+Importan más que la elección de los colores:
 
-### Leggibilità prima di tutto
+### La legibilidad ante todo
 
-L'app è piena di numeri (km, litri, costi, date, scadenze). Serve una chiara
-gerarchia tipografica e spaziatura adeguata. Nella lista delle voci, i dati
-chiave (tipo, data, km, costo) devono saltare all'occhio **senza** dover aprire
-il dettaglio.
+La app está llena de números (km, litros, costes, fechas, vencimientos). Hace
+falta una jerarquía tipográfica clara y un espaciado adecuado. En la lista de
+las entradas, los datos clave (tipo, fecha, km, coste) deben saltar a la vista
+**sin** tener que abrir el detalle.
 
-### Colore con significato, non decorativo
+### Color con significado, no decorativo
 
-Il colore è riservato agli **stati**, in particolare le scadenze:
+El color se reserva para los **estados**, en particular los vencimientos:
 
-- scadenza superata → rosso
-- scadenza vicina → ambra
-- tutto a posto → verde / neutro
+- vencimiento vencido → rojo
+- vencimiento próximo → ámbar
+- todo en orden → verde / neutro
 
-Coerente con la logica di evidenziazione delle scadenze km descritta in
-`03_features.md` e `04_maintenance_logic.md`.
+Coherente con la lógica de resaltado de los vencimientos por km descrita en
+`03_features.md` y `04_maintenance_logic.md`.
 
-**Mai affidarsi al solo colore:** accompagnare sempre con un'icona o un testo,
-sia per accessibilità (daltonismo) sia perché in modalità scura la resa dei
-colori cambia.
+**Nunca confiar solo en el color:** acompañarlo siempre de un icono o de un
+texto, tanto por accesibilidad (daltonismo) como porque en el modo oscuro la
+representación de los colores cambia.
 
-### Coerenza chiaro/scuro sulle immagini
+### Coherencia claro/oscuro en las imágenes
 
-L'app mostra foto (veicoli, documenti, voci). Le miniature devono avere uno
-sfondo/contenitore che funzioni su entrambi i temi, e l'eventuale testo
-sovrapposto deve restare leggibile in chiaro e in scuro.
+La app muestra fotos (vehículos, documentos, entradas). Las miniaturas deben
+tener un fondo/contenedor que funcione en ambos temas, y el posible texto
+superpuesto debe seguir siendo legible en claro y en oscuro.
 
-### Azione "aggiungi" sempre a portata
+### Acción "añadir" siempre a mano
 
-Dato che il principio guida è la velocità d'inserimento, aggiungere una voce
-deve essere immediato e sempre raggiungibile (bottone flottante di Material —
-FAB — o equivalente sempre visibile nelle schermate pertinenti).
+Dado que el principio guía es la rapidez de introducción, añadir una entrada
+debe ser inmediato y estar siempre accesible (botón flotante de Material —
+FAB — o equivalente siempre visible en las pantallas pertinentes).
 
-## Accessibilità (minimi da rispettare)
+## Accesibilidad (mínimos que respetar)
 
-- Contrasti sufficienti in entrambi i temi (Material 3 aiuta, ma va verificato
-  sui colori di stato).
-- Informazione mai veicolata dal solo colore.
-- Dimensioni dei tocchi adeguate e testo scalabile.
+- Contrastes suficientes en ambos temas (Material 3 ayuda, pero hay que
+  verificarlo en los colores de estado).
+- Información nunca transmitida solo mediante el color.
+- Tamaños de toque adecuados y texto escalable.

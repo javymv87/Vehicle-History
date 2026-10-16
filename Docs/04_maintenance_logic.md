@@ -1,155 +1,165 @@
-# 04 — Logica di manutenzione
+# 04 — Lógica de mantenimiento
 
-Questo è il documento più "di dominio": raccoglie tutte le regole di calcolo e
-di comportamento della parte manutentiva. Le decisioni qui derivano anche
-dall'analisi dei manuali reali di Fiat Grande Punto e Toyota Yaris Hybrid.
+Este es el documento más "de dominio": reúne todas las reglas de cálculo y de
+comportamiento de la parte de mantenimiento. Las decisiones aquí derivan
+también del análisis de los manuales reales del Fiat Grande Punto y del Toyota
+Yaris Hybrid.
 
-## Catalogo tipi di manutenzione (MaintenanceType)
+## Catálogo de tipos de mantenimiento (MaintenanceType)
 
-Lista comune, raggruppata per famiglia per ritrovarla facilmente quando cresce.
-Precaricata con le voci più comuni, e modificabile dall'utente.
+Lista común, agrupada por familia para encontrarla fácilmente cuando crece.
+Precargada con las entradas más comunes, y modificable por el usuario.
 
-- **Fluidi**: olio motore, olio cambio manuale, olio cambio automatico, liquido
-  freni, liquido refrigerante
-- **Filtri**: filtro aria, filtro antipolline/abitacolo, filtro carburante
-- **Gomme**: pneumatici, **rotazione/permuta gomme**, **allineamento/convergenza**
-- **Batteria**: batteria 12V (controllo e sostituzione)
-- **Motore**: candele, cinghia distribuzione, cinghia accessori
-- **Freni**: freni anteriori, freni posteriori (vedi sezione dedicata)
-- **Altro**: voci libere aggiunte dall'utente
+- **Fluidos**: aceite de motor, aceite de caja de cambios manual, aceite de
+  caja de cambios automática, líquido de frenos, líquido refrigerante
+- **Filtros**: filtro de aire, filtro antipolen/habitáculo, filtro de
+  combustible
+- **Neumáticos**: neumáticos, **rotación/permuta de neumáticos**,
+  **alineación/convergencia**
+- **Batería**: batería de 12V (control y sustitución)
+- **Motor**: bujías, correa de distribución, correa de accesorios
+- **Frenos**: frenos delanteros, frenos traseros (ver sección dedicada)
+- **Otro**: entradas libres añadidas por el usuario
 
-I due manuali confermano la struttura: il Punto usa intervalli a km **e** a
-tempo con regola "scatta il primo dei due" (es. olio motore a ogni tagliando
-*oppure* ogni 24 mesi, 12 mesi se pochi km/città; cinghia distribuzione ogni
-4–5 anni a prescindere dai km); la Yaris rimanda molti intervalli a un libretto
-separato e a volte fornisce solo un criterio (solo km o solo tempo). La
-struttura deve quindi reggere: solo km, solo tempo, o entrambi.
+Los dos manuales confirman la estructura: el Punto usa intervalos por km **y**
+por tiempo con la regla "vence el primero de los dos" (p. ej. aceite de motor
+en cada servicio de mantenimiento *o bien* cada 24 meses, 12 meses si pocos
+km/ciudad; correa de distribución cada 4–5 años independientemente de los km);
+el Yaris remite muchos intervalos a un libro de mantenimiento separado y a
+veces proporciona un solo criterio (solo km o solo tiempo). Por tanto, la
+estructura debe admitir: solo km, solo tiempo, o ambos.
 
-## Criterio configurato per veicolo (MaintenanceRule)
+## Criterio configurado por vehículo (MaintenanceRule)
 
-Assegnare un criterio a un veicolo significa pescare un tipo dal catalogo e
-dargli gli intervalli di *quel* veicolo:
+Asignar un criterio a un vehículo significa tomar un tipo del catálogo y darle
+los intervalos de *ese* vehículo:
 
-- Scadenza in km (opzionale)
-- Scadenza in tempo in mesi (opzionale)
-- Se presenti entrambe → **scatta la prima che si verifica**
-- Ultimo intervento noto (data + km) → base per calcolare la prossima scadenza
+- Vencimiento en km (opcional)
+- Vencimiento en tiempo en meses (opcional)
+- Si están presentes ambos → **vence el primero que se cumpla**
+- Última intervención conocida (fecha + km) → base para calcular el próximo
+  vencimiento
 
-Un tipo già assegnato a un veicolo **non ricompare** tra le scelte per lo
-stesso veicolo, così non si creano doppioni. Resta disponibile per gli altri
-veicoli.
+Un tipo ya asignado a un vehículo **no vuelve a aparecer** entre las opciones
+para el mismo vehículo, así no se crean duplicados. Sigue disponible para los
+demás vehículos.
 
-### Come scattano le scadenze
+### Cómo saltan los vencimientos
 
-- **A tempo**: calcolabile nel tempo → genera una notifica alla data prevista.
-- **A km**: l'app non conosce i km in tempo reale, quindi non può notificare da
-  sola. Le voci in scadenza a km vengono **evidenziate** all'apertura dell'app
-  e quando si aggiorna il totalizzatore, confrontando la soglia con il km
-  attuale del veicolo.
+- **Por tiempo**: calculable en el tiempo → genera una notificación en la fecha
+  prevista.
+- **Por km**: la app no conoce los km en tiempo real, por lo que no puede
+  notificar por sí sola. Las entradas con vencimiento por km se **resaltan** al
+  abrir la app y al actualizar el cuentakilómetros total, comparando el umbral
+  con el km actual del vehículo.
 
-## Freni (logica per asse)
+## Frenos (lógica por eje)
 
-Modello: **asse → tipo di impianto → componenti, ciascuno con scadenza
-propria.**
+Modelo: **eje → tipo de sistema → componentes, cada uno con su propio
+vencimiento.**
 
-- Un freno appartiene a un **asse**: anteriore o posteriore. Si può agire su un
-  solo asse o su entrambi.
-- Per ciascun asse si indica il **tipo di impianto**:
-  - a **disco** → componenti: **pastiglie** (si consumano) + **disco** (dura di
-    più)
-  - a **tamburo** → componenti: **ganasce** (si consumano) + **tamburo** (dura
-    di più)
-- Ogni componente ha la **sua** scadenza indipendente, in km e/o tempo. La
-  pastiglia si sostituisce più spesso del disco; la ganascia più spesso del
-  tamburo.
-- Il componente "contenitore" (disco/tamburo) esiste solo se c'è quello che si
-  consuma (non ha senso un disco senza pastiglia).
+- Un freno pertenece a un **eje**: delantero o trasero. Se puede actuar sobre
+  un solo eje o sobre ambos.
+- Para cada eje se indica el **tipo de sistema**:
+  - de **disco** → componentes: **pastillas** (se desgastan) + **disco** (dura
+    más)
+  - de **tambor** → componentes: **zapatas** (se desgastan) + **tambor** (dura
+    más)
+- Cada componente tiene **su** vencimiento independiente, en km y/o tiempo. La
+  pastilla se sustituye más a menudo que el disco; la zapata más a menudo que
+  el tambor.
+- El componente "contenedor" (disco/tambor) solo existe si existe el que se
+  desgasta (no tiene sentido un disco sin pastilla).
 
-Nei manuali i freni compaiono come **controllo usura** a ogni tagliando, non
-come sostituzione a scadenza fissa: per questo la distinzione controllo vs
-sostituzione (sotto) vale anche qui.
+En los manuales los frenos aparecen como **control de desgaste** en cada
+servicio de mantenimiento, no como sustitución con vencimiento fijo: por eso la
+distinción control frente a sustitución (abajo) se aplica también aquí.
 
-## Controllo vs sostituzione
+## Control frente a sustitución
 
-Sono due cose diverse e complementari, entrambe registrabili:
+Son dos cosas distintas y complementarias, ambas registrables:
 
-- **Sostituzione** — ho cambiato un componente. Azzera il contatore del criterio
-  e fa ripartire la scadenza.
-- **Controllo** — ho ispezionato. Non azzera nulla. Può essere:
-  - **con misura** (vedi sotto)
-  - **generico non classificato** (solo nota libera)
+- **Sustitución** — he cambiado un componente. Pone a cero el contador del
+  criterio y reinicia el vencimiento.
+- **Control** — he inspeccionado. No pone nada a cero. Puede ser:
+  - **con medición** (ver abajo)
+  - **genérico no clasificado** (solo nota libre)
 
-## Controllo con misura
+## Control con medición
 
-Registra un valore numerico ispezionato in una certa data/km, costruendo uno
-**storico di valori** da cui si vede la tendenza (es. battistrada 7 → 5 → 3 mm).
+Registra un valor numérico inspeccionado en una fecha/km determinados,
+construyendo un **historial de valores** en el que se ve la tendencia (p. ej.
+dibujo del neumático 7 → 5 → 3 mm).
 
-- Grandezza (battistrada, spessore pastiglie, tensione batteria, ...)
-- Valore + unità (mm, V, ...)
-- **Soglia di allarme** opzionale: se l'ultimo valore scende sotto la soglia,
-  l'app avvisa. Utile per anticipare una sostituzione prima che scatti una
-  scadenza fissa.
+- Magnitud (dibujo del neumático, grosor de las pastillas, tensión de la
+  batería, ...)
+- Valor + unidad (mm, V, ...)
+- **Umbral de alarma** opcional: si el último valor baja del umbral, la app
+  avisa. Útil para anticipar una sustitución antes de que salte un
+  vencimiento fijo.
 
-## Rifornimenti e consumi
+## Repostajes y consumos
 
-Ogni rifornimento è **autoconsistente**: contiene i dati per calcolare il
-consumo da solo, senza dipendere dal rifornimento precedente (metodo "per
-singolo pieno", non "range tra due pieni").
+Cada repostaje es **autosuficiente**: contiene los datos para calcular el
+consumo por sí solo, sin depender del repostaje anterior (método "por cada
+lleno", no "rango entre dos llenos").
 
-Campi:
+Campos:
 
-- **Km percorsi** con quel pieno (dal contachilometri parziale/trip azzerato a
-  ogni pieno). NON è il totalizzatore.
-- **Litri**
-- **Prezzo al litro** (inserito dall'utente)
+- **Km recorridos** con ese lleno (del cuentakilómetros parcial/trip puesto a
+  cero en cada lleno). NO es el cuentakilómetros total.
+- **Litros**
+- **Precio por litro** (introducido por el usuario)
 
-Calcoli fatti dall'app:
+Cálculos que hace la app:
 
-- **Consumo** del singolo rifornimento = km percorsi ÷ litri. (Questo calcolo
-  l'app lo fa; il totale speso NON viene calcolato in automatico, per scelta.)
-- Report **consumo medio** (totale o per periodo).
-- Report **spesa totale in carburante** per periodo.
+- **Consumo** de cada repostaje = km recorridos ÷ litros. (Este cálculo lo
+  hace la app; el total gastado NO se calcula automáticamente, por decisión.)
+- Informe de **consumo medio** (total o por periodo).
+- Informe de **gasto total en combustible** por periodo.
 
-Attenzione a non confondere i due tipi di km:
+Atención a no confundir los dos tipos de km:
 
-- **Km percorsi** (nel rifornimento) → solo per il consumo. NON tocca né il
-  totalizzatore né lo storico chilometraggio.
-- **Km totale / totalizzatore** (stato del veicolo) → per le scadenze. Vive in
-  `Vehicle.km_attuale` e nello storico `MileageReading`.
+- **Km recorridos** (en el repostaje) → solo para el consumo. NO toca ni el
+  cuentakilómetros total ni el historial de kilometraje.
+- **Km total / cuentakilómetros total** (estado del vehículo) → para los
+  vencimientos. Vive en `Vehicle.km_attuale` y en el historial
+  `MileageReading`.
 
-## Chilometraggio
+## Kilometraje
 
-### Km attuale del veicolo
+### Km actual del vehículo
 
-Il veicolo ha un "km attuale" (ultimo valore noto del totalizzatore), usato per
-calcolare le scadenze a km. Si aggiorna **manualmente** dall'utente.
+El vehículo tiene un "km actual" (último valor conocido del cuentakilómetros
+total), usado para calcular los vencimientos por km. Lo actualiza
+**manualmente** el usuario.
 
-### Storico chilometraggio (MileageReading)
+### Historial de kilometraje (MileageReading)
 
-Registro indipendente delle letture del totalizzatore nel tempo, per il report
-"km percorsi vs tempo". Regole:
+Registro independiente de las lecturas del cuentakilómetros total a lo largo
+del tiempo, para el informe "km recorridos frente a tiempo". Reglas:
 
-- Si aggiorna **solo** quando l'utente aggiorna il totalizzatore in modo
-  esplicito. Il km scritto sulle singole voci (manutenzioni, rifornimenti...)
-  **non** entra qui: resta dentro la voce. Motivo: così un eventuale errore su
-  una voce non finisce incastrato in mezzo alla serie, dove non sarebbe
-  correggibile con la regola "cancella solo l'ultima".
-- Una nuova lettura **non può essere inferiore** all'ultima valida (il
-  contachilometri non torna indietro): l'app blocca e segnala.
-- Un valore enormemente più alto (probabile refuso, es. 850.000 invece di
-  85.000) **chiede conferma** prima di accettarlo — non lo vieta, perché
-  potrebbe essere reale.
-- Si può cancellare **solo l'ultima** lettura. Dopo la cancellazione la
-  penultima diventa l'ultima e diventa a sua volta cancellabile
-  (comportamento "annulla a ritroso"). Mai togliere letture intermedie: la
-  serie resta sempre coerente e crescente.
+- Se actualiza **solo** cuando el usuario actualiza el cuentakilómetros total
+  de forma explícita. El km escrito en cada entrada (mantenimientos,
+  repostajes...) **no** entra aquí: se queda dentro de la entrada. Motivo: así
+  un posible error en una entrada no queda encajado en medio de la serie, donde
+  no podría corregirse con la regla "borrar solo la última".
+- Una nueva lectura **no puede ser inferior** a la última válida (el
+  cuentakilómetros no va hacia atrás): la app bloquea y lo señala.
+- Un valor enormemente más alto (probable error tipográfico, p. ej. 850.000 en
+  lugar de 85.000) **pide confirmación** antes de aceptarlo — no lo prohíbe,
+  porque podría ser real.
+- Solo se puede borrar **la última** lectura. Después del borrado la
+  penúltima pasa a ser la última y a su vez se puede borrar
+  (comportamiento "deshacer hacia atrás"). Nunca quitar lecturas intermedias:
+  la serie se mantiene siempre coherente y creciente.
 
-## Specifiche di fabbrica del veicolo
+## Especificaciones de fábrica del vehículo
 
-Nella scheda veicolo si registrano i dati raccomandati dal costruttore, usati
-come base per creare i criteri e per riferimento:
+En la ficha del vehículo se registran los datos recomendados por el
+fabricante, usados como base para crear los criterios y como referencia:
 
-- Tipo di carburante
-- Olio motore raccomandato
-- Intervalli di manutenzione consigliati (in km e/o tempo), che alimentano le
+- Tipo de combustible
+- Aceite de motor recomendado
+- Intervalos de mantenimiento aconsejados (en km y/o tiempo), que alimentan las
   `MaintenanceRule`
