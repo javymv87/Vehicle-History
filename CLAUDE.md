@@ -32,7 +32,10 @@ Flutter · Material 3 · Riverpod · `go_router` · Drift through `drift_flutter
 `flutter_secure_storage` · `flutter_local_notifications` · `gen_l10n` · `intl`
 
 Toolchain reference (recorded at scaffold time): **Flutter 3.44.8** (stable
-channel) · **Dart 3.12.2**.
+channel) · **Dart 3.12.2**. The version is pinned for this repository in
+`.fvmrc` through [FVM](https://fvm.app): run every local command as
+`fvm flutter ...` / `fvm dart ...`, never with a bare global `flutter` /
+`dart`, which may be a different version.
 
 Dependencies are added **one at a time, on explicit request**. Never add a
 package as a side effect of implementing a feature. Naming a package in this
@@ -71,8 +74,12 @@ may be older than the last change. A broken migration is permanent data loss.
    externalised for localisation (IT / ES / EN).
 5. **Stop and ask.** When a requirement is ambiguous or a decision is not
    covered by `Docs/`, stop and ask. Do not invent product behaviour.
-6. **No Git side effects.** No `add`, `commit`, `push`, branch switching or
-   history rewriting unless explicitly requested.
+6. **Commit, never publish.** When a task is finished and every quality gate
+   (§8) is green, the assistant commits its work on the working branch, with
+   an English Conventional Commits message in the imperative mood and **no AI
+   attribution** (no `Co-Authored-By` trailer, no "Generated with" line). No
+   push, no force-push, no history rewriting and no PRs unless explicitly
+   requested.
 
 ### Guiding principle: keep it simple, keep it manual
 
@@ -229,7 +236,18 @@ decision, not a refactor.
 ## 7. Localisation
 
 - Supported locales: **it**, **es**, **en**.
-- `gen_l10n` with `.arb` files under `lib/l10n/`.
+- `gen_l10n` with `.arb` files under `lib/l10n/`, configured by `l10n.yaml` at
+  the repository root. The generated `AppLocalizations` classes are written to
+  `lib/l10n/` too (no synthetic package).
+- **Template language: English.** `app_en.arb` is the template: it defines
+  every key, each with an `@key` description. `app_it.arb` and `app_es.arb`
+  carry the same keys.
+- **Fallback locale: `en`.** The device locale is matched by language code
+  (`it_CH` → `it`); any other language falls back to English.
+- **Generated files are not committed.** `lib/l10n/app_localizations*.dart` is
+  git-ignored: with `generate: true` in `pubspec.yaml`, `flutter pub get`
+  regenerates them (already formatted, `format: true` in `l10n.yaml`), which is
+  all CI needs before analysing.
 - Add every new string to all three `.arb` files in the same change. A missing
   translation is a bug, not a follow-up.
 - Dates, numbers and currency are formatted through `intl`, never by hand.
@@ -277,6 +295,9 @@ Coverage percentage is not a target and must not be used as one.
 - Never proceed to the next step on your own initiative.
 - Prefer editing existing files over creating parallel ones.
 - Keep this file up to date when a technical convention changes.
+- **Language of communication.** The assistant talks to the owner in
+  **Spanish**. Code, identifiers, comments, commit messages and PR texts stay
+  in **English**; `Docs/` is in **Spanish**.
 
 ---
 

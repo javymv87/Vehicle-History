@@ -1,0 +1,7 @@
+{
+  "@@locale": "es",
+  "appTitle": "Vehicle History",
+  "statusOverdue": "Vencido",
+  "statusDueSoon": "Próximo a vencer",
+  "statusOk": "En orden"
+}

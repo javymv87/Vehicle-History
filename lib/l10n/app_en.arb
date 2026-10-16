@@ -1,0 +1,19 @@
+{
+  "@@locale": "en",
+  "appTitle": "Vehicle History",
+  "@appTitle": {
+    "description": "Application name, shown in the app bar and as the OS task title. Not translated: it is the product name."
+  },
+  "statusOverdue": "Overdue",
+  "@statusOverdue": {
+    "description": "Status label for a deadline that has already passed (shown in red, with an icon)."
+  },
+  "statusDueSoon": "Due soon",
+  "@statusDueSoon": {
+    "description": "Status label for a deadline that is approaching (shown in amber, with an icon)."
+  },
+  "statusOk": "OK",
+  "@statusOk": {
+    "description": "Status label for an item with no pending deadline (shown in green, with an icon)."
+  }
+}

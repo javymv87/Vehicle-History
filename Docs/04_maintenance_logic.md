@@ -123,7 +123,7 @@ Atención a no confundir los dos tipos de km:
 - **Km recorridos** (en el repostaje) → solo para el consumo. NO toca ni el
   cuentakilómetros total ni el historial de kilometraje.
 - **Km total / cuentakilómetros total** (estado del vehículo) → para los
-  vencimientos. Vive en `Vehicle.km_attuale` y en el historial
+  vencimientos. Vive en `Vehicle.current_odometer_km` y en el historial
   `MileageReading`.
 
 ## Kilometraje
