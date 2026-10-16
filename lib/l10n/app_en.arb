@@ -15,5 +15,345 @@
   "statusOk": "OK",
   "@statusOk": {
     "description": "Status label for an item with no pending deadline (shown in green, with an icon)."
+  },
+  "vehiclesTitle": "Vehicles",
+  "@vehiclesTitle": {
+    "description": "Title of the vehicle list and label of its navigation destination."
+  },
+  "ownersTitle": "Owners",
+  "@ownersTitle": {
+    "description": "Title of the owner list and label of its navigation destination."
+  },
+  "addVehicle": "Add vehicle",
+  "@addVehicle": {
+    "description": "Button and tooltip that opens the form to create a vehicle."
+  },
+  "addOwner": "Add owner",
+  "@addOwner": {
+    "description": "Button and tooltip that opens the form to create an owner."
+  },
+  "vehicleListEmpty": "No vehicles yet. Add the first one to start its history.",
+  "@vehicleListEmpty": {
+    "description": "Empty state of the vehicle list."
+  },
+  "ownerListEmpty": "No owners yet. Every vehicle belongs to an owner.",
+  "@ownerListEmpty": {
+    "description": "Empty state of the owner list."
+  },
+  "newVehicleTitle": "New vehicle",
+  "@newVehicleTitle": {
+    "description": "App bar title of the vehicle form when creating."
+  },
+  "editVehicleTitle": "Edit vehicle",
+  "@editVehicleTitle": {
+    "description": "App bar title of the vehicle form when editing."
+  },
+  "newOwnerTitle": "New owner",
+  "@newOwnerTitle": {
+    "description": "App bar title of the owner form when creating, and the owner picker entry that opens it."
+  },
+  "editOwnerTitle": "Edit owner",
+  "@editOwnerTitle": {
+    "description": "App bar title of the owner form when editing."
+  },
+  "kmValue": "{km} km",
+  "@kmValue": {
+    "description": "An odometer value in kilometres, formatted for the locale.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "dateValue": "{date}",
+  "@dateValue": {
+    "description": "A calendar date formatted for the locale, e.g. a birth date.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "vehicleSummary": "{km} km · {fuel}",
+  "@vehicleSummary": {
+    "description": "Vehicle list row: current odometer and fuel type.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "fuel": {
+        "type": "String"
+      }
+    }
+  },
+  "fuelPetrol": "Petrol",
+  "@fuelPetrol": {
+    "description": "Fuel type: petrol only."
+  },
+  "fuelDiesel": "Diesel",
+  "@fuelDiesel": {
+    "description": "Fuel type: diesel only."
+  },
+  "fuelPetrolLpg": "Petrol + LPG",
+  "@fuelPetrolLpg": {
+    "description": "Fuel type: bi-fuel petrol and LPG."
+  },
+  "fuelPetrolCng": "Petrol + CNG",
+  "@fuelPetrolCng": {
+    "description": "Fuel type: bi-fuel petrol and CNG (methane)."
+  },
+  "fuelHybrid": "Hybrid",
+  "@fuelHybrid": {
+    "description": "Fuel type: full hybrid, not plug-in."
+  },
+  "fuelPluginHybrid": "Plug-in hybrid",
+  "@fuelPluginHybrid": {
+    "description": "Fuel type: plug-in hybrid."
+  },
+  "fuelElectric": "Electric",
+  "@fuelElectric": {
+    "description": "Fuel type: battery electric."
+  },
+  "fuelOther": "Other",
+  "@fuelOther": {
+    "description": "Fuel type: anything else."
+  },
+  "fieldPlate": "Plate",
+  "@fieldPlate": {
+    "description": "Vehicle field: licence plate."
+  },
+  "fieldNickname": "Nickname",
+  "@fieldNickname": {
+    "description": "Vehicle field: optional friendly name."
+  },
+  "fieldOwner": "Owner",
+  "@fieldOwner": {
+    "description": "Vehicle field: the owner."
+  },
+  "fieldFuelType": "Fuel type",
+  "@fieldFuelType": {
+    "description": "Vehicle field: fuel type."
+  },
+  "fieldCurrentKm": "Current km",
+  "@fieldCurrentKm": {
+    "description": "Vehicle field: current odometer reading, entered only when creating."
+  },
+  "fieldRecommendedOil": "Recommended engine oil",
+  "@fieldRecommendedOil": {
+    "description": "Vehicle field: engine oil recommended by the manufacturer."
+  },
+  "fieldManufacturerNotes": "Manufacturer notes",
+  "@fieldManufacturerNotes": {
+    "description": "Vehicle field: other manufacturer notes."
+  },
+  "fieldFirstName": "First name",
+  "@fieldFirstName": {
+    "description": "Owner field: first name (required)."
+  },
+  "fieldLastName": "Last name",
+  "@fieldLastName": {
+    "description": "Owner field: last name."
+  },
+  "fieldBirthDate": "Birth date",
+  "@fieldBirthDate": {
+    "description": "Owner field: birth date."
+  },
+  "fieldNationality": "Nationality",
+  "@fieldNationality": {
+    "description": "Owner field: nationality."
+  },
+  "fieldPhone": "Phone",
+  "@fieldPhone": {
+    "description": "Owner field: phone number."
+  },
+  "fieldEmail": "Email",
+  "@fieldEmail": {
+    "description": "Owner field: email address."
+  },
+  "fieldNotes": "Notes",
+  "@fieldNotes": {
+    "description": "Owner field: free notes."
+  },
+  "birthDatePick": "Choose a date",
+  "@birthDatePick": {
+    "description": "Placeholder of the birth date field when no date is set."
+  },
+  "birthDateClear": "Clear date",
+  "@birthDateClear": {
+    "description": "Tooltip of the button that clears the birth date."
+  },
+  "validationPlateRequired": "Enter the plate",
+  "@validationPlateRequired": {
+    "description": "Error under the plate field when it is empty."
+  },
+  "validationKmRequired": "Enter the current km",
+  "@validationKmRequired": {
+    "description": "Error under the current km field when it is empty."
+  },
+  "validationKmInvalid": "Enter a whole number, 0 or more",
+  "@validationKmInvalid": {
+    "description": "Error under the current km field when the value is not a whole number of at least 0."
+  },
+  "validationFirstNameRequired": "Enter the first name",
+  "@validationFirstNameRequired": {
+    "description": "Error under the first name field when it is empty."
+  },
+  "validationOwnerRequired": "Choose an owner",
+  "@validationOwnerRequired": {
+    "description": "Error under the owner picker when no owner is selected."
+  },
+  "validationFuelTypeRequired": "Choose the fuel type",
+  "@validationFuelTypeRequired": {
+    "description": "Error under the fuel type picker when nothing is selected."
+  },
+  "actionSave": "Save",
+  "@actionSave": {
+    "description": "Button that saves a form."
+  },
+  "actionEdit": "Edit",
+  "@actionEdit": {
+    "description": "Button that opens the edit form."
+  },
+  "actionDelete": "Delete",
+  "@actionDelete": {
+    "description": "Button that deletes the item, after confirmation."
+  },
+  "actionCancel": "Cancel",
+  "@actionCancel": {
+    "description": "Button that closes a dialog without doing anything."
+  },
+  "actionUndo": "Undo",
+  "@actionUndo": {
+    "description": "Snackbar action that restores the item just deleted."
+  },
+  "actionOk": "OK",
+  "@actionOk": {
+    "description": "Button that closes an information dialog."
+  },
+  "vehicleSaved": "Vehicle saved",
+  "@vehicleSaved": {
+    "description": "Brief confirmation after saving a vehicle."
+  },
+  "ownerSaved": "Owner saved",
+  "@ownerSaved": {
+    "description": "Brief confirmation after saving an owner."
+  },
+  "vehicleDeleted": "Vehicle deleted",
+  "@vehicleDeleted": {
+    "description": "Snackbar after deleting a vehicle, shown with an Undo action."
+  },
+  "ownerDeleted": "Owner deleted",
+  "@ownerDeleted": {
+    "description": "Snackbar after deleting an owner, shown with an Undo action."
+  },
+  "deleteVehicleTitle": "Delete vehicle?",
+  "@deleteVehicleTitle": {
+    "description": "Title of the dialog that confirms deleting a vehicle."
+  },
+  "deleteVehicleMessage": "{plate} will be deleted together with all its history. You can undo it for a few seconds afterwards.",
+  "@deleteVehicleMessage": {
+    "description": "Body of the dialog that confirms deleting a vehicle.",
+    "placeholders": {
+      "plate": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOwnerTitle": "Delete owner?",
+  "@deleteOwnerTitle": {
+    "description": "Title of the dialog that confirms deleting an owner."
+  },
+  "deleteOwnerMessage": "{name} will be deleted. You can undo it for a few seconds afterwards.",
+  "@deleteOwnerMessage": {
+    "description": "Body of the dialog that confirms deleting an owner.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownerNotDeletedTitle": "Owner not deleted",
+  "@ownerNotDeletedTitle": {
+    "description": "Title of the dialog shown when an owner with vehicles cannot be deleted."
+  },
+  "errorOwnerHasVehicles": "This owner still has vehicles. Delete them or assign them to another owner first. Nothing was deleted.",
+  "@errorOwnerHasVehicles": {
+    "description": "Explains why an owner with live vehicles was not deleted."
+  },
+  "errorDuplicatePlate": "Another vehicle already has this plate",
+  "@errorDuplicatePlate": {
+    "description": "Error under the plate field, or after Undo, when another live vehicle uses the plate."
+  },
+  "errorOwnerNotFound": "The owner no longer exists. Nothing was saved.",
+  "@errorOwnerNotFound": {
+    "description": "Error when the owner involved was deleted in the meantime."
+  },
+  "errorVehicleNotFound": "The vehicle no longer exists. Nothing was saved.",
+  "@errorVehicleNotFound": {
+    "description": "Error when the vehicle involved was deleted in the meantime."
+  },
+  "errorInvalidInput": "Some data is not valid. Check the form. Nothing was saved.",
+  "@errorInvalidInput": {
+    "description": "Error when the data layer refused a value the form let through."
+  },
+  "errorUnexpected": "Something went wrong. Nothing was saved.",
+  "@errorUnexpected": {
+    "description": "Error for any unexpected failure while saving, deleting or restoring."
+  },
+  "vehicleKmNote": "Changed only from the odometer section, available in a later version.",
+  "@vehicleKmNote": {
+    "description": "Note under the current km on the vehicle detail: the form cannot change it."
+  },
+  "ownerNoVehicles": "No vehicles",
+  "@ownerNoVehicles": {
+    "description": "Shown in the owner detail when the owner has no vehicles."
+  },
+  "notFoundTitle": "Not found",
+  "@notFoundTitle": {
+    "description": "App bar title of a page whose item does not exist."
+  },
+  "vehicleNotFound": "This vehicle does not exist or has been deleted.",
+  "@vehicleNotFound": {
+    "description": "Body of the vehicle page when the id in the path matches no live vehicle."
+  },
+  "ownerNotFound": "This owner does not exist or has been deleted.",
+  "@ownerNotFound": {
+    "description": "Body of the owner page when the id in the path matches no live owner."
+  },
+  "pageNotFound": "This page does not exist.",
+  "@pageNotFound": {
+    "description": "Body of the page shown for an unknown route."
+  },
+  "goToVehicles": "Go to vehicles",
+  "@goToVehicles": {
+    "description": "Button on a not-found page that returns to the vehicle list."
+  },
+  "loadError": "The data could not be loaded.",
+  "@loadError": {
+    "description": "Shown in place of a list or detail when reading the data failed."
+  },
+  "startupErrorTitle": "Your data could not be opened",
+  "@startupErrorTitle": {
+    "description": "Title of the full-screen error shown when the database cannot be opened at startup."
+  },
+  "startupErrorNewerDatabase": "Your data was saved by a newer version of Vehicle History. Install the latest version of the app to open it. Your data has not been touched.",
+  "@startupErrorNewerDatabase": {
+    "description": "Startup error when the database file is newer than the app."
+  },
+  "startupErrorUpgradeFailed": "Your data could not be opened or updated. It has not been changed: if an update was in progress, a copy taken before it is kept on this phone.",
+  "@startupErrorUpgradeFailed": {
+    "description": "Startup error when opening or upgrading the database failed for any other reason."
+  },
+  "startupErrorDetail": "Technical detail: {detail}",
+  "@startupErrorDetail": {
+    "description": "Technical description of the startup error, for support.",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
   }
 }

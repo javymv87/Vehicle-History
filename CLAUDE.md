@@ -75,7 +75,19 @@ Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
   Every read filters `deleted = 0` unless the method name says otherwise;
   delete means soft delete. The audit log is append-only and has no flag.
 - **Audit log from v1.** Every repository write adds its `audit_log` row in
-  the same transaction.
+  the same transaction. Operations: `create`, `update`, `delete`, `restore`
+  (Undo after a delete). `operation` is plain text with no CHECK, so a new
+  code only needs `AuditOperationConverter`, not a schema change; an older
+  build that meets an unknown code throws when reading the audit log.
+- **Location.** `vehicle_history.sqlite` lives in the **application support
+  directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
+  as `DriftNativeOptions.databaseDirectory`), never in the documents
+  directory, which iOS shows in the Files app and backs up to iCloud. Photo
+  paths (future) are stored **relative to the same directory**.
+- **Startup.** `databaseReadyProvider` opens the database (running any
+  migration) before the router is shown; a failure, such as
+  `DatabaseNewerThanAppException`, shows the localised full-screen
+  `StartupErrorPage` and nothing reads data.
 - **No SQLCipher.** The database lives in the app sandbox, protected by
   Android file-based encryption. Owner data leaves the device only through
   the Drive backup, so encrypting the **backup file** is evaluated in the
@@ -230,11 +242,41 @@ code generation (`freezed` and similar are not used).
   `ref.read(...).method()`. No business logic inside `build`.
 - A single `ProviderScope` wraps the app in `main.dart`. Never hold a
   `ProviderContainer` in a global variable.
+- No code generation (`riverpod_generator` / `riverpod_annotation` are not
+  used). Data providers (`appDatabaseProvider`, `databaseReadyProvider`,
+  repository providers) are in `lib/data/data_providers.dart`.
+- Read state that only mirrors the database is a `StreamProvider` /
+  `FutureProvider` (`.autoDispose`, `.family` for an id from the path), so
+  screens refresh after every write. Forms use an `AsyncNotifier` family
+  keyed by the edited id (`null` = create) whose `save` returns an
+  `ActionResult`; controllers map exceptions to `ActionError` and widgets
+  turn it into a localised message (`shared/utils/`). Never show raw
+  exceptions.
+- Deletion controllers (`…DeletionController`) are **kept alive**: the Undo
+  snackbar outlives the page that deleted, so its callback holds the
+  notifier, read before popping, never the page's `ref`.
+- Tests override `databaseReadyProvider` and the repository providers
+  (`test/support/`), never the DAOs.
 
 **Routing.** `go_router`, configured under `app/router/`. Every route that can
 be the target of a notification takes its identifiers from the path, so a
 reminder can deep-link straight to the entry that produced it. Outside that
 configuration, do not navigate with anonymous `MaterialPageRoute`.
+
+- Paths are built only through `AppRoutes` (`app/router/app_routes.dart`).
+- The lists live in a `StatefulShellRoute` under the `NavigationBar`
+  (`HomeShell`, which also owns the add FAB). Details and forms are
+  top-level routes pushed full screen on top of it; `…/new` is declared
+  before `…/:id`.
+- Screens are opened with `context.push`, so Back returns to where the user
+  was. A form pops with the saved id (`context.popOrGo`), which is how the
+  vehicle form gets the owner created through "New owner".
+- An unknown id renders a not-found page, never an exception; an unknown
+  path renders the router's `errorBuilder`.
+- User feedback follows `Docs/03_features.md` through
+  `shared/widgets/feedback.dart`: short snackbar on save, Undo snackbar
+  after a delete (shown on the app-wide `ScaffoldMessenger`), long errors
+  with a close button, dialogs for confirmations and blocking explanations.
 
 ---
 

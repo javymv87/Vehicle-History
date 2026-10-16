@@ -37,7 +37,7 @@ class Vehicles extends Table with TechnicalColumns {
   /// Other manufacturer notes.
   TextColumn get manufacturerNotes => text().nullable()();
 
-  /// Photo path relative to the app documents directory.
+  /// Photo path relative to the app support directory.
   TextColumn get photoPath => text().nullable()();
 
   // Written as SQL rather than with `Column.check`, whose self-referencing

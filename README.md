@@ -39,7 +39,7 @@ device and can be backed up to Google Drive to move between phones.
 
 ## Tech stack
 
-Flutter · Drift (SQLite) · Google Drive (googleapis) · google_sign_in /
+Flutter · Riverpod · go_router · Drift (SQLite) · Google Drive (googleapis) · google_sign_in /
 flutter_appauth · flutter_secure_storage · flutter_local_notifications · gen_l10n
 
 ## Project structure
@@ -69,13 +69,15 @@ lint rules, CI and the conceptual documentation in `Docs/` are all in place.
 The Material 3 theme (single seed, light/dark, status colours) and the
 `gen_l10n` localisation skeleton (IT / ES / EN) are done, and so is the Drift
 data layer for owners and vehicles (with the audit log, schema migrations from
-v1 and repositories).
+v1 and repositories) and the vehicle and owner screens (Riverpod +
+`go_router`: lists, details, forms, delete with confirmation and Undo). Next
+is step 4.
 
 Roadmap to the first usable version:
 
 | Step | Content |
 | --- | --- |
-| 3 | Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner |
+| 3 | ~~Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner~~ — done |
 | 4 | Basic log entries: date, km, type, cost, notes; list, filters, undo on delete |
 | 5 | Odometer: update current km + `MileageReading` history with its rules |
 | 6 | Export / import the database file, and a fixed release signing key kept outside the repo |

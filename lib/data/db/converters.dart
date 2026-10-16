@@ -84,6 +84,7 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         'create' => AuditOperation.create,
         'update' => AuditOperation.update,
         'delete' => AuditOperation.delete,
+        'restore' => AuditOperation.restore,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit operation in database: $fromDb'),
       };
@@ -93,5 +94,6 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         AuditOperation.create => 'create',
         AuditOperation.update => 'update',
         AuditOperation.delete => 'delete',
+        AuditOperation.restore => 'restore',
       };
 }

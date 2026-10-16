@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 
 /// Application entry point.
 ///
-/// Boots the Flutter engine and mounts the root [VehicleHistoryApp] widget.
+/// Mounts the root [VehicleHistoryApp] inside the single [ProviderScope] of
+/// the app.
 void main() {
-  runApp(const VehicleHistoryApp());
+  runApp(const ProviderScope(child: VehicleHistoryApp()));
 }

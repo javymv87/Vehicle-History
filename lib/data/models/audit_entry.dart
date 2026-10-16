@@ -17,6 +17,9 @@ enum AuditOperation {
 
   /// The entity was (soft) deleted.
   delete,
+
+  /// A soft-deleted entity was brought back, e.g. by "Undo" after a delete.
+  restore,
 }
 
 /// One row of the audit log: which entity was written, how, and when.

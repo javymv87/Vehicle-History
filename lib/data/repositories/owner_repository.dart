@@ -54,4 +54,10 @@ abstract interface class OwnerRepository {
   /// still has live vehicles, and `EntityNotFoundException` if the owner is
   /// missing or already deleted.
   Future<void> delete(String id);
+
+  /// Brings back the soft-deleted owner with [id], as "Undo" after [delete].
+  ///
+  /// Recorded in the audit log as a `restore`. Throws
+  /// `EntityNotFoundException` if no deleted owner has that id.
+  Future<Owner> restore(String id);
 }

@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'converters.dart';
 
-/// The `audit_log` table: one row per create, update and delete.
+/// The `audit_log` table: one row per create, update, delete and restore.
 ///
 /// Append-only. It has no soft-delete flag and no `updated_at`, because a row
 /// is never changed once written. `entity_id` has no foreign key: it points
@@ -19,7 +19,10 @@ class AuditLog extends Table {
   /// Id of the audited entity.
   TextColumn get entityId => text()();
 
-  /// Operation performed (`create`, `update`, `delete`).
+  /// Operation performed (`create`, `update`, `delete`, `restore`).
+  ///
+  /// Plain text with no CHECK constraint, so a new operation code needs no
+  /// schema change; only [AuditOperationConverter] has to learn it.
   TextColumn get operation => text().map(const AuditOperationConverter())();
 
   /// When the operation happened, in UTC.

@@ -115,6 +115,19 @@ class DriftOwnerRepository implements OwnerRepository {
     });
   }
 
+  @override
+  Future<Owner> restore(String id) async {
+    final now = utcNow(_clock);
+    return _owners.transaction(() async {
+      final changed = await _owners.restoreDeleted(id, now);
+      if (changed == 0) {
+        throw EntityNotFoundException(AuditEntityType.owner, id);
+      }
+      await _record(id, AuditOperation.restore, now);
+      return _requireLive(id);
+    });
+  }
+
   /// Returns the live owner with [id] or throws [EntityNotFoundException].
   Future<Owner> _requireLive(String id) async {
     final owner = await _owners.getLiveById(id);

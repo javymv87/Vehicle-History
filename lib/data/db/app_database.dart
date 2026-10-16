@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
@@ -26,11 +27,25 @@ part 'app_database.g.dart';
   daos: [OwnersDao, VehiclesDao, AuditLogDao],
 )
 class AppDatabase extends _$AppDatabase {
-  /// Opens the on-device database file `vehicle_history` via `drift_flutter`.
+  /// Opens the on-device database file `vehicle_history.sqlite` via
+  /// `drift_flutter`.
+  ///
+  /// The file lives in the application support directory, not in the
+  /// documents directory: on iOS the latter is visible to the user in the
+  /// Files app and backed up to iCloud, and the only backup of this data is
+  /// the app's own (see `Docs/05_sync_and_storage.md`). Future photo paths are
+  /// relative to the same directory.
   AppDatabase()
       : _upgradeSteps = _schemaSteps,
         _copier = const PreUpgradeCopier(),
-        super(driftDatabase(name: 'vehicle_history'));
+        super(
+          driftDatabase(
+            name: 'vehicle_history',
+            native: const DriftNativeOptions(
+              databaseDirectory: getApplicationSupportDirectory,
+            ),
+          ),
+        );
 
   /// Opens the database on an explicit [executor], such as an in-memory
   /// database in tests.
@@ -62,6 +77,13 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  /// Opens the connection now, running any pending migration.
+  ///
+  /// Drift opens the file lazily on the first query. Calling this at startup
+  /// surfaces a refused or failed upgrade (such as
+  /// [DatabaseNewerThanAppException]) before any screen tries to read data.
+  Future<void> open() => customSelect('SELECT 1').get();
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

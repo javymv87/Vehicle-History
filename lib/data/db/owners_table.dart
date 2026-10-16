@@ -28,7 +28,7 @@ class Owners extends Table with TechnicalColumns {
   /// Free notes.
   TextColumn get notes => text().nullable()();
 
-  /// Photo path relative to the app documents directory.
+  /// Photo path relative to the app support directory.
   TextColumn get photoPath => text().nullable()();
 
   // Written as SQL rather than with `Column.check`, whose self-referencing

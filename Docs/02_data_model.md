@@ -50,8 +50,10 @@ Ficha de la persona propietaria de uno o varios vehículos.
 
 Todo es opcional salvo el nombre. Teléfono y email se guardan tal como se
 escriben (sin espacios al principio ni al final), sin validar el formato.
-La foto es una ruta opcional **relativa** a la carpeta de documentos de la app
-(elegir, copiar y mostrar imágenes llegará más adelante).
+La foto es una ruta opcional **relativa** a la carpeta de soporte de la app
+(*application support*, la misma en la que vive la base de datos; ver
+`05_sync_and_storage.md`). Elegir, copiar y mostrar imágenes llegará más
+adelante.
 
 Un Owner puede tener **varios vehículos**. Un vehículo tiene **un** Owner.
 
@@ -227,12 +229,12 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 
 Registro ligero de todas las operaciones realizadas sobre las entradas,
 consultable y útil también en el futuro. Existe **desde la primera versión
-del esquema**: cada creación, modificación y borrado de un Owner o un Vehicle
-añade su fila en la misma transacción. Es solo de añadir: sus filas no se
+del esquema**: cada creación, modificación, borrado y restauración (deshacer
+un borrado) de un Owner o un Vehicle añade su fila en la misma transacción. Es solo de añadir: sus filas no se
 modifican ni se borran.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
-- Operación: creación / modificación / eliminación
+- Operación: creación / modificación / eliminación / restauración
 - Cuándo: fecha y hora
 
 ### Settings (ajustes)
