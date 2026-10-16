@@ -43,5 +43,18 @@ localización con `gen_l10n` (IT / ES / EN) ya están hechos, igual que la capa
 de datos Drift para propietarios y vehículos (con el historial de operaciones,
 migraciones de esquema desde la v1 y repositorios).
 
-Próximo paso: la funcionalidad de vehículos (Riverpod + `go_router` +
-pantallas).
+Hoja de ruta hasta la primera versión usable:
+
+| Paso | Contenido |
+| --- | --- |
+| 3 | Pantallas de vehículos **y propietarios** (Riverpod + `go_router`) — un vehículo requiere un propietario |
+| 4 | Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar |
+| 5 | Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas |
+| 6 | Exportar / importar el archivo de la base de datos, y una clave fija de firma de release guardada fuera del repositorio |
+
+Después, en el orden que se decida usando la app: ajustes, mantenimiento,
+repostajes, documentos, fotos, recordatorios, informes PDF, copia de
+seguridad en Google Drive.
+
+Por qué importa la clave de firma: cada PC tiene su propia clave de debug, así
+que instalar desde otro PC obliga a desinstalar la app, y eso borra los datos.

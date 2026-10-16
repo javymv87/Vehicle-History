@@ -60,13 +60,11 @@ may be older than the last change. A broken migration is permanent data loss.
 Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
-  `schema_dir: drift_schemas/`, `test_dir: test/drift/`). After a schema change:
-  bump `schemaVersion`, run `dart run drift_dev make-migrations`, wire the
-  generated `stepByStep` from `app_database.steps.dart` into `onUpgrade`, and
-  commit the dump plus every non-`.g.dart` file the command writes. At v1 the
-  command only writes the dump (steps file and `migration_test.dart` appear
-  from v2); the verifier helpers under `test/drift/vehicle_history/generated/`
-  come from `dart run drift_dev schema generate`.
+  `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
+  change follows "Upgrade safety" below. At v1 `make-migrations` only writes
+  the dump (the steps file and `migration_test.dart` appear from v2); the
+  verifier helpers under `test/drift/vehicle_history/generated/` come from
+  `dart run drift_dev schema generate`.
 - **Timestamps as text.** `store_date_time_values_as_text: true` in
   `build.yaml`, set from v1: changing it later is a data migration.
 - **Foreign keys** are enabled with `PRAGMA foreign_keys = ON` in
@@ -86,6 +84,45 @@ Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
   with `Column.check`, whose self-referencing getter trips the
   `recursive_getters` lint.
 
+### Upgrade safety
+
+A new app version must **never** lose or corrupt data written by an older
+one. `AppDatabase` runs every upgrade through `runSafeUpgrade`
+(`lib/data/db/upgrade_safety.dart`), which enforces the mechanics; these rules
+cover the rest, for every schema change:
+
+1. Bump `schemaVersion` and run `dart run drift_dev make-migrations`.
+2. Write the step in the generated `stepByStep(...)` of
+   `app_database.steps.dart` and use it as `AppDatabase._schemaSteps`.
+3. Commit the new dump under `drift_schemas/` and every non-`.g.dart` file
+   the command writes. CI re-runs `make-migrations` and fails on any diff.
+4. Fill in the data-integrity test
+   (`test/drift/vehicle_history/data_integrity_test.dart`): realistic rows
+   written at the old version must all be intact at the new one.
+5. **Never destructive**: no drop-and-recreate, no `deleteEverything`, no
+   reset on mismatch. Renames, type changes and dropped columns use Drift's
+   table-recreation migration (`TableMigration`), which copies the data. New
+   columns are nullable or have a default.
+
+What `runSafeUpgrade` guarantees:
+
+- **Pre-upgrade copy.** Before any upgrade (`from < to`) the database is
+  copied with SQLite's `VACUUM INTO` to `vehicle_history.pre_v<from>.sqlite`
+  next to it; only the latest copy is kept. `VACUUM INTO` yields a
+  consistent file from the open connection (WAL content included), which a
+  plain file copy cannot guarantee. No copy on a fresh install.
+- **Atomic and checked.** The steps, `PRAGMA foreign_key_check` and the new
+  `user_version` run in one transaction, with foreign keys off during the
+  steps. Any foreign key violation fails the upgrade: everything rolls back
+  and the copy is kept.
+- **Downgrade refused.** A file newer than the app (`from > to`) throws
+  `DatabaseNewerThanAppException` and is left untouched, never "fixed".
+
+Releases: the Android `versionCode` (the build number after `+` in
+`pubspec.yaml`) must increase with every release, and release builds are
+signed with the fixed release key introduced in roadmap step 6 — a different
+signature forces an uninstall, which deletes the data.
+
 ---
 
 ## 3. Non-negotiable rules
@@ -103,12 +140,15 @@ Settled for the database (schema v1: `owners`, `vehicles`, `audit_log`):
    externalised for localisation (IT / ES / EN).
 5. **Stop and ask.** When a requirement is ambiguous or a decision is not
    covered by `Docs/`, stop and ask. Do not invent product behaviour.
-6. **Commit, never publish.** When a task is finished and every quality gate
-   (§8) is green, the assistant commits its work on the working branch, with
-   an English Conventional Commits message in the imperative mood and **no AI
-   attribution** (no `Co-Authored-By` trailer, no "Generated with" line). No
-   push, no force-push, no history rewriting and no PRs unless explicitly
-   requested.
+6. **Ship through the full cycle.** When a task is finished and every
+   quality gate (§8) is green, the assistant runs the whole cycle described
+   in §10: commit on the working branch, push it, open the PR, wait for
+   `analyze-and-test`, squash-merge, delete the branch. Commits use English
+   Conventional Commits in the imperative mood with **no AI attribution** (no
+   `Co-Authored-By` trailer, no "Generated with" line). Hard limits: never
+   push to `main` directly, never force-push, never rewrite pushed history,
+   never bypass the ruleset (no `--admin`, no disabling checks), never merge
+   unless `analyze-and-test` is green.
 
 ### Guiding principle: keep it simple, keep it manual
 
@@ -334,6 +374,12 @@ Coverage percentage is not a target and must not be used as one.
 - Never proceed to the next step on your own initiative.
 - Prefer editing existing files over creating parallel ones.
 - Keep this file up to date when a technical convention changes.
+- **Phone test session before the merge** for every step with visible UI:
+  the assistant installs the debug build on the owner's phone
+  (`fvm flutter run` / `adb`), keeps the logs open, and takes screenshots
+  with `adb exec-out screencap -p` when useful; the owner reports what they
+  see, and the assistant fixes and reinstalls until the owner is satisfied.
+  Test data only until roadmap step 6 (export / import and the release key).
 - **Language of communication.** The assistant talks to the owner in
   **Spanish**. Code, identifiers, comments, commit messages and PR texts stay
   in **English**; `Docs/` is in **Spanish**.
@@ -352,6 +398,19 @@ pushes are rejected, and force pushes and branch deletion are blocked.
 - Merging requires the `analyze-and-test` check to be green **and** the
   branch to be up to date with `main` (strict status checks).
 - No required reviewers: the single developer self-merges once CI is green.
+
+At the end of every task the assistant runs this cycle itself, within the
+hard limits of §3 rule 6:
+
+1. Commit (no AI attribution) and `git push -u origin <branch>`.
+2. `gh pr create --base main`, filling `.github/pull_request_template.md`.
+3. `gh pr checks --watch`. If the branch is behind `main`,
+   `gh pr update-branch` and wait again. If CI is red, read
+   `gh run view --log-failed`, fix on the branch, push, and wait (at most two
+   rounds before stopping to ask).
+4. Green → `gh pr merge --squash --delete-branch`, subject = PR title, short
+   body, no `Co-authored-by` lines.
+5. `git switch main && git pull`, and delete the local branch.
 
 ---
 

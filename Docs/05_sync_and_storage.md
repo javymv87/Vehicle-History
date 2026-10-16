@@ -123,6 +123,15 @@ Además de la comprobación al arrancar, el usuario puede en cualquier momento:
 
 siempre con las mismas protecciones descritas arriba.
 
+### Mientras no exista la copia en Drive: exportar / importar
+
+Hasta que exista la copia de seguridad en Google Drive, el usuario puede
+**exportar** el archivo de la base de datos y **volver a importarlo**, con la
+misma regla de "una copia manda": importar **sustituye** los datos locales, y
+solo después de una confirmación explícita. Un archivo de una versión
+**anterior** de la app se migra al importarlo; uno de una versión **más
+reciente** se rechaza.
+
 ## Preparación para el futuro (sin implementarla ahora)
 
 El modelo de datos ya está preparado para una futura sincronización con fusión

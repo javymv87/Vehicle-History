@@ -71,7 +71,20 @@ The Material 3 theme (single seed, light/dark, status colours) and the
 data layer for owners and vehicles (with the audit log, schema migrations from
 v1 and repositories).
 
-Next step: the vehicles feature (Riverpod + `go_router` + screens).
+Roadmap to the first usable version:
+
+| Step | Content |
+| --- | --- |
+| 3 | Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner |
+| 4 | Basic log entries: date, km, type, cost, notes; list, filters, undo on delete |
+| 5 | Odometer: update current km + `MileageReading` history with its rules |
+| 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
+
+Then, in an order decided while using the app: settings, maintenance,
+refuelling, documents, photos, reminders, PDF reports, Google Drive backup.
+
+Why the signing key matters: each PC has its own debug key, so installing
+from another PC forces an uninstall, which deletes the data.
 
 ## License
 

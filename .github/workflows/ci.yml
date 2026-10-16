@@ -49,6 +49,22 @@ jobs:
             echo "build_runner is not a dependency yet — skipping code generation."
           fi
 
+      # Fails when the Drift schema changed without committing its dump and
+      # migration files. `make-migrations` exits non-zero when the dump of the
+      # current schemaVersion differs from the code, and after a version bump
+      # it writes new files (dump, steps, tests) that the diff then reports.
+      # `--intent-to-add` makes those new, untracked files visible to the
+      # diff. Guarded like the step above.
+      - name: Check schema dumps are committed
+        run: |
+          if grep -qE '^\s*drift_dev:' pubspec.yaml; then
+            dart run drift_dev make-migrations
+            git add --intent-to-add drift_schemas/ test/drift/ lib/data/db/
+            git diff --exit-code -- drift_schemas/ test/drift/ lib/data/db/
+          else
+            echo "drift_dev is not a dependency yet — skipping the schema dump check."
+          fi
+
       - name: Analyze
         run: flutter analyze --fatal-infos --fatal-warnings
 
