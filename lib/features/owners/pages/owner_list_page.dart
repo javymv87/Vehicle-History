@@ -10,7 +10,8 @@ import '../widgets/owner_tile.dart';
 
 /// The owner list, second destination of the navigation bar.
 ///
-/// The "add" button is provided by the home shell.
+/// The "add" button is the home shell's FAB, also when the list is empty:
+/// the empty state shows only a message, never a second add button.
 class OwnerListPage extends ConsumerWidget {
   /// Creates the owner list page.
   const OwnerListPage({super.key});
@@ -26,11 +27,6 @@ class OwnerListPage extends ConsumerWidget {
             ? MessageView(
                 icon: Icons.people_outline,
                 message: l10n.ownerListEmpty,
-                action: FilledButton.icon(
-                  onPressed: () => context.push(AppRoutes.newOwner),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.addOwner),
-                ),
               )
             : ListView.builder(
                 // Room at the bottom so the last row clears the add button.

@@ -11,7 +11,8 @@ import '../widgets/vehicle_tile.dart';
 /// The vehicle list: the home screen and first destination of the
 /// navigation bar. Vehicles are ordered by plate.
 ///
-/// The "add" button is provided by the home shell.
+/// The "add" button is the home shell's FAB, also when the list is empty:
+/// the empty state shows only a message, never a second add button.
 class VehicleListPage extends ConsumerWidget {
   /// Creates the vehicle list page.
   const VehicleListPage({super.key});
@@ -27,11 +28,6 @@ class VehicleListPage extends ConsumerWidget {
             ? MessageView(
                 icon: Icons.directions_car_outlined,
                 message: l10n.vehicleListEmpty,
-                action: FilledButton.icon(
-                  onPressed: () => context.push(AppRoutes.newVehicle),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.addVehicle),
-                ),
               )
             : ListView.builder(
                 // Room at the bottom so the last row clears the add button.
