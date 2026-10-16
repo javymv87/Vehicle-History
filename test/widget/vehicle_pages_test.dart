@@ -31,6 +31,15 @@ void main() {
         find.text('No vehicles yet. Add the first one to start its history.'),
         findsOneWidget,
       );
+      // Only the FAB offers "add": the empty state never repeats it.
+      expect(find.text('Add vehicle'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Add vehicle'),
+          matching: find.byType(FloatingActionButton),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('vehicle row shows plate, nickname, owner, km and fuel',
@@ -95,7 +104,7 @@ void main() {
       'creating a vehicle through "New owner" comes back with the owner '
       'selected', (tester) async {
     await pumpApp(tester, store);
-    await tester.tap(find.text('Add vehicle').first);
+    await tester.tap(find.text('Add vehicle'));
     await tester.pumpAndSettle();
 
     // No owner exists yet: the picker offers "New owner" directly.

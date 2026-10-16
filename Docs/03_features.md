@@ -8,8 +8,8 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   destinos: **Vehículos** y **Propietarios**.
 - **Fila de la lista de vehículos:** matrícula, nombre común (si lo hay),
   nombre del propietario, km actual (con el formato del idioma) y tipo de
-  combustible. Ordenada por matrícula. Si no hay vehículos, un texto breve y
-  el botón para añadir.
+  combustible. Ordenada por matrícula. Si no hay vehículos, solo un texto
+  breve: para añadir se usa el botón flotante, que nunca se duplica.
 - **Añadir siempre a mano:** un botón flotante (FAB) en las dos listas (ver
   `07_design_and_theming.md`).
 - **Formulario del vehículo:** matrícula, nombre común, propietario, tipo de

@@ -22,6 +22,15 @@ void main() {
         find.text('No owners yet. Every vehicle belongs to an owner.'),
         findsOneWidget,
       );
+      // Only the FAB offers "add": the empty state never repeats it.
+      expect(find.text('Add owner'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Add owner'),
+          matching: find.byType(FloatingActionButton),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('owner list shows the owners', (tester) async {
