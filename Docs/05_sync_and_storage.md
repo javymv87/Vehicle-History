@@ -6,6 +6,13 @@
    teléfono, en SQLite (a través de Drift). Es aquí donde la app lee y escribe
    normalmente. Las fotos son archivos guardados localmente, referenciados por
    la base de datos.
+
+   El archivo de la base de datos (`vehicle_history.sqlite`) y las fotos viven
+   en la **carpeta de soporte de la aplicación** (*application support*), no
+   en la carpeta de documentos: en iOS esta última es visible para el usuario
+   en la app Archivos y se copia en iCloud, y la única copia de seguridad de
+   estos datos debe ser la de la propia app. Las rutas de las fotos se guardan
+   relativas a esa carpeta.
 2. **Copia de seguridad en la nube** — una copia de toda la base de datos + las
    imágenes, empaquetada y subida a Google Drive, para poder recuperarlo todo en
    otro teléfono. NO es una sincronización continua: es una copia de seguridad

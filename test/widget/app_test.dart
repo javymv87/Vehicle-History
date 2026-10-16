@@ -1,37 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vehicle_history/app/app.dart';
+
+import '../support/fake_repositories.dart';
+import '../support/pump_app.dart';
 
 void main() {
-  // Each device language must produce the localised app title in the app bar.
-  // "Vehicle History" is the product name and is identical in all three ARB
-  // files, so a status label is checked as well to prove the locale switched.
-  const cases = <String, String>{
-    'it': 'Scaduto',
-    'es': 'Vencido',
-    'en': 'Overdue',
+  // The home screen is the vehicle list. Its title and the navigation labels
+  // must follow the device language.
+  const cases = <String, (String, String)>{
+    'it': ('Veicoli', 'Proprietari'),
+    'es': ('Vehículos', 'Propietarios'),
+    'en': ('Vehicles', 'Owners'),
   };
 
-  for (final MapEntry(key: languageCode, value: overdueLabel)
+  for (final MapEntry(key: languageCode, value: (vehicles, owners))
       in cases.entries) {
-    testWidgets('shows the localised title for "$languageCode"', (
+    testWidgets('shows the localised home for "$languageCode"', (
       tester,
     ) async {
-      tester.platformDispatcher.localesTestValue = [Locale(languageCode)];
-      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-
-      await tester.pumpWidget(const VehicleHistoryApp());
-      await tester.pumpAndSettle();
+      await pumpApp(tester, FakeStore(), locale: Locale(languageCode));
 
       expect(
         find.descendant(
           of: find.byType(AppBar),
-          matching: find.text('Vehicle History'),
+          matching: find.text(vehicles),
         ),
         findsOneWidget,
       );
-      // The overdue label appears twice: as plain text and inside the chip.
-      expect(find.text(overdueLabel), findsNWidgets(2));
+      expect(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text(owners),
+        ),
+        findsOneWidget,
+      );
     });
   }
+
+  testWidgets('a device language that is not supported falls back to English',
+      (tester) async {
+    await pumpApp(tester, FakeStore(), locale: const Locale('de'));
+    expect(find.text('Vehicles'), findsWidgets);
+  });
 }

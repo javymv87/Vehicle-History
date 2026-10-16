@@ -125,6 +125,22 @@ class DriftVehicleRepository implements VehicleRepository {
     });
   }
 
+  @override
+  Future<Vehicle> restore(String id) async {
+    final now = utcNow(_clock);
+    return _vehicles.transaction(() async {
+      final deleted = await _vehicles.getDeletedById(id);
+      if (deleted == null) {
+        throw EntityNotFoundException(AuditEntityType.vehicle, id);
+      }
+      // The owner may have been deleted, or the plate reused, since then.
+      await _checkOwnerAndPlate(deleted);
+      await _vehicles.restoreDeleted(id, now);
+      await _record(id, AuditOperation.restore, now);
+      return deleted.copyWith(updatedAt: now);
+    });
+  }
+
   /// Trims [plate] and upper-cases it, refusing a blank one.
   static String normalisePlate(String plate) =>
       requireText(plate, 'plate').toUpperCase();

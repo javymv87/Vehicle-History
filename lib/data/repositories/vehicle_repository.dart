@@ -66,4 +66,13 @@ abstract interface class VehicleRepository {
   /// Throws `EntityNotFoundException` if the vehicle is missing or already
   /// deleted.
   Future<void> delete(String id);
+
+  /// Brings back the soft-deleted vehicle with [id], as "Undo" after
+  /// [delete].
+  ///
+  /// Recorded in the audit log as a `restore`. Throws
+  /// `EntityNotFoundException` if no deleted vehicle has that id or its owner
+  /// is no longer live, and `DuplicatePlateException` if another live vehicle
+  /// took the plate in the meantime.
+  Future<Vehicle> restore(String id);
 }

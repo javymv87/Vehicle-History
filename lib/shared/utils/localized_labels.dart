@@ -1,0 +1,32 @@
+import '../../data/models/fuel_type.dart';
+import '../../l10n/app_localizations.dart';
+import 'action_result.dart';
+
+/// Localised label of a [FuelType].
+extension FuelTypeLabel on FuelType {
+  /// The name of this fuel type in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        FuelType.petrol => l10n.fuelPetrol,
+        FuelType.diesel => l10n.fuelDiesel,
+        FuelType.petrolLpg => l10n.fuelPetrolLpg,
+        FuelType.petrolCng => l10n.fuelPetrolCng,
+        FuelType.hybrid => l10n.fuelHybrid,
+        FuelType.pluginHybrid => l10n.fuelPluginHybrid,
+        FuelType.electric => l10n.fuelElectric,
+        FuelType.other => l10n.fuelOther,
+      };
+}
+
+/// Localised message of an [ActionError].
+extension ActionErrorMessage on ActionError {
+  /// The message shown to the user for this error, in the language of
+  /// [l10n]. Every message says explicitly that nothing was changed.
+  String message(AppLocalizations l10n) => switch (this) {
+        ActionError.duplicatePlate => l10n.errorDuplicatePlate,
+        ActionError.ownerHasVehicles => l10n.errorOwnerHasVehicles,
+        ActionError.ownerNotFound => l10n.errorOwnerNotFound,
+        ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
+        ActionError.invalidInput => l10n.errorInvalidInput,
+        ActionError.unexpected => l10n.errorUnexpected,
+      };
+}

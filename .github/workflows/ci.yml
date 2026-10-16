@@ -44,7 +44,7 @@ jobs:
       - name: Generate code
         run: |
           if grep -qE '^\s*build_runner:' pubspec.yaml; then
-            dart run build_runner build --delete-conflicting-outputs
+            dart run build_runner build
           else
             echo "build_runner is not a dependency yet — skipping code generation."
           fi

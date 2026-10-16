@@ -47,6 +47,13 @@ dependencies:
   drift_flutter: ^0.3.1
   # Device-generated UUID v4 primary keys.
   uuid: ^4.6.0
+  # Opens the database in the application support directory (not the
+  # user-visible, iCloud-backed documents directory on iOS).
+  path_provider: ^2.1.6
+  # State management: Notifier / AsyncNotifier, no code generation.
+  flutter_riverpod: ^3.4.3
+  # Declarative routing; identifiers come from the path for deep links.
+  go_router: ^18.0.2
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,48 @@
 # 03 — Funcionalidades
 
+## Pantallas de vehículos y propietarios
+
+Primera parte usable de la app (paso 3 de la hoja de ruta).
+
+- **Inicio = lista de vehículos.** Una barra de navegación inferior con dos
+  destinos: **Vehículos** y **Propietarios**.
+- **Fila de la lista de vehículos:** matrícula, nombre común (si lo hay),
+  nombre del propietario, km actual (con el formato del idioma) y tipo de
+  combustible. Ordenada por matrícula. Si no hay vehículos, un texto breve y
+  el botón para añadir.
+- **Añadir siempre a mano:** un botón flotante (FAB) en las dos listas (ver
+  `07_design_and_theming.md`).
+- **Formulario del vehículo:** matrícula, nombre común, propietario, tipo de
+  combustible, km actual (**solo al crearlo**), aceite recomendado y notas del
+  fabricante. El propietario se elige entre los existentes **o con "Nuevo
+  propietario"**, que abre el formulario del propietario y vuelve con el
+  nuevo propietario ya elegido. Si todavía no existe ningún propietario, el
+  campo ofrece directamente "Nuevo propietario".
+- **Editar un vehículo:** el mismo formulario sin el km actual. La ficha del
+  vehículo muestra el km en solo lectura, con una nota breve: se cambia solo
+  desde la función de cuentakilómetros (paso 5).
+- **Formulario del propietario:** nombre (obligatorio), apellidos, fecha de
+  nacimiento (selector de fecha de Material; fecha de calendario sin hora),
+  nacionalidad, teléfono, email y notas.
+- **Ficha del propietario:** muestra sus vehículos; al tocar uno se abre su
+  ficha.
+- **Validación** en línea bajo cada campo y traducida: matrícula
+  obligatoria; matrícula duplicada (otro vehículo no borrado ya la usa)
+  señalada en el propio campo; km obligatorio, número entero ≥ 0; nombre del
+  propietario obligatorio. También son obligatorios el propietario y el tipo
+  de combustible del vehículo.
+- **Mensajes** (reglas de abajo): toast breve al guardar; al borrar, toast
+  **con Deshacer** durante unos segundos; errores explícitos y lo bastante
+  persistentes para leerlos. Borrar un propietario que todavía tiene
+  vehículos muestra un mensaje explícito y no borra nada.
+- **Deshacer un borrado** devuelve el registro borrado lógicamente. En el
+  historial de operaciones queda como **restauración**. Si mientras tanto
+  otro vehículo ha tomado la matrícula, o el propietario del vehículo se ha
+  borrado, el deshacer se rechaza con un mensaje y no cambia nada.
+- **Confirmación** con un diálogo antes de borrar (además del Deshacer),
+  porque un vehículo lleva consigo todo su historial.
+- Los **tipos de combustible** se muestran traducidos en los tres idiomas.
+
 ## Historial de entradas
 
 Cada vehículo tiene una lista desplazable de LogEntry ordenadas por fecha (las

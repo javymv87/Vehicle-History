@@ -41,13 +41,15 @@ reglas de lint, la CI y esta documentación ya están en el repositorio. El tema
 Material 3 (semilla única, claro/oscuro, colores de estado) y el esqueleto de
 localización con `gen_l10n` (IT / ES / EN) ya están hechos, igual que la capa
 de datos Drift para propietarios y vehículos (con el historial de operaciones,
-migraciones de esquema desde la v1 y repositorios).
+migraciones de esquema desde la v1 y repositorios) y las pantallas de
+vehículos y propietarios (Riverpod + `go_router`: listas, fichas,
+formularios, borrar con confirmación y Deshacer). Lo siguiente es el paso 4.
 
 Hoja de ruta hasta la primera versión usable:
 
 | Paso | Contenido |
 | --- | --- |
-| 3 | Pantallas de vehículos **y propietarios** (Riverpod + `go_router`) — un vehículo requiere un propietario |
+| 3 | ~~Pantallas de vehículos **y propietarios** (Riverpod + `go_router`) — un vehículo requiere un propietario~~ — hecho |
 | 4 | Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar |
 | 5 | Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas |
 | 6 | Exportar / importar el archivo de la base de datos, y una clave fija de firma de release guardada fuera del repositorio |

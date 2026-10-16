@@ -54,6 +54,15 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
     return row?.toModel();
   }
 
+  /// Returns the soft-deleted vehicle with [id], or `null` if it is missing
+  /// or still live.
+  Future<Vehicle?> getDeletedById(String id) async {
+    final row = await (select(vehicles)
+          ..where((v) => v.id.equals(id) & v.deleted.equals(true)))
+        .getSingleOrNull();
+    return row?.toModel();
+  }
+
   /// Whether a live vehicle other than [exceptId] already uses [plate].
   ///
   /// [plate] must already be normalised (trimmed, upper-case).
@@ -96,6 +105,16 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
   /// already deleted.
   Future<int> softDeleteLive(String id, DateTime at) => _whereLive(id).write(
         VehiclesCompanion(deleted: const Value(true), updatedAt: Value(at)),
+      );
+
+  /// Brings the soft-deleted vehicle with [id] back to life at [at].
+  ///
+  /// Returns the number of rows changed: 0 when the vehicle is missing or not
+  /// deleted.
+  Future<int> restoreDeleted(String id, DateTime at) =>
+      (update(vehicles)..where((v) => v.id.equals(id) & v.deleted.equals(true)))
+          .write(
+        VehiclesCompanion(deleted: const Value(false), updatedAt: Value(at)),
       );
 
   /// Update statement restricted to the live vehicle with [id].

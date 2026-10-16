@@ -66,6 +66,16 @@ class OwnersDao extends DatabaseAccessor<AppDatabase> with _$OwnersDaoMixin {
         OwnersCompanion(deleted: const Value(true), updatedAt: Value(at)),
       );
 
+  /// Brings the soft-deleted owner with [id] back to life at [at].
+  ///
+  /// Returns the number of rows changed: 0 when the owner is missing or not
+  /// deleted.
+  Future<int> restoreDeleted(String id, DateTime at) =>
+      (update(owners)..where((o) => o.id.equals(id) & o.deleted.equals(true)))
+          .write(
+        OwnersCompanion(deleted: const Value(false), updatedAt: Value(at)),
+      );
+
   /// Update statement restricted to the live owner with [id].
   UpdateStatement<$OwnersTable, OwnerRow> _whereLive(String id) =>
       update(owners)..where((o) => o.id.equals(id) & o.deleted.equals(false));

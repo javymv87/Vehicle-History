@@ -46,7 +46,7 @@ class Owner {
   /// Free notes.
   final String? notes;
 
-  /// Photo file path, relative to the app documents directory.
+  /// Photo file path, relative to the app support directory.
   final String? photoPath;
 
   /// When the owner was created, in UTC.
@@ -54,6 +54,10 @@ class Owner {
 
   /// When the owner was last modified, in UTC.
   final DateTime updatedAt;
+
+  /// First name followed by the last name, if any, as shown in lists.
+  String get fullName =>
+      lastName == null ? firstName : '$firstName ${lastName!}';
 
   /// Returns a copy with the given fields replaced.
   ///

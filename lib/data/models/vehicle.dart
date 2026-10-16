@@ -49,7 +49,7 @@ class Vehicle {
   /// Any other useful manufacturer notes.
   final String? manufacturerNotes;
 
-  /// Photo file path, relative to the app documents directory.
+  /// Photo file path, relative to the app support directory.
   final String? photoPath;
 
   /// When the vehicle was created, in UTC.
