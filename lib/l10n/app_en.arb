@@ -834,7 +834,7 @@
   "@entryKmAboveOdometerTitle": {
     "description": "Confirmation title for a past entry with km above the current odometer."
   },
-  "entryKmAboveOdometerMessage": "This km is higher than the reading of {date} ({km} km), taken on a later day. Save anyway?",
+  "entryKmAboveOdometerMessage": "This km is higher than the reading of {date} ({km} km), dated after this entry. Save anyway?",
   "@entryKmAboveOdometerMessage": {
     "description": "Confirmation for an entry with more km than a reading taken on a later day.",
     "placeholders": {

@@ -179,7 +179,7 @@
   "errorReadingNotEditable": "Solo se puede corregir la única lectura de un vehículo. No se ha guardado nada.",
   "errorReadingNotFound": "La lectura ya no existe. No se ha guardado nada.",
   "entryKmAboveOdometerTitle": "Revisa los km",
-  "entryKmAboveOdometerMessage": "Este km es mayor que la lectura del {date} ({km} km), de un día posterior. ¿Guardar igualmente?",
+  "entryKmAboveOdometerMessage": "Este km es mayor que la lectura del {date} ({km} km), fecha posterior a esta entrada. ¿Guardar igualmente?",
   "updateOdometerOffer": "Entrada guardada. ¿Actualizar el cuentakilómetros a {km} km?",
   "actionUpdate": "Actualizar",
   "validationEntryDateFuture": "Este tipo de entrada no puede tener una fecha futura",

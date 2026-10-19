@@ -145,7 +145,8 @@ Reglas añadidas al formulario de entradas en el paso 5:
   entrada, casi seguro es un error tipográfico (el cuentakilómetros no va
   hacia atrás). Se compara con la primera lectura posterior a esa fecha, no
   solo con la última. Un diálogo avisa ("Este km es mayor que la lectura del
-  10 oct 2026 (111.000 km), de un día posterior. ¿Guardar igualmente?"). No
+  10 oct 2026 (111.000 km), fecha posterior a esta entrada. ¿Guardar
+  igualmente?"). No
   bloquea.
 - **E3 — Oferta de actualizar el cuentakilómetros.** Después de guardar una
   entrada (nueva o editada) cuando se cumplen las tres condiciones — km

@@ -179,7 +179,7 @@
   "errorReadingNotEditable": "Si può correggere solo l'unica lettura di un veicolo. Non è stato salvato nulla.",
   "errorReadingNotFound": "La lettura non esiste più. Non è stato salvato nulla.",
   "entryKmAboveOdometerTitle": "Controlla i km",
-  "entryKmAboveOdometerMessage": "Questo km è maggiore della lettura del {date} ({km} km), di un giorno successivo. Salvare comunque?",
+  "entryKmAboveOdometerMessage": "Questo km è maggiore della lettura del {date} ({km} km), data successiva a questa voce. Salvare comunque?",
   "updateOdometerOffer": "Voce salvata. Aggiornare il contachilometri a {km} km?",
   "actionUpdate": "Aggiorna",
   "validationEntryDateFuture": "Questo tipo di voce non può avere una data futura",
