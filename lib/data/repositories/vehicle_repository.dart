@@ -1,4 +1,5 @@
 import '../models/fuel_type.dart';
+import '../models/trashed_vehicle.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_kind.dart';
 
@@ -11,7 +12,9 @@ const int maxModelYear = 2100;
 
 /// The only access path to persisted vehicles.
 ///
-/// Reads return live vehicles only. Every write is recorded in the audit log
+/// Reads return live vehicles only, except the Trash methods
+/// ([watchTrashed], [purge], [purgeAllTrashed]), which work on soft-deleted
+/// ones. Every write is recorded in the audit log
 /// in the same transaction. Errors are reported as `RepositoryException`
 /// subtypes (see `repository_exceptions.dart`).
 abstract interface class VehicleRepository {
@@ -92,7 +95,15 @@ abstract interface class VehicleRepository {
     String? photoPath,
   });
 
-  /// Soft-deletes the vehicle with [id]. Its plate becomes free for reuse.
+  /// Counts the live entries and readings of the live vehicle with [id]:
+  /// what a delete would hide (and a restore bring back).
+  ///
+  /// Throws `EntityNotFoundException` if the vehicle is missing or deleted.
+  Future<VehicleContents> countContents(String id);
+
+  /// Soft-deletes the vehicle with [id], recording when (`deleted_at`): it
+  /// moves to the Trash with its entries and readings. Its plate becomes
+  /// free for reuse.
   ///
   /// Throws `EntityNotFoundException` if the vehicle is missing or already
   /// deleted.
@@ -105,5 +116,24 @@ abstract interface class VehicleRepository {
   /// `EntityNotFoundException` if no deleted vehicle has that id or its owner
   /// is no longer live, and `DuplicatePlateException` if another live vehicle
   /// took the plate in the meantime.
+  ///
+  /// It is also how a vehicle comes back from the Trash.
   Future<Vehicle> restore(String id);
+
+  /// Emits the vehicles in the Trash (soft-deleted), most recently deleted
+  /// first, each with its owner and its live entry and reading counts.
+  Stream<List<TrashedVehicle>> watchTrashed();
+
+  /// Removes the vehicle with [id] from the Trash for good: the vehicle and
+  /// every one of its entries and readings, whatever their own flags, in
+  /// one transaction. Irreversible. Recorded in the audit log as a `purge`
+  /// of the vehicle; its older audit rows stay.
+  ///
+  /// Throws `EntityNotFoundException` if no vehicle with [id] is in the
+  /// Trash (a live vehicle is never purged).
+  Future<void> purge(String id);
+
+  /// Empties the Trash: [purge] for every vehicle in it, in one transaction.
+  /// Returns how many vehicles were removed.
+  Future<int> purgeAllTrashed();
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/app/router/app_routes.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
@@ -444,26 +445,73 @@ void main() {
     expect(find.text('Another vehicle already has this plate'), findsNothing);
   });
 
-  testWidgets('delete asks for confirmation, then Undo restores',
+  testWidgets(
+      'delete confirms with what goes with the vehicle, then Undo restores',
+      (tester) async {
+    final owner = store.addOwner('Mario');
+    final vehicle = store.addVehicle(
+      'AB123CD',
+      ownerId: owner.id,
+      make: 'Fiat',
+      model: 'Punto',
+    );
+    final day = CalendarDate(store.now.year, store.now.month, store.now.day);
+    store.addEntry(vehicle.id, date: day);
+    store.addEntry(vehicle.id, date: day);
+    store.addReading(vehicle.id, date: day, km: 1500);
+    await pumpApp(tester, store);
+    await tester.tap(find.text('Fiat Punto'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Delete'));
+    await tester.pumpAndSettle();
+    // U16: name and plate in the title, live counts in the body.
+    expect(find.text('Delete Fiat Punto (AB123CD)?'), findsOneWidget);
+    expect(
+      find.text(
+        'The vehicle, its 2 entries and its 2 odometer readings will be '
+        'deleted. You can recover it from the Trash for 30 days.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(store.liveVehicles, isEmpty);
+    expect(store.trashedVehicles.single.vehicle.id, vehicle.id);
+    expect(find.text('Vehicle deleted'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(store.liveVehicles, [vehicle.copyWith(currentOdometerKm: 1500)]);
+    expect(store.trashedVehicles, isEmpty);
+    expect(store.liveEntriesOf(vehicle.id), hasLength(2));
+    expect(store.liveReadingsOf(vehicle.id), hasLength(2));
+    expect(find.text('Fiat Punto'), findsOneWidget);
+  });
+
+  testWidgets('the delete dialog uses the singular for one of each',
       (tester) async {
     final owner = store.addOwner('Mario');
     final vehicle = store.addVehicle('AB123CD', ownerId: owner.id);
+    store.addEntry(
+      vehicle.id,
+      date: CalendarDate(store.now.year, store.now.month, store.now.day),
+    );
     await pumpApp(tester, store);
     await tester.tap(find.text('AB123CD'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
-    expect(find.text('Delete vehicle?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
-    await tester.pumpAndSettle();
-
-    expect(store.liveVehicles, isEmpty);
-    expect(find.text('Vehicle deleted'), findsOneWidget);
-
-    await tester.tap(find.text('Undo'));
+    // No make and model: the plate alone names the vehicle.
+    expect(find.text('Delete AB123CD?'), findsOneWidget);
+    expect(
+      find.textContaining('its entry and its odometer reading'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(store.liveVehicles, [vehicle]);
-    expect(find.text('AB123CD'), findsOneWidget);
   });
 }

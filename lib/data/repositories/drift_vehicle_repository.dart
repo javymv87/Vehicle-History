@@ -1,9 +1,11 @@
 import '../db/daos/audit_log_dao.dart';
 import '../db/daos/mileage_readings_dao.dart';
+import '../db/daos/trash_dao.dart';
 import '../db/daos/vehicles_dao.dart';
 import '../models/audit_entry.dart';
 import '../models/fuel_type.dart';
 import '../models/mileage_reading.dart';
+import '../models/trashed_vehicle.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_kind.dart';
 import 'repository_exceptions.dart';
@@ -13,12 +15,14 @@ import 'vehicle_repository.dart';
 /// [VehicleRepository] backed by the local Drift database.
 class DriftVehicleRepository implements VehicleRepository {
   /// Creates the repository on [_vehicles], writing the initial odometer
-  /// reading through [_readings] and auditing through [_audit].
+  /// reading through [_readings], reading and emptying the Trash through
+  /// [_trash] and auditing through [_audit].
   ///
   /// [clock] must return UTC; it defaults to the system clock.
   DriftVehicleRepository(
     this._vehicles,
     this._readings,
+    this._trash,
     this._audit, {
     UtcClock clock = systemUtcClock,
   }) : _clock = clock;
@@ -28,6 +32,9 @@ class DriftVehicleRepository implements VehicleRepository {
 
   /// Odometer readings, for the initial reading of a new vehicle.
   final MileageReadingsDao _readings;
+
+  /// Soft-deleted vehicles and the physical deletes.
+  final TrashDao _trash;
 
   /// Audit log writes, joined to the same transaction as each change.
   final AuditLogDao _audit;
@@ -188,6 +195,12 @@ class DriftVehicleRepository implements VehicleRepository {
   }
 
   @override
+  Future<VehicleContents> countContents(String id) async {
+    await _requireLive(id);
+    return _trash.countLiveContents(id);
+  }
+
+  @override
   Future<void> delete(String id) async {
     final now = utcNow(_clock);
     return _vehicles.transaction(() async {
@@ -210,6 +223,34 @@ class DriftVehicleRepository implements VehicleRepository {
       await _vehicles.restoreDeleted(id, now);
       await _record(id, AuditOperation.restore, now);
       return deleted.copyWith(updatedAt: now);
+    });
+  }
+
+  @override
+  Stream<List<TrashedVehicle>> watchTrashed() => _trash.watchTrashedVehicles();
+
+  @override
+  Future<void> purge(String id) async {
+    final now = utcNow(_clock);
+    return _vehicles.transaction(() async {
+      final removed = await _trash.purgeVehicle(id);
+      if (removed == 0) {
+        throw EntityNotFoundException(AuditEntityType.vehicle, id);
+      }
+      await _record(id, AuditOperation.purge, now);
+    });
+  }
+
+  @override
+  Future<int> purgeAllTrashed() async {
+    final now = utcNow(_clock);
+    return _vehicles.transaction(() async {
+      final ids = await _trash.getTrashedVehicleIds();
+      for (final id in ids) {
+        await _trash.purgeVehicle(id);
+        await _record(id, AuditOperation.purge, now);
+      }
+      return ids.length;
     });
   }
 

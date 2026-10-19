@@ -50,12 +50,14 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   otro vehículo ha tomado la matrícula, o el propietario del vehículo se ha
   borrado, el deshacer se rechaza con un mensaje y no cambia nada.
 - **Confirmación** con un diálogo antes de borrar (además del Deshacer),
-  porque un vehículo lleva consigo todo su historial.
+  porque un vehículo lleva consigo todo su historial. Para el vehículo, el
+  diálogo dice qué se va con él (ver U16, en "Papelera").
 - Los **tipos de combustible** y los **tipos de vehículo** se muestran
   traducidos en los tres idiomas.
 - **Información:** el menú de la barra superior de las dos listas tiene
   "Información", con los créditos de los datos incluidos (VehiclesDB, Unicode
-  CLDR) y la página de licencias.
+  CLDR) y la página de licencias. El de la lista de vehículos tiene además
+  "Papelera" (ver U17).
 
 ### Selectores de marca, modelo y nacionalidad
 
@@ -184,6 +186,39 @@ El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
 - **U15 — Abrir en una pestaña:** la página del vehículo acepta el
   parámetro `tab` (`?tab=mileage`), para que la acción "Actualizar" y los
   futuros enlaces directos lleguen a la pestaña correcta.
+
+## Papelera
+
+Los vehículos borrados (paso 5b de la hoja de ruta). Reglas de datos en
+`02_data_model.md` ("Borrado lógico, papelera y borrado físico") y en
+`05_sync_and_storage.md` ("Papelera y limpieza").
+
+- **U16 — Confirmación al borrar un vehículo:** el título lleva el nombre y
+  la matrícula ("¿Eliminar Fiat Punto (AB123CD)?"; solo la matrícula si el
+  vehículo no tiene marca ni modelo) y el texto dice qué se va con él: "Se
+  borrarán el vehículo, sus N entradas y sus M lecturas de km. Podrás
+  recuperarlo desde la papelera durante 30 días." (cuenta las entradas y
+  lecturas **no borradas**, con singular y plural). Al confirmar, el toast
+  con Deshacer de siempre.
+- **U17 — Pantalla Papelera** (ruta `/trash`), desde el menú de la lista de
+  vehículos: "Papelera", con el número de vehículos cuando hay alguno
+  ("Papelera (2)"). Cada fila: icono del tipo, marca + modelo, matrícula,
+  propietario, "Borrado el 3 oct 2026", "Se eliminará en 27 días" (días que
+  faltan para los 30, redondeados hacia arriba: recién borrado dice 30) y
+  cuántas entradas y lecturas lleva. Acciones de cada fila: **Restaurar** y
+  **Eliminar definitivamente** (diálogo de confirmación con lo que se borra,
+  en color de error, sin Deshacer). En la barra superior, **Vaciar
+  papelera** (icono con su nombre como descripción; confirmación con el
+  número de vehículos). Sin vehículos: "La papelera está vacía", y no hay
+  botón de vaciar.
+- **U18 — Restaurar:** toast "Vehículo restaurado" y el vehículo vuelve a la
+  lista con sus entradas y lecturas. Si otro vehículo ha tomado la matrícula
+  o el propietario ya no existe, se rechaza con los mensajes de siempre y
+  sigue en la papelera.
+- **U19 — Diseño:** Material 3, zonas táctiles de al menos 48 dp, modo
+  oscuro, texto grande y 360 dp de ancho; las acciones destructivas
+  (eliminar, eliminar definitivamente, vaciar) usan el color de error. Los
+  diálogos se pueden desplazar cuando el texto grande no cabe.
 
 ## Filtros y búsqueda
 

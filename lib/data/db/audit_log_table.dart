@@ -19,7 +19,7 @@ class AuditLog extends Table {
   /// Id of the audited entity.
   TextColumn get entityId => text()();
 
-  /// Operation performed (`create`, `update`, `delete`, `restore`).
+  /// Operation performed (`create`, `update`, `delete`, `restore`, `purge`).
   ///
   /// Plain text with no CHECK constraint, so a new operation code needs no
   /// schema change; only [AuditOperationConverter] has to learn it.

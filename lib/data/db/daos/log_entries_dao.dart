@@ -157,22 +157,32 @@ class LogEntriesDao extends DatabaseAccessor<AppDatabase>
   Future<int> updateLive(LogEntry entry) =>
       _whereLive(entry.id).write(entry.toUpdateCompanion());
 
-  /// Marks the live entry with [id] as deleted at [at].
+  /// Marks the live entry with [id] as deleted at [at], setting
+  /// `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the entry is missing or
   /// already deleted.
   Future<int> softDeleteLive(String id, DateTime at) => _whereLive(id).write(
-        LogEntriesCompanion(deleted: const Value(true), updatedAt: Value(at)),
+        LogEntriesCompanion(
+          deleted: const Value(true),
+          updatedAt: Value(at),
+          deletedAt: Value(at),
+        ),
       );
 
-  /// Brings the soft-deleted entry with [id] back to life at [at].
+  /// Brings the soft-deleted entry with [id] back to life at [at],
+  /// clearing `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the entry is missing or not
   /// deleted.
   Future<int> restoreDeleted(String id, DateTime at) => (update(logEntries)
             ..where((e) => e.id.equals(id) & e.deleted.equals(true)))
           .write(
-        LogEntriesCompanion(deleted: const Value(false), updatedAt: Value(at)),
+        LogEntriesCompanion(
+          deleted: const Value(false),
+          updatedAt: Value(at),
+          deletedAt: const Value(null),
+        ),
       );
 
   /// Update statement restricted to the live entry with [id].

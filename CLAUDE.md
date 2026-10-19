@@ -57,10 +57,11 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v4: `owners`, `vehicles`, `audit_log`,
+Settled for the database (schema v5: `owners`, `vehicles`, `audit_log`,
 `log_entries`, `mileage_readings`; v2 added the vehicle kind, make / model,
 model year and version; v3 added `log_entries`; v4 added
-`mileage_readings` with one initial reading per vehicle):
+`mileage_readings` with one initial reading per vehicle; v5 added
+`deleted_at` for the Trash):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -75,30 +76,47 @@ model year and version; v3 added `log_entries`; v4 added
   `owners.id`, `log_entries.vehicle_id` → `vehicles.id` and
   `mileage_readings.vehicle_id` → `vehicles.id`, all
   `ON DELETE RESTRICT`.
-- **Soft delete.** Main tables carry `deleted` (default `false`), shared with
-  `id`, `created_at`, `updated_at` through the `TechnicalColumns` mixin.
+- **Soft delete.** Main tables carry `deleted` (default `false`) and
+  `deleted_at` (nullable UTC timestamp, v5), shared with `id`,
+  `created_at`, `updated_at` through the `TechnicalColumns` mixin. Every
+  soft delete sets both (`deleted_at = now`), every restore clears both.
   Every read filters `deleted = 0` unless the method name says otherwise;
   delete means soft delete. The audit log is append-only and has no flag.
   Child rows of a soft-deleted parent are **not** cascaded: the entries of a
   deleted vehicle keep their own flag, and the `log_entries` and
   `mileage_readings` reads also require a live vehicle, so they come back
   when the vehicle is restored.
+- **Trash and physical delete (v5).** Soft-deleted vehicles are the Trash
+  (`VehicleRepository.watchTrashed`, with live entry / reading counts).
+  `TrashDao` is the only code that removes rows from disk: `purgeVehicle`
+  deletes the vehicle's readings and entries (whatever their flags) and then
+  the vehicle, in one transaction. Callers: `VehicleRepository.purge` /
+  `purgeAllTrashed` (user action) and `TrashCleanupService`, run once per
+  app start by `databaseReadyProvider` after the open
+  (`runStartupCleanupSafely`: a failure is logged, rolled back and never
+  blocks the start). The cleanup removes, at `deleted_at` ≤ now − 30 days
+  (`trashRetention`): trashed vehicles with their children; deleted entries
+  and readings of live vehicles; deleted owners referenced by no vehicle
+  row. Vehicles and owners get a `purge` audit row, children none. An owner
+  with vehicles in the Trash cannot be deleted
+  (`OwnerHasTrashedVehiclesException`).
 - **Audit log from v1.** Every repository write adds its `audit_log` row in
   the same transaction. Operations: `create`, `update`, `delete`, `restore`
   (Undo after a delete). `operation` and `entity_type` are plain
   text with no CHECK, so a new code only needs its converter
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
-  this way in v3, `mileageReading` in v4), not a schema change; an older build that meets an unknown
-  code throws when reading the audit log.
+  this way in v3, `mileageReading` in v4, operation `purge` in v5), not a
+  schema change; an older build that meets an unknown code throws when
+  reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
   as `DriftNativeOptions.databaseDirectory`), never in the documents
   directory, which iOS shows in the Files app and backs up to iCloud. Photo
   paths (future) are stored **relative to the same directory**.
 - **Startup.** `databaseReadyProvider` opens the database (running any
-  migration) before the router is shown; a failure, such as
-  `DatabaseNewerThanAppException`, shows the localised full-screen
-  `StartupErrorPage` and nothing reads data.
+  migration), then runs the 30-day Trash cleanup, before the router is
+  shown; an opening failure, such as `DatabaseNewerThanAppException`, shows
+  the localised full-screen `StartupErrorPage` and nothing reads data.
 - **No SQLCipher.** The database lives in the app sandbox, protected by
   Android file-based encryption. Owner data leaves the device only through
   the Drive backup, so encrypting the **backup file** is evaluated in the

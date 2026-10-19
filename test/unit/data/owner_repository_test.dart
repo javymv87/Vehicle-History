@@ -25,6 +25,7 @@ void main() {
     vehicles = DriftVehicleRepository(
       db.vehiclesDao,
       db.mileageReadingsDao,
+      db.trashDao,
       db.auditLogDao,
       clock: clock.call,
     );
@@ -153,7 +154,23 @@ void main() {
       );
     });
 
-    test('is allowed once the owner\'s vehicles are deleted', () async {
+    test('is allowed once the owner\'s vehicles are purged', () async {
+      final owner = await owners.create(firstName: 'Mario');
+      final vehicle = await vehicles.create(
+        plate: 'AB123CD',
+        kind: VehicleKind.car,
+        ownerId: owner.id,
+        currentOdometerKm: 1000,
+        fuelType: FuelType.petrol,
+      );
+      await vehicles.delete(vehicle.id);
+      await vehicles.purge(vehicle.id);
+
+      await owners.delete(owner.id);
+      expect(await owners.getById(owner.id), isNull);
+    });
+
+    test('is refused while a vehicle of the owner is in the Trash', () async {
       final owner = await owners.create(firstName: 'Mario');
       final vehicle = await vehicles.create(
         plate: 'AB123CD',
@@ -164,8 +181,18 @@ void main() {
       );
       await vehicles.delete(vehicle.id);
 
-      await owners.delete(owner.id);
-      expect(await owners.getById(owner.id), isNull);
+      await expectLater(
+        owners.delete(owner.id),
+        throwsA(
+          isA<OwnerHasTrashedVehiclesException>()
+              .having((e) => e.ownerId, 'ownerId', owner.id)
+              .having((e) => e.vehicleCount, 'vehicleCount', 1),
+        ),
+      );
+      expect(await owners.getById(owner.id), isNotNull);
+      final audit =
+          await db.auditLogDao.getForEntity(AuditEntityType.owner, owner.id);
+      expect([for (final e in audit) e.operation], [AuditOperation.create]);
     });
   });
 

@@ -26,6 +26,7 @@ void main() {
     vehicles = DriftVehicleRepository(
       db.vehiclesDao,
       db.mileageReadingsDao,
+      db.trashDao,
       db.auditLogDao,
       clock: clock.call,
     );
@@ -138,7 +139,9 @@ void main() {
     test('refuses when the owner was deleted meanwhile', () async {
       final id = await createVehicle('AB123CD');
       await vehicles.delete(id);
-      await owners.delete(ownerId);
+      // The repository no longer deletes an owner with vehicles in the
+      // Trash; an owner deleted that way before schema v5 is still possible.
+      await db.ownersDao.softDeleteLive(ownerId, clock());
 
       await expectLater(
         vehicles.restore(id),

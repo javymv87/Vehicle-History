@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/models/trashed_vehicle.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -94,21 +95,35 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     super.dispose();
   }
 
-  /// Deletes the vehicle after confirmation, then offers "Undo".
+  /// Deletes the vehicle after a confirmation that says what goes with it
+  /// (U16), then offers "Undo". The vehicle moves to the Trash.
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final vehicle = widget.item.vehicle;
-    final confirmed = await confirmDelete(
-      context,
-      title: l10n.deleteVehicleTitle,
-      message: l10n.deleteVehicleMessage(vehicle.plate),
-    );
-    if (!confirmed || !mounted) return;
-
     // Read before popping: the controller outlives this page, the page's
     // `ref` does not.
     final deletion = ref.read(vehicleDeletionControllerProvider.notifier);
+    final counted = await deletion.countContents(vehicle.id);
+    if (!mounted) return;
+    final VehicleContents contents;
+    switch (counted) {
+      case ActionSuccess(:final value):
+        contents = value;
+      case ActionFailure(:final error):
+        showErrorSnackBar(messenger, error.message(l10n));
+        return;
+    }
+    final confirmed = await confirmDelete(
+      context,
+      title: l10n.deleteVehicleTitle(vehicle.displayNameWithPlate(l10n)),
+      message: l10n.deleteVehicleMessage(
+        contents.entryCount,
+        contents.readingCount,
+      ),
+    );
+    if (!confirmed || !mounted) return;
+
     final result = await deletion.delete(vehicle.id);
     if (!mounted) return;
     switch (result) {

@@ -80,6 +80,24 @@ class OwnerHasVehiclesException extends RepositoryException {
       'OwnerHasVehiclesException(id: $ownerId, vehicles: $vehicleCount)';
 }
 
+/// The owner has no live vehicles but still has vehicles in the Trash, and
+/// cannot be deleted: restoring one of them would need the owner.
+class OwnerHasTrashedVehiclesException extends RepositoryException {
+  /// Creates the exception for the owner with [ownerId].
+  const OwnerHasTrashedVehiclesException(this.ownerId, this.vehicleCount);
+
+  /// Id of the owner that was not deleted.
+  final String ownerId;
+
+  /// Number of soft-deleted vehicles still linked to the owner.
+  final int vehicleCount;
+
+  @override
+  String toString() =>
+      'OwnerHasTrashedVehiclesException(id: $ownerId, vehicles: '
+      '$vehicleCount)';
+}
+
 /// Why a mileage reading cannot be deleted, edited or restored.
 enum MileageReadingRule {
   /// Only the last reading of a vehicle can be deleted.

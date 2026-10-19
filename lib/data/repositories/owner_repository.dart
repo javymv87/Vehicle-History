@@ -51,8 +51,9 @@ abstract interface class OwnerRepository {
   /// Soft-deletes the owner with [id].
   ///
   /// Throws `OwnerHasVehiclesException`, writing nothing, while the owner
-  /// still has live vehicles, and `EntityNotFoundException` if the owner is
-  /// missing or already deleted.
+  /// still has live vehicles, `OwnerHasTrashedVehiclesException` while it
+  /// has vehicles in the Trash, and `EntityNotFoundException` if the owner
+  /// is missing or already deleted.
   Future<void> delete(String id);
 
   /// Brings back the soft-deleted owner with [id], as "Undo" after [delete].

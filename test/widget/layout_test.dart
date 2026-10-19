@@ -57,6 +57,16 @@ void main() {
       date: const CalendarDate(2026, 10, 1),
       km: 1299999,
     );
+    // A vehicle in the Trash, with the longest names.
+    final trashed = store.addVehicle(
+      'ZZ999ZZ',
+      ownerId: ownerId,
+      kind: VehicleKind.van,
+      make: 'Mercedes-Benz',
+      model: 'Classe A 180 d Automatic Premium',
+    );
+    store.deletedVehicles.add(trashed.id);
+    store.vehicleDeletedAt[trashed.id] = DateTime.now().toUtc();
   });
 
   final locations = <String, String Function()>{
@@ -72,6 +82,7 @@ void main() {
     'owner list': () => AppRoutes.owners,
     'owner detail': () => AppRoutes.owner(ownerId),
     'owner form': () => AppRoutes.newOwner,
+    'trash': () => AppRoutes.trash,
   };
 
   for (final brightness in Brightness.values) {
@@ -164,6 +175,64 @@ void main() {
       await tester.tap(find.text('Scheda'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'the delete dialog fits 360 dp with 2x text '
+        '(${brightness.name})', (tester) async {
+      tester.view
+        ..physicalSize = const Size(360, 720)
+        ..devicePixelRatio = 1;
+      tester.platformDispatcher
+        ..textScaleFactorTestValue = 2
+        ..platformBrightnessTestValue = brightness;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.vehicle(vehicleId),
+        locale: const Locale('it'),
+      );
+      await tester.tap(find.byTooltip('Elimina'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Annulla'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Trash dialogs fit 360 dp with 2x text (${brightness.name})',
+        (tester) async {
+      tester.view
+        ..physicalSize = const Size(360, 720)
+        ..devicePixelRatio = 1;
+      tester.platformDispatcher
+        ..textScaleFactorTestValue = 2
+        ..platformBrightnessTestValue = brightness;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.trash,
+        locale: const Locale('it'),
+      );
+      for (final action in [
+        find.text('Elimina definitivamente').first,
+        find.byTooltip('Svuota cestino'),
+      ]) {
+        await tester.ensureVisible(action);
+        await tester.pumpAndSettle();
+        await tester.tap(action);
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Annulla'));
+        await tester.pumpAndSettle();
+      }
     });
   }
 }

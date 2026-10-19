@@ -26,6 +26,12 @@ enum AuditOperation {
 
   /// A soft-deleted entity was brought back, e.g. by "Undo" after a delete.
   restore,
+
+  /// A soft-deleted entity was removed from disk for good: from the Trash,
+  /// or by the 30-day cleanup at app start. Recorded for vehicles and
+  /// owners only; the entries and readings removed with a vehicle get no
+  /// row of their own.
+  purge,
 }
 
 /// One row of the audit log: which entity was written, how, and when.

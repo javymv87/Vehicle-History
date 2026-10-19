@@ -1,5 +1,6 @@
 import '../../data/models/fuel_type.dart';
 import '../../data/models/log_entry_type.dart';
+import '../../data/models/vehicle.dart';
 import '../../data/models/vehicle_kind.dart';
 import '../../l10n/app_localizations.dart';
 import 'action_result.dart';
@@ -16,6 +17,16 @@ extension FuelTypeLabel on FuelType {
         FuelType.pluginHybrid => l10n.fuelPluginHybrid,
         FuelType.electric => l10n.fuelElectric,
         FuelType.other => l10n.fuelOther,
+      };
+}
+
+/// How a vehicle is named in dialog titles.
+extension VehicleDisplayName on Vehicle {
+  /// Make and model followed by the plate, e.g. "Fiat Punto (AB123CD)", or
+  /// the plate alone for a vehicle without make and model (schema v1).
+  String displayNameWithPlate(AppLocalizations l10n) => switch (makeAndModel) {
+        final name? => l10n.vehicleNameWithPlate(name, plate),
+        null => plate,
       };
 }
 
@@ -52,6 +63,8 @@ extension ActionErrorMessage on ActionError {
   String message(AppLocalizations l10n) => switch (this) {
         ActionError.duplicatePlate => l10n.errorDuplicatePlate,
         ActionError.ownerHasVehicles => l10n.errorOwnerHasVehicles,
+        ActionError.ownerHasTrashedVehicles =>
+          l10n.errorOwnerHasTrashedVehicles,
         ActionError.ownerNotFound => l10n.errorOwnerNotFound,
         ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
         ActionError.entryNotFound => l10n.errorEntryNotFound,

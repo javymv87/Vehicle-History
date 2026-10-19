@@ -152,9 +152,27 @@ El modelo de datos ya está preparado para una futura sincronización con fusió
 Esto cuesta muy poco ahora y no cierra la puerta a una evolución, pero el
 comportamiento de la versión 1 sigue siendo la Strada A.
 
-## Borrado físico / limpieza
+## Papelera y limpieza
 
-Como el borrado es lógico, hará falta (en el futuro, no es urgente) una
-estrategia de limpieza periódica de los registros marcados como `deleted` desde
-hace tiempo, para no hacer crecer la base de datos indefinidamente. Para la
-versión 1 basta con conservarlos.
+Desde el esquema v5 (paso 5b).
+
+- **Lógico:** borrar un vehículo, una entrada, una lectura o un propietario
+  solo lo marca (`deleted = 1` y `deleted_at` con el instante). Los
+  vehículos borrados forman la **papelera** y se pueden restaurar con todas
+  sus entradas y lecturas durante **30 días**.
+- **Físico:** el registro desaparece del archivo, sin vuelta atrás. Ocurre
+  solo al "Eliminar definitivamente" un vehículo o "Vaciar papelera" (por
+  decisión del usuario, con confirmación) y en la **limpieza al arrancar la
+  app**, que borra lo que lleva borrado 30 días o más: vehículos de la
+  papelera (con todas sus entradas y lecturas), entradas y lecturas sueltas
+  de vehículos vivos, y propietarios a los que ya no apunta ningún vehículo.
+  La limpieza se ejecuta una vez por arranque, después de abrir y migrar la
+  base de datos, en una sola transacción; si falla, no borra nada y la app
+  arranca igual.
+- El historial de operaciones conserva sus filas y añade una `purge` por
+  cada vehículo y propietario borrados físicamente.
+- **La copia lleva la papelera dentro:** el archivo que se exporte o se suba
+  a Drive es la base de datos entera, papelera incluida. Restaurar una copia
+  devuelve también los vehículos que estaban en la papelera en ese momento,
+  con su fecha de borrado; la siguiente limpieza al arrancar decide con esa
+  fecha, no con la de la restauración.

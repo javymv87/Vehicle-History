@@ -133,10 +133,12 @@ void main() {
 
   test('a database newer than the app is refused and left untouched', () async {
     await seedCurrent();
+    // One version beyond the app, whatever the app's version is.
+    final newer = _current + 1;
     final future = _FutureAppDatabase(
       NativeDatabase(dbFile),
       steps: _noopStep,
-      version: 5,
+      version: newer,
     );
     await userVersion(future);
     await future.close();
@@ -147,19 +149,19 @@ void main() {
       current.ownersDao.getLive(),
       throwsA(
         isA<DatabaseNewerThanAppException>()
-            .having((e) => e.fileVersion, 'fileVersion', 5)
+            .having((e) => e.fileVersion, 'fileVersion', newer)
             .having((e) => e.appVersion, 'appVersion', _current),
       ),
     );
     await current.close();
 
-    // Still v5 with its data, and no copy was made for a refused open.
+    // Still newer with its data, and no copy was made for a refused open.
     final reopened = _FutureAppDatabase(
       NativeDatabase(dbFile),
       steps: _noopStep,
-      version: 5,
+      version: newer,
     );
-    expect(await userVersion(reopened), 5);
+    expect(await userVersion(reopened), newer);
     expect(await reopened.ownersDao.getLive(), hasLength(1));
     await reopened.close();
     expect(fileNames(), filesBefore);

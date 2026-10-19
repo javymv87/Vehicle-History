@@ -63,31 +63,20 @@ void showErrorSnackBar(ScaffoldMessengerState messenger, String message) {
 
 /// Asks the user to confirm a delete.
 ///
-/// Resolves to `true` only when the user taps the delete button.
+/// Resolves to `true` only when the user taps the delete button, which is
+/// drawn in the error colour like every destructive action (U19).
 Future<bool> confirmDelete(
   BuildContext context, {
   required String title,
   required String message,
-}) async {
-  final l10n = AppLocalizations.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(l10n.actionCancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.actionDelete),
-        ),
-      ],
-    ),
+}) {
+  return confirmAction(
+    context,
+    title: title,
+    message: message,
+    confirmLabel: AppLocalizations.of(context).actionDelete,
+    destructive: true,
   );
-  return confirmed ?? false;
 }
 
 /// Shows an explicit, blocking explanation that stays until dismissed.
@@ -138,21 +127,26 @@ void showOfferSnackBar(
     );
 }
 
-/// Asks the user to confirm a value that looks wrong but is allowed, such
-/// as a very large odometer jump.
+/// Asks the user to confirm an action, such as a very large odometer jump
+/// that looks wrong but is allowed, or a permanent delete.
 ///
 /// Resolves to `true` only when the user taps [confirmLabel]; cancel is the
-/// safe default.
+/// safe default. When [destructive] is true, [confirmLabel] is drawn in the
+/// error colour (U19).
 Future<bool> confirmAction(
   BuildContext context, {
   required String title,
   required String message,
   required String confirmLabel,
+  bool destructive = false,
 }) async {
   final l10n = AppLocalizations.of(context);
+  final errorColor = Theme.of(context).colorScheme.error;
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
+      // Long messages with very large text scroll instead of overflowing.
+      scrollable: true,
       title: Text(title),
       content: Text(message),
       actions: [
@@ -161,6 +155,9 @@ Future<bool> confirmAction(
           child: Text(l10n.actionCancel),
         ),
         TextButton(
+          style: destructive
+              ? TextButton.styleFrom(foregroundColor: errorColor)
+              : null,
           onPressed: () => Navigator.of(context).pop(true),
           child: Text(confirmLabel),
         ),
