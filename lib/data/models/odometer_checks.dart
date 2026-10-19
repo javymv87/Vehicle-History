@@ -1,4 +1,5 @@
 import 'calendar_date.dart';
+import 'mileage_reading.dart';
 
 // Pure checks between a typed km and the odometer history
 // (`Docs/04_maintenance_logic.md`, "Kilometraje"). They only decide what
@@ -14,20 +15,29 @@ const int bigOdometerJumpKm = 50000;
 bool isBigOdometerJump({required int km, required int lastKm}) =>
     km > lastKm + bigOdometerJumpKm;
 
-/// Whether an entry dated [entryDate] with [entryKm] looks like a typo: it
-/// happened before the last reading ([lastReadingDate]) but has more km
-/// than the current odometer ([currentOdometerKm]). Since the odometer never
-/// goes backwards, the form asks before saving it (E2); it never blocks.
-bool isPastEntryAboveOdometer({
+/// The reading that makes an entry dated [entryDate] with [entryKm] look
+/// like a typo (E2), or `null` when there is none.
+///
+/// Since the odometer never goes backwards, an entry cannot have more km
+/// than a reading taken on a **later** day. The series is non-decreasing, so
+/// the first reading after [entryDate] is the one with the fewest km: it is
+/// returned when its km is below [entryKm]. [readings] is the vehicle's
+/// series in any order. The form asks before saving; it never blocks.
+MileageReading? laterReadingBelowEntryKm({
   required int? entryKm,
   required CalendarDate entryDate,
-  required int currentOdometerKm,
-  required CalendarDate? lastReadingDate,
-}) =>
-    entryKm != null &&
-    lastReadingDate != null &&
-    entryDate.isBefore(lastReadingDate) &&
-    entryKm > currentOdometerKm;
+  required List<MileageReading> readings,
+}) {
+  if (entryKm == null) return null;
+  MileageReading? firstAfter;
+  for (final reading in readings) {
+    if (!reading.date.isAfter(entryDate)) continue;
+    if (firstAfter == null || firstAfter.isAfter(reading)) {
+      firstAfter = reading;
+    }
+  }
+  return firstAfter != null && firstAfter.km < entryKm ? firstAfter : null;
+}
 
 /// Whether saving an entry dated [entryDate] with [entryKm] should be
 /// followed by the offer to update the odometer to that km (E3).

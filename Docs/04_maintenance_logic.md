@@ -190,10 +190,13 @@ del tiempo, para el informe "km recorridos frente a tiempo". Reglas:
   actualizar el cuentakilómetros con ese km y esa fecha; solo si el usuario
   pulsa "Actualizar" se crea la lectura (con la misma confirmación de los
   50.000 km).
-- **Entradas en el pasado con km demasiado alto:** si una entrada tiene
-  fecha anterior a la última lectura pero más km que el km actual, es casi
-  seguro un error (el cuentakilómetros no va hacia atrás): la app avisa y
-  deja guardar igualmente.
+- **Entradas con km demasiado alto para su fecha:** si alguna lectura de
+  un día posterior a la fecha de la entrada tiene menos km que la entrada,
+  es casi seguro un error (el cuentakilómetros no va hacia atrás): la app
+  avisa y deja guardar igualmente. Basta con mirar la primera lectura
+  posterior a esa fecha, que es la de menos km entre las posteriores; así
+  también se detecta el error frente a lecturas intermedias, no solo frente
+  a la última.
 - **Fechas futuras por tipo:** solo vencimientos legales, gastos y notas
   pueden tener fecha futura; mantenimientos, reparaciones, repostajes y
   controles no (ver `02_data_model.md`).

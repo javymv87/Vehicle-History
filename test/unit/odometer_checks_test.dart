@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
+import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/odometer_checks.dart';
 
 void main() {
@@ -41,30 +42,66 @@ void main() {
     });
   });
 
-  group('isPastEntryAboveOdometer (E2)', () {
-    bool warn({
-      int? km = 90000,
-      CalendarDate date = const CalendarDate(2026, 9, 1),
-    }) =>
-        isPastEntryAboveOdometer(
-          entryKm: km,
-          entryDate: date,
-          currentOdometerKm: 85000,
-          lastReadingDate: lastReading,
+  group('laterReadingBelowEntryKm (E2)', () {
+    MileageReading reading(String id, CalendarDate date, int km) =>
+        MileageReading(
+          id: id,
+          vehicleId: 'v',
+          date: date,
+          km: km,
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
         );
 
-    test('warns for an earlier day with more km than the odometer', () {
-      expect(warn(), isTrue);
+    // 1 Oct 100 000, 10 Oct 111 000, 15 Oct 115 000; newest first, as the
+    // repository returns them.
+    final series = [
+      reading('r3', const CalendarDate(2026, 10, 15), 115000),
+      reading('r2', const CalendarDate(2026, 10, 10), 111000),
+      reading('r1', const CalendarDate(2026, 10, 1), 100000),
+    ];
+
+    String? warn(int? km, CalendarDate date) => laterReadingBelowEntryKm(
+          entryKm: km,
+          entryDate: date,
+          readings: series,
+        )?.id;
+
+    test('catches an intermediate reading, not only the last one', () {
+      // Below the current odometer, yet above the 10 Oct reading.
+      expect(warn(112000, const CalendarDate(2026, 10, 5)), 'r2');
     });
 
-    test('not on or after the last reading day', () {
-      expect(warn(date: lastReading), isFalse);
-      expect(warn(date: today), isFalse);
+    test('warns against the last reading for an earlier day', () {
+      expect(warn(116000, const CalendarDate(2026, 10, 12)), 'r3');
     });
 
-    test('not when the km is not above the odometer, or missing', () {
-      expect(warn(km: 85000), isFalse);
-      expect(warn(km: null), isFalse);
+    test('not when the km fits between the readings around the date', () {
+      expect(warn(105000, const CalendarDate(2026, 10, 5)), isNull);
+      expect(warn(111000, const CalendarDate(2026, 10, 5)), isNull);
+    });
+
+    test('not on or after the last reading day, whatever the km', () {
+      expect(warn(200000, const CalendarDate(2026, 10, 15)), isNull);
+      expect(warn(200000, today), isNull);
+    });
+
+    test('a reading on the same day as the entry does not count', () {
+      // The 10 Oct reading (111 000) is ignored; 15 Oct is the next one.
+      expect(warn(112000, const CalendarDate(2026, 10, 10)), isNull);
+      expect(warn(116000, const CalendarDate(2026, 10, 10)), 'r3');
+    });
+
+    test('not without km or without readings', () {
+      expect(warn(null, const CalendarDate(2026, 9, 1)), isNull);
+      expect(
+        laterReadingBelowEntryKm(
+          entryKm: 1,
+          entryDate: const CalendarDate(2026, 9, 1),
+          readings: const [],
+        ),
+        isNull,
+      );
     });
   });
 

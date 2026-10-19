@@ -140,10 +140,13 @@ Reglas añadidas al formulario de entradas en el paso 5:
   mantenimiento, reparación, repostaje y control la fecha debe ser hoy o
   anterior: el formulario lo señala bajo la fecha y el repositorio lo
   rechaza. Las entradas que ya existían no se tocan.
-- **E2 — Entrada en el pasado con km mayor que el cuentakilómetros:** si la
-  fecha es anterior a la última lectura y el km supera el km actual, casi
-  seguro es un error tipográfico: un diálogo avisa ("Este km es mayor que el
-  cuentakilómetros actual (X). ¿Guardar igualmente?"). No bloquea.
+- **E2 — Entrada con km mayor que una lectura posterior:** si alguna
+  lectura de un día posterior a la fecha de la entrada tiene menos km que la
+  entrada, casi seguro es un error tipográfico (el cuentakilómetros no va
+  hacia atrás). Se compara con la primera lectura posterior a esa fecha, no
+  solo con la última. Un diálogo avisa ("Este km es mayor que la lectura del
+  10 oct 2026 (111.000 km), de un día posterior. ¿Guardar igualmente?"). No
+  bloquea.
 - **E3 — Oferta de actualizar el cuentakilómetros.** Después de guardar una
   entrada (nueva o editada) cuando se cumplen las tres condiciones — km
   mayor que el km actual, fecha hoy o anterior, fecha no anterior a la

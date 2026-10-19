@@ -139,7 +139,9 @@ model year and version; v3 added `log_entries`; v4 added
   last; correcting only while it is the sole reading. Refusals are
   `InvalidFieldException` reasons or `MileageReadingRuleException`. A jump
   above `bigOdometerJumpKm` (50 000) is accepted by the repository and
-  confirmed by the UI (`odometer_checks.dart`).
+  confirmed by the UI (`odometer_checks.dart`). The entry form warns, never
+  blocks, when an entry has more km than the first reading of a later day
+  (`laterReadingBelowEntryKm`).
 - **Make and model** are stored as the display name (always) plus an
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches

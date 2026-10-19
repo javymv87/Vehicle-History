@@ -13,14 +13,14 @@ import '../../../shared/utils/action_result.dart';
 typedef LogEntryFormKey = ({String vehicleId, String? entryId});
 
 /// What the entry form needs once loaded: the vehicle (for the "Use current
-/// km" chip), its last odometer reading (for the km checks E2 and E3) and
-/// the entry being edited.
+/// km" chip), its odometer readings (for the km checks E2 and E3) and the
+/// entry being edited.
 class LogEntryFormData {
   /// Creates the loaded form data.
   const LogEntryFormData({
     required this.vehicle,
     required this.entry,
-    this.lastReading,
+    this.readings = const [],
   });
 
   /// The vehicle, or `null` when no live vehicle has the id in the path.
@@ -30,9 +30,13 @@ class LogEntryFormData {
   /// path matches no live entry of this vehicle.
   final LogEntry? entry;
 
+  /// The vehicle's odometer readings, newest first; empty when the vehicle
+  /// is missing.
+  final List<MileageReading> readings;
+
   /// The vehicle's last odometer reading; `null` when the vehicle is
   /// missing.
-  final MileageReading? lastReading;
+  MileageReading? get lastReading => readings.firstOrNull;
 }
 
 /// The values typed into the entry form, before they are saved.
@@ -81,14 +85,15 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
     if (vehicle == null) {
       return const LogEntryFormData(vehicle: null, entry: null);
     }
-    final lastReading =
-        await ref.watch(mileageReadingRepositoryProvider).getLast(vehicle.id);
+    final readings = await ref
+        .watch(mileageReadingRepositoryProvider)
+        .getByVehicle(vehicle.id);
     final entryId = key.entryId;
     if (entryId == null) {
       return LogEntryFormData(
         vehicle: vehicle,
         entry: null,
-        lastReading: lastReading,
+        readings: readings,
       );
     }
     final entry = await ref.watch(logEntryRepositoryProvider).getById(entryId);
@@ -96,7 +101,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
     return LogEntryFormData(
       vehicle: vehicle,
       entry: entry?.vehicleId == vehicle.id ? entry : null,
-      lastReading: lastReading,
+      readings: readings,
     );
   }
 

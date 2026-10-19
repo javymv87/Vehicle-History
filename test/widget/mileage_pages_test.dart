@@ -248,11 +248,49 @@ void main() {
       expect(find.textContaining('Update the odometer'), findsNothing);
     });
 
-    testWidgets('a past entry above the odometer asks first (E2)',
+    testWidgets('more km than a later reading asks first (E2)', (tester) async {
+      store
+        ..addReading(
+          vehicleId,
+          date: const CalendarDate(2025, 6, 1),
+          km: 20000,
+        )
+        ..addReading(
+          vehicleId,
+          date: const CalendarDate(2025, 9, 1),
+          km: 30000,
+        );
+      final entry = store.addEntry(
+        vehicleId,
+        date: const CalendarDate(2025, 5, 1),
+        km: 15000,
+      );
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.editEntry(vehicleId, entry.id),
+      );
+      // Below the current odometer (30,000), but above the 1 June reading.
+      await tester.enterText(
+        find.byKey(const ValueKey('entry-km-field')),
+        '25000',
+      );
+      await save(tester);
+      expect(find.text('Check the km'), findsOneWidget);
+      expect(
+        find.textContaining('reading of Jun 1, 2025 (20,000 km)'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Save anyway'));
+      await tester.pumpAndSettle();
+      expect(store.entries[entry.id]!.km, 25000);
+    });
+
+    testWidgets('a km that fits the readings saves without asking (E2)',
         (tester) async {
       store.addReading(
         vehicleId,
-        date: const CalendarDate(2030, 1, 1),
+        date: const CalendarDate(2025, 6, 1),
         km: 20000,
       );
       final entry = store.addEntry(
@@ -267,14 +305,11 @@ void main() {
       );
       await tester.enterText(
         find.byKey(const ValueKey('entry-km-field')),
-        '25000',
+        '19000',
       );
       await save(tester);
-      expect(find.text('Check the km'), findsOneWidget);
-      expect(find.textContaining('(20,000 km)'), findsOneWidget);
-      await tester.tap(find.text('Save anyway'));
-      await tester.pumpAndSettle();
-      expect(store.entries[entry.id]!.km, 25000);
+      expect(find.text('Check the km'), findsNothing);
+      expect(store.entries[entry.id]!.km, 19000);
     });
 
     testWidgets('maintenance in the future is refused, a deadline is not (E1)',

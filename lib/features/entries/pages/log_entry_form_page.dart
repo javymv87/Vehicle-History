@@ -68,7 +68,7 @@ class LogEntryFormPage extends ConsumerWidget {
         return _LogEntryForm(
           formKey: key,
           vehicle: vehicle,
-          lastReading: data.lastReading,
+          readings: data.readings,
           initial: data.entry,
           title: title,
         );
@@ -82,14 +82,14 @@ class _LogEntryForm extends ConsumerStatefulWidget {
   const _LogEntryForm({
     required this.formKey,
     required this.vehicle,
-    required this.lastReading,
+    required this.readings,
     required this.initial,
     required this.title,
   });
 
   final LogEntryFormKey formKey;
   final Vehicle vehicle;
-  final MileageReading? lastReading;
+  final List<MileageReading> readings;
   final LogEntry? initial;
   final String title;
 
@@ -218,20 +218,23 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     final costText = _cost.text.trim();
     final km = kmText.isEmpty ? null : int.parse(kmText);
     final currentKm = widget.vehicle.currentOdometerKm;
-    final lastReadingDate = widget.lastReading?.date;
+    final lastReadingDate = widget.readings.firstOrNull?.date;
 
-    // E2: an earlier day with more km than the odometer is almost surely a
+    // E2: more km than a reading taken on a later day is almost surely a
     // typo, since the odometer never goes backwards. Ask, never block.
-    if (isPastEntryAboveOdometer(
+    final conflicting = laterReadingBelowEntryKm(
       entryKm: km,
       entryDate: _date,
-      currentOdometerKm: currentKm,
-      lastReadingDate: lastReadingDate,
-    )) {
+      readings: widget.readings,
+    );
+    if (conflicting != null) {
       final confirmed = await confirmAction(
         context,
         title: l10n.entryKmAboveOdometerTitle,
-        message: l10n.entryKmAboveOdometerMessage(currentKm),
+        message: l10n.entryKmAboveOdometerMessage(
+          conflicting.km,
+          conflicting.date.toLocalDateTime(),
+        ),
         confirmLabel: l10n.actionSaveAnyway,
       );
       if (!confirmed || !mounted) return;
