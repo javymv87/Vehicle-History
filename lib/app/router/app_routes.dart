@@ -57,6 +57,9 @@ abstract final class AppRoutes {
   static String editMileageReading(String vehicleId, String readingId) =>
       '${vehicle(vehicleId)}/mileage/${Uri.encodeComponent(readingId)}/edit';
 
+  /// The Trash: the deleted vehicles, restorable for 30 days.
+  static const String trash = '/trash';
+
   /// Detail of the owner with [id].
   static String owner(String id) => '$owners/${Uri.encodeComponent(id)}';
 

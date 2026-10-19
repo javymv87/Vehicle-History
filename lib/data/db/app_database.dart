@@ -16,6 +16,7 @@ import 'daos/audit_log_dao.dart';
 import 'daos/log_entries_dao.dart';
 import 'daos/mileage_readings_dao.dart';
 import 'daos/owners_dao.dart';
+import 'daos/trash_dao.dart';
 import 'daos/vehicles_dao.dart';
 import 'log_entries_table.dart';
 import 'mileage_readings_table.dart';
@@ -38,6 +39,7 @@ part 'app_database.g.dart';
     AuditLogDao,
     LogEntriesDao,
     MileageReadingsDao,
+    TrashDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -112,7 +114,48 @@ class AppDatabase extends _$AppDatabase {
       await m.createIndex(schema.mileageReadingsVehicleDate);
       await insertInitialReadings(m.database);
     },
+    // v5: `deleted_at` on every soft-deletable table, for the Trash and its
+    // 30-day cleanup. Only new nullable columns, then a backfill of the rows
+    // already deleted: their deletion instant is their `updated_at`, which
+    // every soft delete has always written. No other value is touched.
+    from4To5: (m, schema) async {
+      for (final (table, column) in [
+        (schema.owners, schema.owners.deletedAt),
+        (schema.vehicles, schema.vehicles.deletedAt),
+        (schema.logEntries, schema.logEntries.deletedAt),
+        (schema.mileageReadings, schema.mileageReadings.deletedAt),
+      ]) {
+        await m.addColumn(table, column);
+      }
+      await backfillDeletedAt(m.database);
+    },
   );
+
+  /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
+  static const List<String> _softDeleteTables = [
+    'owners',
+    'vehicles',
+    'log_entries',
+    'mileage_readings',
+  ];
+
+  /// Sets `deleted_at = updated_at` on every soft-deleted row, for the
+  /// v4 → v5 upgrade.
+  ///
+  /// Before v5 a soft delete wrote its instant into `updated_at`, and a
+  /// deleted row cannot be edited, so `updated_at` is when it was deleted.
+  /// Live rows keep `deleted_at` NULL. Plain SQL against the v5 shape, and no
+  /// audit row: the user did not write these values, the upgrade did.
+  ///
+  /// Runs inside the upgrade transaction of [runSafeUpgrade].
+  @visibleForTesting
+  static Future<void> backfillDeletedAt(GeneratedDatabase db) async {
+    for (final table in _softDeleteTables) {
+      await db.customStatement(
+        'UPDATE $table SET deleted_at = updated_at WHERE deleted = 1',
+      );
+    }
+  }
 
   /// Inserts the initial reading of every vehicle, for the v3 → v4 upgrade.
   ///
@@ -159,7 +202,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// Opens the connection now, running any pending migration.
   ///

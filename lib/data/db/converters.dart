@@ -144,6 +144,9 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
 }
 
 /// Stores an [AuditOperation] as a stable text code.
+///
+/// The column has no CHECK constraint, so a new operation (such as `purge`,
+/// added with schema v5) needs only a new code here.
 class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditOperationConverter();
@@ -154,6 +157,7 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         'update' => AuditOperation.update,
         'delete' => AuditOperation.delete,
         'restore' => AuditOperation.restore,
+        'purge' => AuditOperation.purge,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit operation in database: $fromDb'),
       };
@@ -164,5 +168,6 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         AuditOperation.update => 'update',
         AuditOperation.delete => 'delete',
         AuditOperation.restore => 'restore',
+        AuditOperation.purge => 'purge',
       };
 }

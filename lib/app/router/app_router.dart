@@ -7,6 +7,7 @@ import '../../features/mileage/pages/mileage_reading_form_page.dart';
 import '../../features/owners/pages/owner_detail_page.dart';
 import '../../features/owners/pages/owner_form_page.dart';
 import '../../features/owners/pages/owner_list_page.dart';
+import '../../features/trash/pages/trash_page.dart';
 import '../../features/vehicles/controllers/vehicle_tab_controller.dart';
 import '../../features/vehicles/pages/vehicle_detail_page.dart';
 import '../../features/vehicles/pages/vehicle_form_page.dart';
@@ -114,6 +115,10 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.trash,
+        builder: (context, state) => const TrashPage(),
       ),
       GoRoute(
         path: AppRoutes.newOwner,

@@ -11,6 +11,8 @@ import 'repositories/drift_vehicle_repository.dart';
 import 'repositories/log_entry_repository.dart';
 import 'repositories/mileage_reading_repository.dart';
 import 'repositories/owner_repository.dart';
+import 'repositories/repository_support.dart';
+import 'repositories/trash_cleanup_service.dart';
 import 'repositories/vehicle_repository.dart';
 
 /// The single [AppDatabase] of the app, opened once and closed when the
@@ -24,16 +26,33 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-/// Completes once the database is open and any pending migration has run.
+/// Completes once the database is open, any pending migration has run, and
+/// the 30-day Trash cleanup has had its turn.
 ///
-/// Fails with the error that stopped it, such as
+/// Fails with the error that stopped the opening, such as
 /// `DatabaseNewerThanAppException`; the app then shows the startup error
 /// screen instead of the router. Never retried automatically: a refused or
 /// failed upgrade does not fix itself, and retrying would only repeat it.
+///
+/// The cleanup runs here, once per app start (this provider is created once
+/// and never retried), and only after a successful opening. Its failure is
+/// logged and never stops the start (`runStartupCleanupSafely`).
 final databaseReadyProvider = FutureProvider<void>(
-  (ref) => ref.watch(appDatabaseProvider).open(),
+  (ref) async {
+    await ref.watch(appDatabaseProvider).open();
+    await runStartupCleanupSafely(
+      ref.read(trashCleanupServiceProvider),
+      systemUtcClock(),
+    );
+  },
   retry: (retryCount, error) => null,
 );
+
+/// The [TrashCleanupService] on the app database.
+final trashCleanupServiceProvider = Provider<TrashCleanupService>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return TrashCleanupService(db.trashDao, db.auditLogDao);
+});
 
 /// The [OwnerRepository] on the app database.
 final ownerRepositoryProvider = Provider<OwnerRepository>((ref) {
@@ -47,6 +66,7 @@ final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
   return DriftVehicleRepository(
     db.vehiclesDao,
     db.mileageReadingsDao,
+    db.trashDao,
     db.auditLogDao,
   );
 });

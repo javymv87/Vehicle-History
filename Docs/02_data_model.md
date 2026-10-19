@@ -22,6 +22,40 @@ registro principal lleva consigo:
   destruye de inmediato: se marca como borrada. Sirve para poder recuperar
   errores y para que la copia de seguridad sepa que el elemento se eliminó a
   propósito.
+- `deleted_at` — **cuándo** se borró (instante en UTC, texto ISO-8601);
+  vacío (`NULL`) mientras el registro está vivo. Existe desde el esquema v5
+  en `owners`, `vehicles`, `log_entries` y `mileage_readings`. Se escribe
+  siempre junto con `deleted` y se vacía junto con él al restaurar.
+
+### Borrado lógico, papelera y borrado físico (esquema v5)
+
+- **Borrar** es siempre lógico: `deleted = 1` y `deleted_at = ahora`.
+  **Restaurar** (Deshacer, o "Restaurar" desde la papelera) pone
+  `deleted = 0` y `deleted_at = NULL`.
+- La migración v4 → v5 añadió `deleted_at` y lo rellenó con `updated_at` en
+  las filas ya borradas: hasta la v4 cada borrado escribía su instante en
+  `updated_at`, y una fila borrada no se puede modificar. Las filas vivas
+  quedaron con `NULL`. No cambió nada más.
+- **Papelera:** solo para **vehículos**. Un vehículo borrado está en la
+  papelera durante **30 días** y se lleva consigo sus entradas y lecturas
+  (no se marcan como borradas: simplemente no se ven, como antes). Las
+  entradas, las lecturas y los propietarios sueltos no tienen papelera: solo
+  el Deshacer de unos segundos.
+- **Borrado físico** (`DELETE` real, irreversible) solo en estos casos:
+  1. "Eliminar definitivamente" un vehículo o "Vaciar papelera": se borran
+     el vehículo y **todas** sus entradas y lecturas, sea cual sea su propio
+     indicador, en una sola transacción (primero entradas y lecturas, porque
+     las claves externas son `RESTRICT`).
+  2. La **limpieza al arrancar la app**, una vez abierta y migrada la base
+     de datos, en una sola transacción: los vehículos borrados hace 30 días o
+     más (como en el punto 1); las entradas y lecturas borradas hace 30 días
+     o más de vehículos vivos; y los propietarios borrados hace 30 días o más
+     a los que ya no apunta **ningún** vehículo (vivo o borrado). Si algo
+     falla, se deshace todo, se anota en el registro y la app arranca igual.
+- El historial de operaciones guarda una fila `purge` por cada vehículo y
+  cada propietario borrados físicamente; las entradas y lecturas que se van
+  con ellos no tienen fila propia. Las filas anteriores del historial que
+  apuntan a lo borrado se quedan (no hay clave externa).
 
 ## Moneda e importes
 
@@ -66,6 +100,9 @@ Un Owner puede tener **varios vehículos**. Un vehículo tiene **un** Owner.
 
 **Borrar un Owner** no se permite mientras tenga vehículos no borrados: la app
 lo rechaza y no escribe nada. Primero hay que borrar o reasignar sus vehículos.
+Tampoco se permite mientras tenga vehículos **en la papelera** (desde el
+esquema v5): restaurarlos necesitaría al propietario. El mensaje lo dice
+("Tiene vehículos en la papelera: restáuralos o vacía la papelera").
 
 ### OwnerDocument (documento del propietario)
 
@@ -329,12 +366,14 @@ del esquema**: cada creación, modificación, borrado y restauración (deshacer
 un borrado) de un Owner, un Vehicle, una LogEntry o una MileageReading
 añade su fila en la misma transacción. El tipo de entidad es texto sin
 restricción CHECK, así que añadir las entradas del historial (`logEntry`, en
-la v3) y las lecturas del cuentakilómetros (`mileageReading`, en la v4) no ha
-requerido tocar esta tabla. Es solo de añadir: sus filas no se
-modifican ni se borran.
+la v3), las lecturas del cuentakilómetros (`mileageReading`, en la v4) y la
+operación de borrado físico (`purge`, en la v5) no ha requerido tocar esta
+tabla. Es solo de añadir: sus filas no se modifican ni se borran, tampoco
+cuando la entidad a la que apuntan se borra físicamente.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
-- Operación: creación / modificación / eliminación / restauración
+- Operación: creación / modificación / eliminación / restauración /
+  eliminación definitiva (`purge`, solo vehículos y propietarios)
 - Cuándo: fecha y hora
 
 ### Settings (ajustes)

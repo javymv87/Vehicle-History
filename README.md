@@ -81,7 +81,10 @@ detail, edit, delete with Undo, and filters by date range, type and text.
 Step 5 added the odometer (schema v4): a Mileage tab with the readings, one
 initial reading per vehicle, "Update km", delete-last with Undo, the offer
 to update the odometer from an entry, and future dates allowed per entry
-type. Next is step 5b (Trash), then step 6.
+type. Step 5b added the Trash (schema v5): `deleted_at` on every
+soft-deletable table, a delete dialog that says what goes with the vehicle,
+the Trash screen (restore, delete permanently, empty) and the automatic
+30-day cleanup at app start. Next is step 6.
 
 Roadmap to the first usable version:
 
@@ -91,7 +94,7 @@ Roadmap to the first usable version:
 | 3b | ~~Vehicle kind, make / model catalogue, year, version, nationality picker (schema v2)~~ — done |
 | 4 | ~~Basic log entries: date, km, type, cost, notes; list, filters, undo on delete (schema v3)~~ — done |
 | 5 | ~~Odometer: update current km + `MileageReading` history with its rules (schema v4)~~ — done |
-| 5b | Trash: deleted vehicles, restore, permanent delete, 30-day cleanup |
+| 5b | ~~Trash: deleted vehicles, restore, permanent delete, 30-day cleanup (schema v5)~~ — done |
 | 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
 
 Then, in an order decided while using the app: settings, maintenance,

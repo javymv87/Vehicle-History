@@ -18,6 +18,12 @@ mixin TechnicalColumns on Table {
   /// Soft-delete flag. Deleted rows stay on disk but are hidden from reads.
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
+  /// When the row was soft-deleted, in UTC; `null` while it is live.
+  ///
+  /// Added in schema v5 for the Trash and its 30-day cleanup. Always set
+  /// together with [deleted] and cleared together with it on restore.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

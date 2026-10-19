@@ -58,22 +58,32 @@ class OwnersDao extends DatabaseAccessor<AppDatabase> with _$OwnersDaoMixin {
   Future<int> updateLive(Owner owner) =>
       _whereLive(owner.id).write(owner.toUpdateCompanion());
 
-  /// Marks the live owner with [id] as deleted at [at].
+  /// Marks the live owner with [id] as deleted at [at], setting
+  /// `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the owner is missing or
   /// already deleted.
   Future<int> softDeleteLive(String id, DateTime at) => _whereLive(id).write(
-        OwnersCompanion(deleted: const Value(true), updatedAt: Value(at)),
+        OwnersCompanion(
+          deleted: const Value(true),
+          updatedAt: Value(at),
+          deletedAt: Value(at),
+        ),
       );
 
-  /// Brings the soft-deleted owner with [id] back to life at [at].
+  /// Brings the soft-deleted owner with [id] back to life at [at],
+  /// clearing `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the owner is missing or not
   /// deleted.
   Future<int> restoreDeleted(String id, DateTime at) =>
       (update(owners)..where((o) => o.id.equals(id) & o.deleted.equals(true)))
           .write(
-        OwnersCompanion(deleted: const Value(false), updatedAt: Value(at)),
+        OwnersCompanion(
+          deleted: const Value(false),
+          updatedAt: Value(at),
+          deletedAt: const Value(null),
+        ),
       );
 
   /// Update statement restricted to the live owner with [id].
@@ -87,6 +97,19 @@ class OwnersDao extends DatabaseAccessor<AppDatabase> with _$OwnersDaoMixin {
       ..addColumns([count])
       ..where(
         vehicles.ownerId.equals(ownerId) & vehicles.deleted.equals(false),
+      );
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Counts the soft-deleted vehicles (those in the Trash) that belong to
+  /// the owner with [ownerId].
+  Future<int> countTrashedVehicles(String ownerId) async {
+    final count = vehicles.id.count();
+    final query = selectOnly(vehicles)
+      ..addColumns([count])
+      ..where(
+        vehicles.ownerId.equals(ownerId) & vehicles.deleted.equals(true),
       );
     final row = await query.getSingle();
     return row.read(count) ?? 0;

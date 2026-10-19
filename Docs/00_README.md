@@ -53,7 +53,10 @@ con Deshacer y filtros por fechas, tipo y texto. El paso 5 añadió el
 cuentakilómetros (esquema v4): pestaña Kilometraje con las lecturas, lectura
 inicial por vehículo, "Actualizar km", borrar la última con Deshacer, la
 oferta de actualizar desde las entradas y las fechas futuras según el tipo.
-Lo siguiente es el paso 5b (Papelera) y después el 6.
+El paso 5b añadió la papelera (esquema v5): `deleted_at` en las tablas, el
+diálogo de borrado con lo que se va con el vehículo, la pantalla Papelera
+(restaurar, eliminar definitivamente, vaciar) y la limpieza automática a los
+30 días al arrancar. Lo siguiente es el paso 6.
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -63,7 +66,7 @@ Hoja de ruta hasta la primera versión usable:
 | 3b | ~~Tipo de vehículo, catálogo de marcas / modelos, año, versión, selector de nacionalidad (esquema v2)~~ — hecho |
 | 4 | ~~Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar (esquema v3)~~ — hecho |
 | 5 | ~~Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas (esquema v4)~~ — hecho |
-| 5b | Papelera: vehículos borrados, restaurar, borrado definitivo, limpieza a los 30 días |
+| 5b | ~~Papelera: vehículos borrados, restaurar, borrado definitivo, limpieza a los 30 días (esquema v5)~~ — hecho |
 | 6 | Exportar / importar el archivo de la base de datos, y una clave fija de firma de release guardada fuera del repositorio |
 
 Después, en el orden que se decida usando la app: ajustes, mantenimiento,

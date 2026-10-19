@@ -110,6 +110,12 @@ class DriftOwnerRepository implements OwnerRepository {
       if (vehicleCount > 0) {
         throw OwnerHasVehiclesException(id, vehicleCount);
       }
+      // A vehicle in the Trash can still be restored, which needs its
+      // owner: the owner goes only once the Trash no longer holds any.
+      final trashedCount = await _owners.countTrashedVehicles(id);
+      if (trashedCount > 0) {
+        throw OwnerHasTrashedVehiclesException(id, trashedCount);
+      }
       await _owners.softDeleteLive(id, now);
       await _record(id, AuditOperation.delete, now);
     });

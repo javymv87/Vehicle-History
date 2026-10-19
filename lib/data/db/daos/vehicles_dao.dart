@@ -99,22 +99,32 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
   Future<int> updateLive(Vehicle vehicle) =>
       _whereLive(vehicle.id).write(vehicle.toUpdateCompanion());
 
-  /// Marks the live vehicle with [id] as deleted at [at].
+  /// Marks the live vehicle with [id] as deleted at [at], setting
+  /// `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the vehicle is missing or
   /// already deleted.
   Future<int> softDeleteLive(String id, DateTime at) => _whereLive(id).write(
-        VehiclesCompanion(deleted: const Value(true), updatedAt: Value(at)),
+        VehiclesCompanion(
+          deleted: const Value(true),
+          updatedAt: Value(at),
+          deletedAt: Value(at),
+        ),
       );
 
-  /// Brings the soft-deleted vehicle with [id] back to life at [at].
+  /// Brings the soft-deleted vehicle with [id] back to life at [at],
+  /// clearing `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the vehicle is missing or not
   /// deleted.
   Future<int> restoreDeleted(String id, DateTime at) =>
       (update(vehicles)..where((v) => v.id.equals(id) & v.deleted.equals(true)))
           .write(
-        VehiclesCompanion(deleted: const Value(false), updatedAt: Value(at)),
+        VehiclesCompanion(
+          deleted: const Value(false),
+          updatedAt: Value(at),
+          deletedAt: const Value(null),
+        ),
       );
 
   /// Update statement restricted to the live vehicle with [id].

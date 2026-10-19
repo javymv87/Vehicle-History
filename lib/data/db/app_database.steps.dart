@@ -641,10 +641,296 @@ i1.GeneratedColumn<String> _column_36(String aliasedName) =>
 i1.GeneratedColumn<int> _column_37(String aliasedName) =>
     i1.GeneratedColumn<int>('km', aliasedName, false,
         type: i1.DriftSqlType.int, $customConstraints: 'NOT NULL');
+
+final class Schema5 extends i0.VersionedSchema {
+  Schema5({required super.database}) : super(version: 5);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    owners,
+    vehicles,
+    auditLog,
+    logEntries,
+    mileageReadings,
+    vehiclesPlateLiveUnique,
+    vehiclesOwnerId,
+    auditLogEntity,
+    logEntriesVehicleDate,
+    logEntriesVehicleType,
+    mileageReadingsVehicleDate,
+  ];
+  late final Shape5 owners = Shape5(
+      source: i0.VersionedTable(
+        entityName: 'owners',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(id)',
+          'CHECK(length(trim(first_name)) > 0)',
+        ],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_2,
+          _column_3,
+          _column_38,
+          _column_4,
+          _column_5,
+          _column_6,
+          _column_7,
+          _column_8,
+          _column_9,
+          _column_10,
+          _column_11,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape6 vehicles = Shape6(
+      source: i0.VersionedTable(
+        entityName: 'vehicles',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(id)',
+          'CHECK(length(trim(plate)) > 0)',
+          'CHECK(current_odometer_km >= 0)',
+        ],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_2,
+          _column_3,
+          _column_38,
+          _column_12,
+          _column_13,
+          _column_14,
+          _column_15,
+          _column_16,
+          _column_17,
+          _column_18,
+          _column_19,
+          _column_20,
+          _column_21,
+          _column_22,
+          _column_23,
+          _column_24,
+          _column_25,
+          _column_11,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape2 auditLog = Shape2(
+      source: i0.VersionedTable(
+        entityName: 'audit_log',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(id)',
+        ],
+        columns: [
+          _column_0,
+          _column_26,
+          _column_27,
+          _column_28,
+          _column_29,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape7 logEntries = Shape7(
+      source: i0.VersionedTable(
+        entityName: 'log_entries',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(id)',
+          'CHECK(km >= 0)',
+          'CHECK(cost_cents >= 0)',
+        ],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_2,
+          _column_3,
+          _column_38,
+          _column_30,
+          _column_31,
+          _column_32,
+          _column_33,
+          _column_34,
+          _column_35,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape8 mileageReadings = Shape8(
+      source: i0.VersionedTable(
+        entityName: 'mileage_readings',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(id)',
+          'CHECK(km >= 0)',
+        ],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_2,
+          _column_3,
+          _column_38,
+          _column_30,
+          _column_36,
+          _column_37,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  final i1.Index vehiclesPlateLiveUnique = i1.Index(
+      'vehicles_plate_live_unique',
+      'CREATE UNIQUE INDEX vehicles_plate_live_unique ON vehicles (plate) WHERE deleted = 0');
+  final i1.Index vehiclesOwnerId = i1.Index('vehicles_owner_id',
+      'CREATE INDEX vehicles_owner_id ON vehicles (owner_id)');
+  final i1.Index auditLogEntity = i1.Index('audit_log_entity',
+      'CREATE INDEX audit_log_entity ON audit_log (entity_type, entity_id)');
+  final i1.Index logEntriesVehicleDate = i1.Index('log_entries_vehicle_date',
+      'CREATE INDEX log_entries_vehicle_date ON log_entries (vehicle_id, entry_date)');
+  final i1.Index logEntriesVehicleType = i1.Index('log_entries_vehicle_type',
+      'CREATE INDEX log_entries_vehicle_type ON log_entries (vehicle_id, type)');
+  final i1.Index mileageReadingsVehicleDate = i1.Index(
+      'mileage_readings_vehicle_date',
+      'CREATE INDEX mileage_readings_vehicle_date ON mileage_readings (vehicle_id, reading_date)');
+}
+
+class Shape5 extends i0.VersionedTable {
+  Shape5({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get deletedAt =>
+      columnsByName['deleted_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get firstName =>
+      columnsByName['first_name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get lastName =>
+      columnsByName['last_name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get birthDate =>
+      columnsByName['birth_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get nationality =>
+      columnsByName['nationality']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get phone =>
+      columnsByName['phone']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get email =>
+      columnsByName['email']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get notes =>
+      columnsByName['notes']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get photoPath =>
+      columnsByName['photo_path']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_38(String aliasedName) =>
+    i1.GeneratedColumn<String>('deleted_at', aliasedName, true,
+        type: i1.DriftSqlType.string, $customConstraints: 'NULL');
+
+class Shape6 extends i0.VersionedTable {
+  Shape6({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get deletedAt =>
+      columnsByName['deleted_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get plate =>
+      columnsByName['plate']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get kind =>
+      columnsByName['kind']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get make =>
+      columnsByName['make']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get makeSlug =>
+      columnsByName['make_slug']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get model =>
+      columnsByName['model']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get modelSlug =>
+      columnsByName['model_slug']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get modelYear =>
+      columnsByName['model_year']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get version =>
+      columnsByName['version']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get nickname =>
+      columnsByName['nickname']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get ownerId =>
+      columnsByName['owner_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get currentOdometerKm =>
+      columnsByName['current_odometer_km']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get fuelType =>
+      columnsByName['fuel_type']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get recommendedEngineOil =>
+      columnsByName['recommended_engine_oil']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get manufacturerNotes =>
+      columnsByName['manufacturer_notes']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get photoPath =>
+      columnsByName['photo_path']! as i1.GeneratedColumn<String>;
+}
+
+class Shape7 extends i0.VersionedTable {
+  Shape7({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get deletedAt =>
+      columnsByName['deleted_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get vehicleId =>
+      columnsByName['vehicle_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get entryDate =>
+      columnsByName['entry_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get km =>
+      columnsByName['km']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get type =>
+      columnsByName['type']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get description =>
+      columnsByName['description']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get costCents =>
+      columnsByName['cost_cents']! as i1.GeneratedColumn<int>;
+}
+
+class Shape8 extends i0.VersionedTable {
+  Shape8({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get deletedAt =>
+      columnsByName['deleted_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get vehicleId =>
+      columnsByName['vehicle_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get readingDate =>
+      columnsByName['reading_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get km =>
+      columnsByName['km']! as i1.GeneratedColumn<int>;
+}
+
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -663,6 +949,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from3To4(migrator, schema);
         return 4;
+      case 4:
+        final schema = Schema5(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from4To5(migrator, schema);
+        return 5;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -673,10 +964,12 @@ i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) =>
     i0.VersionedSchema.stepByStepHelper(
         step: migrationSteps(
       from1To2: from1To2,
       from2To3: from2To3,
       from3To4: from3To4,
+      from4To5: from4To5,
     ));

@@ -15,6 +15,9 @@ enum ActionError {
   /// The owner still has live vehicles and was not deleted.
   ownerHasVehicles,
 
+  /// The owner still has vehicles in the Trash and was not deleted.
+  ownerHasTrashedVehicles,
+
   /// The owner involved is missing or deleted.
   ownerNotFound,
 
@@ -52,6 +55,7 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
   return switch (error) {
     DuplicatePlateException() => ActionError.duplicatePlate,
     OwnerHasVehiclesException() => ActionError.ownerHasVehicles,
+    OwnerHasTrashedVehiclesException() => ActionError.ownerHasTrashedVehicles,
     EntityNotFoundException(entityType: AuditEntityType.owner) =>
       ActionError.ownerNotFound,
     EntityNotFoundException(entityType: AuditEntityType.vehicle) =>

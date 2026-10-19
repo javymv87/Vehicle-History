@@ -37,6 +37,7 @@ void main() {
     vehicles = DriftVehicleRepository(
       db.vehiclesDao,
       db.mileageReadingsDao,
+      db.trashDao,
       db.auditLogDao,
       clock: clock.call,
     );

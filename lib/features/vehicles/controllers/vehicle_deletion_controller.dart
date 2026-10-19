@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/data_providers.dart';
+import '../../../data/models/trashed_vehicle.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../shared/utils/action_result.dart';
 
@@ -14,7 +15,12 @@ class VehicleDeletionController extends Notifier<String?> {
   @override
   String? build() => null;
 
-  /// Soft-deletes the vehicle with [id].
+  /// Counts what deleting the vehicle with [id] would hide: its live
+  /// entries and readings, shown in the confirmation dialog (U16).
+  Future<ActionResult<VehicleContents>> countContents(String id) =>
+      runAction(() => ref.read(vehicleRepositoryProvider).countContents(id));
+
+  /// Soft-deletes the vehicle with [id], moving it to the Trash.
   Future<ActionResult<void>> delete(String id) async {
     final result =
         await runAction(() => ref.read(vehicleRepositoryProvider).delete(id));

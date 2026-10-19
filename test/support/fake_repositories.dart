@@ -8,6 +8,7 @@ import 'package:vehicle_history/data/models/log_entry_filter.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/owner.dart';
+import 'package:vehicle_history/data/models/trashed_vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/log_entry_repository.dart';
@@ -34,6 +35,10 @@ class FakeStore {
 
   /// Ids of soft-deleted vehicles.
   final Set<String> deletedVehicles = {};
+
+  /// When each soft-deleted vehicle was deleted, by id. Set to the real
+  /// current time, so the Trash shows the full 30 days left.
+  final Map<String, DateTime> vehicleDeletedAt = {};
 
   /// Live and deleted history entries, by id.
   final Map<String, LogEntry> entries = {};
@@ -82,6 +87,42 @@ class FakeStore {
         final byCreation = b.createdAt.compareTo(a.createdAt);
         return byCreation != 0 ? byCreation : b.id.compareTo(a.id);
       });
+  }
+
+  /// Live entries and readings of the vehicle [vehicleId], whatever its
+  /// state.
+  VehicleContents contentsOf(String vehicleId) => VehicleContents(
+        entryCount: entries.values
+            .where(
+              (e) => e.vehicleId == vehicleId && !deletedEntries.contains(e.id),
+            )
+            .length,
+        readingCount: readings.values
+            .where(
+              (r) =>
+                  r.vehicleId == vehicleId && !deletedReadings.contains(r.id),
+            )
+            .length,
+      );
+
+  /// Vehicles in the Trash, most recently deleted first, like the real DAO.
+  List<TrashedVehicle> get trashedVehicles => [
+        for (final id in deletedVehicles)
+          TrashedVehicle(
+            vehicle: vehicles[id]!,
+            owner: owners[vehicles[id]!.ownerId]!,
+            deletedAt: vehicleDeletedAt[id]!,
+            contents: contentsOf(id),
+          ),
+      ]..sort((a, b) => b.deletedAt.compareTo(a.deletedAt));
+
+  /// Removes the vehicle [id] and all its entries and readings for good.
+  void purgeVehicle(String id) {
+    vehicles.remove(id);
+    deletedVehicles.remove(id);
+    vehicleDeletedAt.remove(id);
+    entries.removeWhere((_, e) => e.vehicleId == id);
+    readings.removeWhere((_, r) => r.vehicleId == id);
   }
 
   /// Live readings of the live vehicle [vehicleId], newest first, like the
@@ -325,6 +366,9 @@ class FakeOwnerRepository implements OwnerRepository {
         }
         final count = store.liveVehicles.where((v) => v.ownerId == id).length;
         if (count > 0) throw OwnerHasVehiclesException(id, count);
+        final trashed =
+            store.trashedVehicles.where((t) => t.vehicle.ownerId == id).length;
+        if (trashed > 0) throw OwnerHasTrashedVehiclesException(id, trashed);
         store.deletedOwners.add(id);
       });
 
@@ -460,6 +504,7 @@ class FakeVehicleRepository implements VehicleRepository {
           throw EntityNotFoundException(AuditEntityType.vehicle, id);
         }
         store.deletedVehicles.add(id);
+        store.vehicleDeletedAt[id] = DateTime.now().toUtc();
       });
 
   @override
@@ -470,7 +515,35 @@ class FakeVehicleRepository implements VehicleRepository {
         final vehicle = store.vehicles[id]!;
         _check(vehicle);
         store.deletedVehicles.remove(id);
+        store.vehicleDeletedAt.remove(id);
         return vehicle;
+      });
+
+  @override
+  Future<VehicleContents> countContents(String id) async {
+    if (!store.vehicles.containsKey(id) || store.deletedVehicles.contains(id)) {
+      throw EntityNotFoundException(AuditEntityType.vehicle, id);
+    }
+    return store.contentsOf(id);
+  }
+
+  @override
+  Stream<List<TrashedVehicle>> watchTrashed() =>
+      store.watch(() => store.trashedVehicles);
+
+  @override
+  Future<void> purge(String id) => store.write(() {
+        if (!store.deletedVehicles.contains(id)) {
+          throw EntityNotFoundException(AuditEntityType.vehicle, id);
+        }
+        store.purgeVehicle(id);
+      });
+
+  @override
+  Future<int> purgeAllTrashed() => store.write(() {
+        final ids = store.deletedVehicles.toList();
+        ids.forEach(store.purgeVehicle);
+        return ids.length;
       });
 
   /// Refuses [vehicle] when its owner is not live or its plate is taken.

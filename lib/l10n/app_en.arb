@@ -249,16 +249,24 @@
   "@ownerDeleted": {
     "description": "Snackbar after deleting an owner, shown with an Undo action."
   },
-  "deleteVehicleTitle": "Delete vehicle?",
+  "deleteVehicleTitle": "Delete {vehicle}?",
   "@deleteVehicleTitle": {
-    "description": "Title of the dialog that confirms deleting a vehicle."
-  },
-  "deleteVehicleMessage": "{plate} will be deleted together with all its history. You can undo it for a few seconds afterwards.",
-  "@deleteVehicleMessage": {
-    "description": "Body of the dialog that confirms deleting a vehicle.",
+    "description": "Title of the dialog that confirms deleting a vehicle (U16). vehicle is the name with the plate, see vehicleNameWithPlate.",
     "placeholders": {
-      "plate": {
+      "vehicle": {
         "type": "String"
+      }
+    }
+  },
+  "deleteVehicleMessage": "The vehicle, {entries, plural, =1{its entry} other{its {entries} entries}} and {readings, plural, =1{its odometer reading} other{its {readings} odometer readings}} will be deleted. You can recover it from the Trash for 30 days.",
+  "@deleteVehicleMessage": {
+    "description": "Body of the dialog that confirms deleting a vehicle (U16): counts of its live history entries and odometer readings.",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
       }
     }
   },
@@ -882,5 +890,127 @@
   "readingNotCorrectable": "This reading does not exist or can no longer be corrected: only the sole reading of a vehicle can be.",
   "@readingNotCorrectable": {
     "description": "Page shown when the reading to correct is missing or no longer the sole one."
+  },
+  "vehicleNameWithPlate": "{name} ({plate})",
+  "@vehicleNameWithPlate": {
+    "description": "A vehicle named by make and model followed by its plate, e.g. in dialog titles.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "plate": {
+        "type": "String"
+      }
+    }
+  },
+  "trashMenuItem": "{count, plural, =0{Trash} other{Trash ({count})}}",
+  "@trashMenuItem": {
+    "description": "Overflow menu item of the vehicle list that opens the Trash, with the number of vehicles in it when there are any (U17).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trashTitle": "Trash",
+  "@trashTitle": {
+    "description": "Title of the Trash page, which lists the deleted vehicles (U17)."
+  },
+  "trashEmpty": "The Trash is empty",
+  "@trashEmpty": {
+    "description": "Empty state of the Trash page."
+  },
+  "trashDeletedOn": "Deleted on {date}",
+  "@trashDeletedOn": {
+    "description": "Trash row: the day the vehicle was deleted.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "trashPurgeIn": "{days, plural, =0{Will be removed at the next start} =1{Will be removed in 1 day} other{Will be removed in {days} days}}",
+  "@trashPurgeIn": {
+    "description": "Trash row: days left before the vehicle is removed for good. 0 means the next app start removes it.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "trashContents": "{entries, plural, =1{1 entry} other{{entries} entries}} · {readings, plural, =1{1 odometer reading} other{{readings} odometer readings}}",
+  "@trashContents": {
+    "description": "Trash row: how many history entries and odometer readings the vehicle carries.",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      }
+    }
+  },
+  "actionRestore": "Restore",
+  "@actionRestore": {
+    "description": "Button that brings a vehicle back from the Trash."
+  },
+  "actionPurge": "Delete permanently",
+  "@actionPurge": {
+    "description": "Button that removes a vehicle from the Trash for good."
+  },
+  "actionEmptyTrash": "Empty Trash",
+  "@actionEmptyTrash": {
+    "description": "App bar action of the Trash page that removes every vehicle in it for good."
+  },
+  "purgeVehicleTitle": "Delete {vehicle} permanently?",
+  "@purgeVehicleTitle": {
+    "description": "Title of the dialog that confirms removing a vehicle from the Trash for good.",
+    "placeholders": {
+      "vehicle": {
+        "type": "String"
+      }
+    }
+  },
+  "purgeVehicleMessage": "The vehicle, {entries, plural, =1{its entry} other{its {entries} entries}} and {readings, plural, =1{its odometer reading} other{its {readings} odometer readings}} will be deleted forever. This cannot be undone.",
+  "@purgeVehicleMessage": {
+    "description": "Body of the dialog that confirms removing a vehicle from the Trash for good.",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      }
+    }
+  },
+  "emptyTrashTitle": "Empty the Trash?",
+  "@emptyTrashTitle": {
+    "description": "Title of the dialog that confirms emptying the Trash."
+  },
+  "emptyTrashMessage": "{count, plural, =1{The vehicle in the Trash will be deleted forever, with all its entries and odometer readings.} other{The {count} vehicles in the Trash will be deleted forever, with all their entries and odometer readings.}} This cannot be undone.",
+  "@emptyTrashMessage": {
+    "description": "Body of the dialog that confirms emptying the Trash, with the number of vehicles in it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vehicleRestored": "Vehicle restored",
+  "@vehicleRestored": {
+    "description": "Snackbar after restoring a vehicle from the Trash (U18)."
+  },
+  "vehiclePurged": "Vehicle deleted permanently",
+  "@vehiclePurged": {
+    "description": "Snackbar after removing a vehicle from the Trash for good."
+  },
+  "trashEmptied": "Trash emptied",
+  "@trashEmptied": {
+    "description": "Snackbar after emptying the Trash."
+  },
+  "errorOwnerHasTrashedVehicles": "This owner has vehicles in the Trash: restore them or empty the Trash.",
+  "@errorOwnerHasTrashedVehicles": {
+    "description": "Error when deleting an owner whose only vehicles are in the Trash. Nothing was deleted."
   }
 }

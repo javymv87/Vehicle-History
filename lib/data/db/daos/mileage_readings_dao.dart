@@ -137,7 +137,8 @@ class MileageReadingsDao extends DatabaseAccessor<AppDatabase>
   Future<int> updateLive(MileageReading reading) =>
       _whereLive(reading.id).write(reading.toUpdateCompanion());
 
-  /// Marks the live reading with [id] as deleted at [at].
+  /// Marks the live reading with [id] as deleted at [at], setting
+  /// `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the reading is missing or
   /// already deleted.
@@ -145,10 +146,12 @@ class MileageReadingsDao extends DatabaseAccessor<AppDatabase>
         MileageReadingsCompanion(
           deleted: const Value(true),
           updatedAt: Value(at),
+          deletedAt: Value(at),
         ),
       );
 
-  /// Brings the soft-deleted reading with [id] back to life at [at].
+  /// Brings the soft-deleted reading with [id] back to life at [at],
+  /// clearing `deleted` and `deleted_at` together.
   ///
   /// Returns the number of rows changed: 0 when the reading is missing or
   /// not deleted.
@@ -158,6 +161,7 @@ class MileageReadingsDao extends DatabaseAccessor<AppDatabase>
         MileageReadingsCompanion(
           deleted: const Value(false),
           updatedAt: Value(at),
+          deletedAt: const Value(null),
         ),
       );
 

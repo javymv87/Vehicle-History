@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/app_menu_button.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../trash/controllers/trash_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 import '../widgets/vehicle_tile.dart';
 
@@ -24,7 +25,7 @@ class VehicleListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.vehiclesTitle),
-        actions: const [AppMenuButton()],
+        actions: [AppMenuButton(trashCount: ref.watch(trashCountProvider))],
       ),
       body: AsyncValueView(
         value: ref.watch(vehicleListProvider),
