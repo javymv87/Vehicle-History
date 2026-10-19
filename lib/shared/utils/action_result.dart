@@ -21,6 +21,9 @@ enum ActionError {
   /// The vehicle involved is missing or deleted.
   vehicleNotFound,
 
+  /// The history entry involved is missing or deleted.
+  entryNotFound,
+
   /// The data layer refused a value that the form let through.
   invalidInput,
 
@@ -40,6 +43,8 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.ownerNotFound,
     EntityNotFoundException(entityType: AuditEntityType.vehicle) =>
       ActionError.vehicleNotFound,
+    EntityNotFoundException(entityType: AuditEntityType.logEntry) =>
+      ActionError.entryNotFound,
     InvalidFieldException() => ActionError.invalidInput,
     _ => _unexpected(error, stackTrace),
   };

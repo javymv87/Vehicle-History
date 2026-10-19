@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/entries/pages/log_entry_detail_page.dart';
+import '../../features/entries/pages/log_entry_form_page.dart';
 import '../../features/owners/pages/owner_detail_page.dart';
 import '../../features/owners/pages/owner_form_page.dart';
 import '../../features/owners/pages/owner_list_page.dart';
@@ -23,8 +25,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 ///
 /// The two lists live in a [StatefulShellRoute] under the navigation bar;
 /// details and forms are top-level routes, so they are pushed full screen on
-/// top of it. `/vehicles/new` and `/owners/new` are declared before the
-/// `:id` routes so that "new" is never read as an id.
+/// top of it. `/vehicles/new`, `/owners/new` and `entries/new` are declared
+/// before the matching `:id` routes so that "new" is never read as an id.
+/// The history entries live under their vehicle
+/// (`/vehicles/:id/entries/...`), so pushing one keeps the vehicle page
+/// below it.
 GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
   return GoRouter(
     initialLocation: initialLocation,
@@ -68,6 +73,27 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
             path: 'edit',
             builder: (context, state) =>
                 VehicleFormPage(vehicleId: state.pathParameters['id']),
+          ),
+          GoRoute(
+            path: 'entries/new',
+            builder: (context, state) =>
+                LogEntryFormPage(vehicleId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'entries/:entryId',
+            builder: (context, state) => LogEntryDetailPage(
+              vehicleId: state.pathParameters['id']!,
+              entryId: state.pathParameters['entryId']!,
+            ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => LogEntryFormPage(
+                  vehicleId: state.pathParameters['id']!,
+                  entryId: state.pathParameters['entryId'],
+                ),
+              ),
+            ],
           ),
         ],
       ),

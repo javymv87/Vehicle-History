@@ -166,6 +166,39 @@ Tipos de entrada previstos:
 - Control genérico no clasificado (nota libre)
 - Nota / evento (accidentes, multas, recordatorios libres)
 
+**Lo que existe hoy (esquema v3).** La tabla `log_entries` guarda los campos
+técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la referencia
+al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON DELETE
+RESTRICT`), la **fecha** (fecha de calendario, texto `yyyy-MM-dd`, sin hora ni
+zona horaria), los **km** (entero, opcional, nunca negativo), el **tipo**
+(texto con código estable), la **descripción** (texto, opcional) y el
+**coste** (entero en **céntimos de euro**, opcional, nunca negativo). Un coste
+vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
+`(vehicle_id, type)`, para la lista y los filtros.
+
+- **Tipos y sus códigos:** mantenimiento (`maintenance`), reparación
+  (`repair`), vencimiento legal (`legalDue`), repostaje (`refuel`), gasto
+  (`expense`), control con medición (`measuredCheck`), control genérico
+  (`genericCheck`) y nota (`note`). El control con medición existe en el
+  esquema pero **el formulario todavía no lo ofrece**: sin su medición sería
+  un control genérico. Llegará con el paso de las mediciones.
+- **Km obligatorio según el tipo:** obligatorio para mantenimiento,
+  reparación, repostaje y control genérico (y el control con medición);
+  opcional para vencimiento legal, gasto y nota. La regla la aplica el
+  formulario y también el repositorio. Este km **nunca** alimenta
+  `MileageReading` ni cambia el km actual del vehículo.
+- **Sin recordatorio todavía:** los campos del recordatorio se añadirán con su
+  propia migración en el paso de los recordatorios. Guardar un recordatorio
+  que nunca avisa engañaría al usuario.
+- **Vehículo borrado:** sus entradas se quedan tal cual (no se borran en
+  cascada) y simplemente no se ven, porque el vehículo ya no es accesible.
+  Restaurar el vehículo las hace visibles de nuevo.
+- **Deshacer el borrado de una entrada** la restaura; si mientras tanto se ha
+  borrado su vehículo, el deshacer se rechaza con un mensaje y no cambia
+  nada.
+- Los campos extra del repostaje (litros, precio/litro), las partidas de
+  gasto, las imágenes y las mediciones llegarán en pasos posteriores.
+
 ### EntryImage (imagen de una entrada)
 
 Las fotos adjuntas a una LogEntry. Una entrada puede tener **varias** imágenes.
@@ -258,7 +291,10 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 Registro ligero de todas las operaciones realizadas sobre las entradas,
 consultable y útil también en el futuro. Existe **desde la primera versión
 del esquema**: cada creación, modificación, borrado y restauración (deshacer
-un borrado) de un Owner o un Vehicle añade su fila en la misma transacción. Es solo de añadir: sus filas no se
+un borrado) de un Owner, un Vehicle o una LogEntry
+añade su fila en la misma transacción. El tipo de entidad es texto sin
+restricción CHECK, así que añadir las entradas del historial (`logEntry`, en
+la v3) no ha requerido tocar esta tabla. Es solo de añadir: sus filas no se
 modifican ni se borran.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)

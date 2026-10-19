@@ -6,13 +6,16 @@ import 'package:path_provider/path_provider.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
+import '../models/log_entry_type.dart';
 import '../models/vehicle_kind.dart';
 import 'app_database.steps.dart';
 import 'audit_log_table.dart';
 import 'converters.dart';
 import 'daos/audit_log_dao.dart';
+import 'daos/log_entries_dao.dart';
 import 'daos/owners_dao.dart';
 import 'daos/vehicles_dao.dart';
+import 'log_entries_table.dart';
 import 'owners_table.dart';
 import 'upgrade_safety.dart';
 import 'vehicles_table.dart';
@@ -25,8 +28,8 @@ part 'app_database.g.dart';
 /// [schemaVersion], add a migration step and commit the new schema dump
 /// (see CLAUDE.md §2).
 @DriftDatabase(
-  tables: [Owners, Vehicles, AuditLog],
-  daos: [OwnersDao, VehiclesDao, AuditLogDao],
+  tables: [Owners, Vehicles, AuditLog, LogEntries],
+  daos: [OwnersDao, VehiclesDao, AuditLogDao, LogEntriesDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens the on-device database file `vehicle_history.sqlite` via
@@ -83,6 +86,15 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(vehicles, column);
       }
     },
+    // v3: the vehicle history (`log_entries`) and its two indexes. Only new
+    // objects: no existing table or row is touched. `audit_log` needs no
+    // change, since `entity_type` has no CHECK and accepts the new
+    // `logEntry` code as it is.
+    from2To3: (m, schema) async {
+      await m.createTable(schema.logEntries);
+      await m.createIndex(schema.logEntriesVehicleDate);
+      await m.createIndex(schema.logEntriesVehicleType);
+    },
   );
 
   /// Steps run by [runSafeUpgrade] when the file is older than the app.
@@ -92,7 +104,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// Opens the connection now, running any pending migration.
   ///

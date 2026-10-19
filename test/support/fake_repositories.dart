@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
+import 'package:vehicle_history/data/models/log_entry.dart';
+import 'package:vehicle_history/data/models/log_entry_filter.dart';
+import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/data/repositories/log_entry_repository.dart';
 import 'package:vehicle_history/data/repositories/owner_repository.dart';
 import 'package:vehicle_history/data/repositories/repository_exceptions.dart';
 import 'package:vehicle_history/data/repositories/vehicle_repository.dart';
@@ -29,6 +33,12 @@ class FakeStore {
   /// Ids of soft-deleted vehicles.
   final Set<String> deletedVehicles = {};
 
+  /// Live and deleted history entries, by id.
+  final Map<String, LogEntry> entries = {};
+
+  /// Ids of soft-deleted entries.
+  final Set<String> deletedEntries = {};
+
   /// When set, every write throws it instead of writing.
   Exception? failWritesWith;
 
@@ -50,6 +60,21 @@ class FakeStore {
         for (final v in vehicles.values)
           if (!deletedVehicles.contains(v.id)) v,
       ]..sort((a, b) => a.plate.compareTo(b.plate));
+
+  /// Live entries of the live vehicle [vehicleId], newest first, like the
+  /// real DAO.
+  List<LogEntry> liveEntriesOf(String vehicleId) {
+    if (deletedVehicles.contains(vehicleId)) return [];
+    return [
+      for (final e in entries.values)
+        if (e.vehicleId == vehicleId && !deletedEntries.contains(e.id)) e,
+    ]..sort((a, b) {
+        final byDate = b.date.compareTo(a.date);
+        if (byDate != 0) return byDate;
+        final byCreation = b.createdAt.compareTo(a.createdAt);
+        return byCreation != 0 ? byCreation : b.id.compareTo(a.id);
+      });
+  }
 
   /// Emits [read] now and after every change.
   Stream<T> watch<T>(T Function() read) => Stream.multi((controller) {
@@ -84,6 +109,35 @@ class FakeStore {
     owners[owner.id] = owner;
     _changes.add(null);
     return owner;
+  }
+
+  /// Adds a live history entry directly, for test setup.
+  ///
+  /// Each entry is created one minute after the previous one, so entries of
+  /// the same day keep their insertion order (newest first).
+  LogEntry addEntry(
+    String vehicleId, {
+    required CalendarDate date,
+    LogEntryType type = LogEntryType.maintenance,
+    int? km = 1000,
+    String? description,
+    int? costCents,
+  }) {
+    final created = _now.add(Duration(minutes: entries.length));
+    final entry = LogEntry(
+      id: newId('entry'),
+      vehicleId: vehicleId,
+      date: date,
+      km: km,
+      type: type,
+      description: description,
+      costCents: costCents,
+      createdAt: created,
+      updatedAt: created,
+    );
+    entries[entry.id] = entry;
+    _changes.add(null);
+    return entry;
   }
 
   /// Adds a live vehicle directly, for test setup.
@@ -363,6 +417,131 @@ class FakeVehicleRepository implements VehicleRepository {
     if (store.liveVehicles
         .any((v) => v.plate == vehicle.plate && v.id != vehicle.id)) {
       throw DuplicatePlateException(vehicle.plate);
+    }
+  }
+}
+
+/// [LogEntryRepository] on a [FakeStore].
+///
+/// Applies the filter with `LogEntryFilter.matches`, the reference the Drift
+/// repository is tested against.
+class FakeLogEntryRepository implements LogEntryRepository {
+  /// Creates the repository on [store].
+  FakeLogEntryRepository(this.store);
+
+  /// The shared data.
+  final FakeStore store;
+
+  @override
+  Stream<List<LogEntry>> watchByVehicle(
+    String vehicleId, {
+    LogEntryFilter filter = LogEntryFilter.none,
+  }) =>
+      store.watch(
+        () => store.liveEntriesOf(vehicleId).where(filter.matches).toList(),
+      );
+
+  @override
+  Future<LogEntry?> getById(String id) async => _live(id);
+
+  @override
+  Stream<LogEntry?> watchById(String id) => store.watch(() => _live(id));
+
+  /// The live entry with [id] of a live vehicle, or `null`.
+  LogEntry? _live(String id) {
+    final entry = store.entries[id];
+    if (entry == null ||
+        store.deletedEntries.contains(id) ||
+        store.deletedVehicles.contains(entry.vehicleId)) {
+      return null;
+    }
+    return entry;
+  }
+
+  @override
+  Future<LogEntry> create({
+    required String vehicleId,
+    required CalendarDate date,
+    int? km,
+    required LogEntryType type,
+    String? description,
+    int? costCents,
+  }) =>
+      store.write(() {
+        _check(type, km);
+        if (!store.liveVehicles.any((v) => v.id == vehicleId)) {
+          throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
+        }
+        final created = store.now.add(Duration(minutes: store.entries.length));
+        final entry = LogEntry(
+          id: store.newId('entry'),
+          vehicleId: vehicleId,
+          date: date,
+          km: km,
+          type: type,
+          description: _clean(description),
+          costCents: costCents,
+          createdAt: created,
+          updatedAt: created,
+        );
+        store.entries[entry.id] = entry;
+        return entry;
+      });
+
+  @override
+  Future<LogEntry> update(
+    String id, {
+    required CalendarDate date,
+    int? km,
+    required LogEntryType type,
+    String? description,
+    int? costCents,
+  }) =>
+      store.write(() {
+        _check(type, km);
+        final current = _live(id);
+        if (current == null) {
+          throw EntityNotFoundException(AuditEntityType.logEntry, id);
+        }
+        final updated = current.copyWith(
+          date: date,
+          km: km,
+          type: type,
+          description: _clean(description),
+          costCents: costCents,
+        );
+        store.entries[id] = updated;
+        return updated;
+      });
+
+  @override
+  Future<void> delete(String id) => store.write(() {
+        if (_live(id) == null) {
+          throw EntityNotFoundException(AuditEntityType.logEntry, id);
+        }
+        store.deletedEntries.add(id);
+      });
+
+  @override
+  Future<LogEntry> restore(String id) => store.write(() {
+        if (!store.deletedEntries.contains(id)) {
+          throw EntityNotFoundException(AuditEntityType.logEntry, id);
+        }
+        final entry = store.entries[id]!;
+        if (store.deletedVehicles.contains(entry.vehicleId)) {
+          throw EntityNotFoundException(
+            AuditEntityType.vehicle,
+            entry.vehicleId,
+          );
+        }
+        store.deletedEntries.remove(id);
+        return entry;
+      });
+
+  /// Refuses a missing km for a type that requires it.
+  void _check(LogEntryType type, int? km) {
+    if (km == null && type.requiresKm) {
+      throw const InvalidFieldException('km', 'required');
     }
   }
 }

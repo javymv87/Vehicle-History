@@ -98,6 +98,41 @@ recordatorio.
 Al tocar una entrada se ve su detalle completo y se puede modificar o
 borrar.
 
+Lo que hace hoy la app (paso 4 de la hoja de ruta):
+
+- **U1 — El vehículo se abre en su historial.** La página del vehículo
+  tiene dos pestañas: **Historial** (la primera, la que se ve al abrir) y
+  **Ficha** (los datos del vehículo). Arriba, siempre visible, una cabecera
+  compacta con el icono del tipo de vehículo, marca + modelo, matrícula y km
+  actual.
+- **U2 — Botón flotante "Nueva entrada"** en la página del vehículo (en las
+  listas sigue el botón de añadir vehículo / propietario).
+- **U3 — Formulario rápido, pocos toques.** Orden: tipo (chips con icono, un
+  toque), fecha (**hoy por defecto**, selector de fecha de Material), km,
+  coste y descripción. El botón Guardar está siempre en la barra superior.
+- **U4 — Ayuda para el km:** bajo el campo, un chip de un toque "Usar km
+  actual (123.456)" copia el km actual del vehículo. El campo **nunca** se
+  rellena solo. La etiqueta indica si el km es obligatorio para el tipo
+  elegido o opcional.
+- **U5 — Coste en euros** con el separador decimal del idioma (`,` en
+  italiano y español, `.` en inglés), con 2 decimales como máximo; se guarda
+  en céntimos y se muestra con el formato de moneda del idioma. Como algunos
+  teclados del teléfono solo muestran uno de los dos separadores, se acepta
+  también el otro como separador decimal; no se aceptan separadores de miles
+  (`1.234` se rechaza en vez de leerse como 1234 €).
+- **U6 — Fila de la lista:** icono y nombre del tipo, fecha, km (si los
+  hay), la primera línea de la descripción y el coste (si lo hay). Las más
+  recientes arriba (por fecha y, en el mismo día, la creada más tarde
+  primero), agrupadas por mes con un pequeño encabezado ("Octubre de
+  2026").
+- **U7 — Detalle:** todos los campos; editar y borrar (confirmación +
+  toast con Deshacer). Bajo los km, una nota recuerda que solo se registran
+  en la entrada y no cambian el km del vehículo.
+- **U9 — Historial vacío:** un texto breve; para añadir, el botón flotante.
+- **U10 — Validación** en línea y traducida: tipo obligatorio; fecha
+  obligatoria; km entero ≥ 0, obligatorio para los tipos que lo requieren
+  (ver `02_data_model.md`); coste ≥ 0 con 2 decimales como máximo.
+
 ## Filtros y búsqueda
 
 En el historial se puede filtrar por:
@@ -108,6 +143,22 @@ En el historial se puede filtrar por:
 
 Los filtros son combinables. Deben poder activarse y restablecerse
 rápidamente.
+
+Cómo funciona (U8):
+
+- Un botón de filtro en la barra superior (solo en la pestaña Historial, con
+  un punto cuando hay filtros activos) abre una hoja inferior con el
+  intervalo de fechas (selector de intervalo de Material), los tipos (chips
+  de selección múltiple) y el texto. Se aplican con "Aplicar".
+- Los filtros activos aparecen como chips encima de la lista, cada uno con su
+  botón para quitarlo, más **"Quitar filtros"** para quitarlos todos.
+- El texto se busca en la descripción, en cualquier parte, sin distinguir
+  mayúsculas ni acentos ("malaga" encuentra "Málaga").
+- El intervalo de fechas incluye los dos extremos. Los criterios se combinan
+  (todos deben cumplirse).
+- Si no hay resultados: "Ninguna entrada con estos filtros" y un botón para
+  quitarlos.
+- Los filtros duran mientras la página del vehículo está abierta.
 
 ## Recordatorios y notificaciones
 

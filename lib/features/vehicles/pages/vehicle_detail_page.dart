@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
@@ -12,12 +13,15 @@ import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
+import '../../entries/controllers/log_entry_history_controller.dart';
+import '../../entries/widgets/log_entry_history_view.dart';
 import '../controllers/vehicle_deletion_controller.dart';
 import '../controllers/vehicle_detail_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 
-/// Detail of one vehicle. The vehicle id comes from the path; an unknown or
-/// deleted id shows a not-found page.
+/// The page of one vehicle: its history first, its details in a second tab.
+/// The vehicle id comes from the path; an unknown or deleted id shows a
+/// not-found page.
 class VehicleDetailPage extends ConsumerWidget {
   /// Creates the page for the vehicle with [vehicleId].
   const VehicleDetailPage({super.key, required this.vehicleId});
@@ -46,29 +50,52 @@ class VehicleDetailPage extends ConsumerWidget {
   }
 }
 
-/// The loaded vehicle detail.
-class _VehicleDetailView extends ConsumerWidget {
+/// The loaded vehicle page (`Docs/03_features.md`, U1–U2): a compact
+/// header, then two tabs, History (shown first) and Details, and the "New
+/// entry" button.
+class _VehicleDetailView extends ConsumerStatefulWidget {
   const _VehicleDetailView({required this.item});
 
   final VehicleWithOwner item;
 
+  @override
+  ConsumerState<_VehicleDetailView> createState() => _VehicleDetailViewState();
+}
+
+class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
+    with SingleTickerProviderStateMixin {
+  /// Index of the history tab, the default one.
+  static const int _historyTab = 0;
+
+  late final TabController _tabs = TabController(length: 2, vsync: this)
+    // The filter button belongs to the history: shown only on that tab.
+    ..addListener(() {
+      if (!_tabs.indexIsChanging) setState(() {});
+    });
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
   /// Deletes the vehicle after confirmation, then offers "Undo".
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+  Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final vehicle = item.vehicle;
+    final vehicle = widget.item.vehicle;
     final confirmed = await confirmDelete(
       context,
       title: l10n.deleteVehicleTitle,
       message: l10n.deleteVehicleMessage(vehicle.plate),
     );
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted) return;
 
     // Read before popping: the controller outlives this page, the page's
     // `ref` does not.
     final deletion = ref.read(vehicleDeletionControllerProvider.notifier);
     final result = await deletion.delete(vehicle.id);
-    if (!context.mounted) return;
+    if (!mounted) return;
     switch (result) {
       case ActionSuccess():
         context.popOrGo(AppRoutes.vehicles);
@@ -89,14 +116,23 @@ class _VehicleDetailView extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final vehicle = item.vehicle;
-    final owner = item.owner;
+    final vehicle = widget.item.vehicle;
+    final filter = ref.watch(logEntryFilterProvider(vehicle.id));
     return Scaffold(
       appBar: AppBar(
-        title: Text(vehicle.makeAndModel ?? vehicle.plate),
         actions: [
+          if (_tabs.index == _historyTab)
+            IconButton(
+              tooltip: l10n.filterAction,
+              // A dot on the icon tells that filters are active.
+              icon: Badge(
+                isLabelVisible: !filter.isEmpty,
+                child: const Icon(Icons.filter_list),
+              ),
+              onPressed: () => openLogEntryFilters(context, ref, vehicle.id),
+            ),
           IconButton(
             tooltip: l10n.actionEdit,
             icon: const Icon(Icons.edit),
@@ -105,52 +141,154 @@ class _VehicleDetailView extends ConsumerWidget {
           IconButton(
             tooltip: l10n.actionDelete,
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _delete(context, ref),
+            onPressed: _delete,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: AppRoutes.newEntry(vehicle.id),
+        onPressed: () => context.push(AppRoutes.newEntry(vehicle.id)),
+        icon: const Icon(Icons.add),
+        label: Text(l10n.addEntry),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ListTile(
-            leading: Icon(vehicle.kind.icon),
-            title: Text(vehicle.kind.label(l10n)),
-            subtitle: Text(l10n.fieldKind),
+          _VehicleHeader(vehicle: vehicle),
+          TabBar(
+            controller: _tabs,
+            tabs: [
+              Tab(text: l10n.tabHistory),
+              Tab(text: l10n.tabDetails),
+            ],
           ),
-          if (vehicle.make case final make?)
-            DetailField(label: l10n.fieldMake, value: make),
-          if (vehicle.model case final model?)
-            DetailField(label: l10n.fieldModel, value: model),
-          if (vehicle.modelYear case final year?)
-            DetailField(label: l10n.fieldModelYear, value: '$year'),
-          if (vehicle.version case final version?)
-            DetailField(label: l10n.fieldVersion, value: version),
-          DetailField(label: l10n.fieldPlate, value: vehicle.plate),
-          if (vehicle.nickname case final nickname?)
-            DetailField(label: l10n.fieldNickname, value: nickname),
-          if (owner != null)
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(owner.fullName),
-              subtitle: Text(l10n.fieldOwner),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push(AppRoutes.owner(owner.id)),
+          Expanded(
+            child: TabBarView(
+              controller: _tabs,
+              children: [
+                LogEntryHistoryView(vehicleId: vehicle.id),
+                _VehicleInfo(item: widget.item),
+              ],
             ),
-          DetailField(
-            label: l10n.fieldFuelType,
-            value: vehicle.fuelType.label(l10n),
           ),
-          DetailField(
-            label: l10n.fieldCurrentKm,
-            value: l10n.kmValue(vehicle.currentOdometerKm),
-            note: l10n.vehicleKmNote,
-          ),
-          if (vehicle.recommendedEngineOil case final oil?)
-            DetailField(label: l10n.fieldRecommendedOil, value: oil),
-          if (vehicle.manufacturerNotes case final notes?)
-            DetailField(label: l10n.fieldManufacturerNotes, value: notes),
         ],
       ),
+    );
+  }
+}
+
+/// The compact header always shown above the tabs: kind icon, make and
+/// model (the plate for vehicles without them), plate and current km.
+class _VehicleHeader extends StatelessWidget {
+  const _VehicleHeader({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final makeAndModel = vehicle.makeAndModel;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            child: Icon(
+              vehicle.kind.icon,
+              semanticLabel: vehicle.kind.label(l10n),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Capped in lines: the header stays compact with long names
+                // and very large text, leaving the screen to the history.
+                Text(
+                  makeAndModel ?? vehicle.plate,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  makeAndModel == null
+                      ? l10n.kmValue(vehicle.currentOdometerKm)
+                      : l10n.vehicleHeaderSummary(
+                          vehicle.plate,
+                          vehicle.currentOdometerKm,
+                        ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Details tab: every field of the vehicle, read-only.
+class _VehicleInfo extends StatelessWidget {
+  const _VehicleInfo({required this.item});
+
+  final VehicleWithOwner item;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final vehicle = item.vehicle;
+    final owner = item.owner;
+    return ListView(
+      // Room at the bottom so the FAB never covers the last field.
+      padding: const EdgeInsets.only(top: 8, bottom: 88),
+      children: [
+        ListTile(
+          leading: Icon(vehicle.kind.icon),
+          title: Text(vehicle.kind.label(l10n)),
+          subtitle: Text(l10n.fieldKind),
+        ),
+        if (vehicle.make case final make?)
+          DetailField(label: l10n.fieldMake, value: make),
+        if (vehicle.model case final model?)
+          DetailField(label: l10n.fieldModel, value: model),
+        if (vehicle.modelYear case final year?)
+          DetailField(label: l10n.fieldModelYear, value: '$year'),
+        if (vehicle.version case final version?)
+          DetailField(label: l10n.fieldVersion, value: version),
+        DetailField(label: l10n.fieldPlate, value: vehicle.plate),
+        if (vehicle.nickname case final nickname?)
+          DetailField(label: l10n.fieldNickname, value: nickname),
+        if (owner != null)
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(owner.fullName),
+            subtitle: Text(l10n.fieldOwner),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.owner(owner.id)),
+          ),
+        DetailField(
+          label: l10n.fieldFuelType,
+          value: vehicle.fuelType.label(l10n),
+        ),
+        DetailField(
+          label: l10n.fieldCurrentKm,
+          value: l10n.kmValue(vehicle.currentOdometerKm),
+          note: l10n.vehicleKmNote,
+        ),
+        if (vehicle.recommendedEngineOil case final oil?)
+          DetailField(label: l10n.fieldRecommendedOil, value: oil),
+        if (vehicle.manufacturerNotes case final notes?)
+          DetailField(label: l10n.fieldManufacturerNotes, value: notes),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
+import '../models/log_entry_type.dart';
 import '../models/vehicle_kind.dart';
 
 /// Stores a [CalendarDate] as ISO-8601 `yyyy-MM-dd` text.
@@ -82,7 +83,42 @@ class VehicleKindConverter extends TypeConverter<VehicleKind, String> {
       };
 }
 
+/// Stores a [LogEntryType] as a stable text code.
+class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const LogEntryTypeConverter();
+
+  @override
+  LogEntryType fromSql(String fromDb) => switch (fromDb) {
+        'maintenance' => LogEntryType.maintenance,
+        'repair' => LogEntryType.repair,
+        'legalDue' => LogEntryType.legalDue,
+        'refuel' => LogEntryType.refuel,
+        'expense' => LogEntryType.expense,
+        'measuredCheck' => LogEntryType.measuredCheck,
+        'genericCheck' => LogEntryType.genericCheck,
+        'note' => LogEntryType.note,
+        // Only reachable with a corrupted or foreign database file.
+        _ => throw StateError('Unknown log entry type in database: $fromDb'),
+      };
+
+  @override
+  String toSql(LogEntryType value) => switch (value) {
+        LogEntryType.maintenance => 'maintenance',
+        LogEntryType.repair => 'repair',
+        LogEntryType.legalDue => 'legalDue',
+        LogEntryType.refuel => 'refuel',
+        LogEntryType.expense => 'expense',
+        LogEntryType.measuredCheck => 'measuredCheck',
+        LogEntryType.genericCheck => 'genericCheck',
+        LogEntryType.note => 'note',
+      };
+}
+
 /// Stores an [AuditEntityType] as a stable text code.
+///
+/// The column has no CHECK constraint, so a new entity type (such as
+/// `logEntry`, added with schema v3) needs only a new code here.
 class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditEntityTypeConverter();
@@ -91,6 +127,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   AuditEntityType fromSql(String fromDb) => switch (fromDb) {
         'owner' => AuditEntityType.owner,
         'vehicle' => AuditEntityType.vehicle,
+        'logEntry' => AuditEntityType.logEntry,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit entity type in database: $fromDb'),
       };
@@ -99,6 +136,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   String toSql(AuditEntityType value) => switch (value) {
         AuditEntityType.owner => 'owner',
         AuditEntityType.vehicle => 'vehicle',
+        AuditEntityType.logEntry => 'logEntry',
       };
 }
 
