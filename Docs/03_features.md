@@ -29,7 +29,7 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   creado antes de existir marca y modelo se abre y se ve normalmente, pero al
   guardarlo el formulario pide marca y modelo. La ficha del
   vehículo muestra el km en solo lectura, con una nota breve: se cambia solo
-  desde la función de cuentakilómetros (paso 5).
+  desde la pestaña Kilometraje.
 - **Formulario del propietario:** nombre (obligatorio), apellidos, fecha de
   nacimiento (selector de fecha de Material; fecha de calendario sin hora),
   nacionalidad (selector de países, abajo), teléfono, email y notas.
@@ -101,8 +101,9 @@ borrar.
 Lo que hace hoy la app (paso 4 de la hoja de ruta):
 
 - **U1 — El vehículo se abre en su historial.** La página del vehículo
-  tiene dos pestañas: **Historial** (la primera, la que se ve al abrir) y
-  **Ficha** (los datos del vehículo). Arriba, siempre visible, una cabecera
+  tenía dos pestañas: **Historial** (la primera, la que se ve al abrir) y
+  **Ficha** (los datos del vehículo); desde el paso 5 tiene también
+  **Kilometraje** (ver U11). Arriba, siempre visible, una cabecera
   compacta con el icono del tipo de vehículo, marca + modelo, matrícula y km
   actual.
 - **U2 — Botón flotante "Nueva entrada"** en la página del vehículo (en las
@@ -132,6 +133,53 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
 - **U10 — Validación** en línea y traducida: tipo obligatorio; fecha
   obligatoria; km entero ≥ 0, obligatorio para los tipos que lo requieren
   (ver `02_data_model.md`); coste ≥ 0 con 2 decimales como máximo.
+
+Reglas añadidas al formulario de entradas en el paso 5:
+
+- **E1 — Fechas futuras** solo para vencimiento legal, gasto y nota. Para
+  mantenimiento, reparación, repostaje y control la fecha debe ser hoy o
+  anterior: el formulario lo señala bajo la fecha y el repositorio lo
+  rechaza. Las entradas que ya existían no se tocan.
+- **E2 — Entrada en el pasado con km mayor que el cuentakilómetros:** si la
+  fecha es anterior a la última lectura y el km supera el km actual, casi
+  seguro es un error tipográfico: un diálogo avisa ("Este km es mayor que el
+  cuentakilómetros actual (X). ¿Guardar igualmente?"). No bloquea.
+- **E3 — Oferta de actualizar el cuentakilómetros.** Después de guardar una
+  entrada (nueva o editada) cuando se cumplen las tres condiciones — km
+  mayor que el km actual, fecha hoy o anterior, fecha no anterior a la
+  última lectura — aparece durante unos 8 segundos "Entrada guardada.
+  ¿Actualizar el cuentakilómetros a 123.456 km?" con la acción
+  **"Actualizar"**. Al pulsarla se crea una lectura con la fecha y el km de
+  la entrada (con la confirmación de los 50.000 km si procede) y la página
+  del vehículo pasa a la pestaña Kilometraje. Si no se pulsa, no pasa nada:
+  la entrada ya está guardada.
+
+## Kilometraje
+
+El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
+`04_maintenance_logic.md`.
+
+- **U11 — Tres pestañas** en la página del vehículo: **Historial** (la que
+  se ve al abrir), **Kilometraje** y **Ficha**. La cabecera compacta sigue
+  mostrando el km actual.
+- **U12 — Pestaña Kilometraje:** las lecturas de la más reciente a la más
+  antigua; cada fila muestra la fecha, los km (con el formato del idioma) y
+  la diferencia con la lectura anterior ("+1.250 km"); la más antigua
+  muestra "Lectura inicial" en lugar de la diferencia.
+- **U13 — Botón flotante "Actualizar km"** en la pestaña Kilometraje (en
+  Historial y en Ficha sigue "Nueva entrada"). Formulario: km (obligatorio,
+  entero, con la ayuda "Última: 123.456 km el 3 oct 2026") y fecha (hoy por
+  defecto; el selector solo permite días entre la última lectura y hoy).
+  Mensajes para km inferior a la última lectura y fecha fuera de rango;
+  diálogo de confirmación si se superan en más de 50.000 km.
+- **U14 — Acciones de una fila** (al tocarla, una pequeña hoja inferior): la
+  última lectura, si no es la inicial, ofrece **"Eliminar"** (confirmación +
+  toast con Deshacer); la única lectura (la inicial) ofrece **"Corregir"**
+  (el mismo formulario, ya relleno). Las demás muestran la lectura y una
+  explicación breve: solo se puede borrar la última.
+- **U15 — Abrir en una pestaña:** la página del vehículo acepta el
+  parámetro `tab` (`?tab=mileage`), para que la acción "Actualizar" y los
+  futuros enlaces directos lleguen a la pestaña correcta.
 
 ## Filtros y búsqueda
 

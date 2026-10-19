@@ -56,4 +56,19 @@ enum LogEntryType {
           true,
         legalDue || expense || note => false,
       };
+
+  /// Whether an entry of this type may be dated after today.
+  ///
+  /// Only for what is naturally planned ahead: a legal deadline, a booked
+  /// expense, a note. Work on the vehicle, a refuelling or a check is
+  /// recorded once it happened, so its date is never in the future.
+  bool get allowsFutureDate => switch (this) {
+        legalDue || expense || note => true,
+        maintenance ||
+        repair ||
+        refuel ||
+        genericCheck ||
+        measuredCheck =>
+          false,
+      };
 }

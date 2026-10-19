@@ -1,7 +1,9 @@
 import '../db/daos/audit_log_dao.dart';
+import '../db/daos/mileage_readings_dao.dart';
 import '../db/daos/vehicles_dao.dart';
 import '../models/audit_entry.dart';
 import '../models/fuel_type.dart';
+import '../models/mileage_reading.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_kind.dart';
 import 'repository_exceptions.dart';
@@ -10,17 +12,22 @@ import 'vehicle_repository.dart';
 
 /// [VehicleRepository] backed by the local Drift database.
 class DriftVehicleRepository implements VehicleRepository {
-  /// Creates the repository on [_vehicles], auditing through [_audit].
+  /// Creates the repository on [_vehicles], writing the initial odometer
+  /// reading through [_readings] and auditing through [_audit].
   ///
   /// [clock] must return UTC; it defaults to the system clock.
   DriftVehicleRepository(
     this._vehicles,
+    this._readings,
     this._audit, {
     UtcClock clock = systemUtcClock,
   }) : _clock = clock;
 
   /// Vehicle queries.
   final VehiclesDao _vehicles;
+
+  /// Odometer readings, for the initial reading of a new vehicle.
+  final MileageReadingsDao _readings;
 
   /// Audit log writes, joined to the same transaction as each change.
   final AuditLogDao _audit;
@@ -98,10 +105,30 @@ class DriftVehicleRepository implements VehicleRepository {
       createdAt: now,
       updatedAt: now,
     );
+    // Every vehicle starts its odometer history with the km typed in the
+    // form, dated today: its initial reading.
+    final initialReading = MileageReading(
+      id: newId(),
+      vehicleId: vehicle.id,
+      date: localToday(_clock),
+      km: currentOdometerKm,
+      createdAt: now,
+      updatedAt: now,
+    );
     return _vehicles.transaction(() async {
       await _checkOwnerAndPlate(vehicle);
       await _vehicles.insertVehicle(vehicle);
+      await _readings.insertReading(initialReading);
       await _record(vehicle.id, AuditOperation.create, now);
+      await _audit.insertEntry(
+        AuditEntry(
+          id: newId(),
+          entityType: AuditEntityType.mileageReading,
+          entityId: initialReading.id,
+          operation: AuditOperation.create,
+          at: now,
+        ),
+      );
       return vehicle;
     });
   }

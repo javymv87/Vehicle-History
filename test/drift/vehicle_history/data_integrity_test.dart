@@ -10,6 +10,7 @@ import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
+import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 
 import 'generated/schema.dart';
@@ -29,7 +30,7 @@ import 'generated/schema.dart';
 /// 4. extend the existing expectations with any new column's default.
 ///
 /// The tests must never be weakened to make an upgrade pass.
-const int latestVersion = 3;
+const int latestVersion = 4;
 
 /// Timestamp written into every old row.
 const String _ts = '2024-03-04T10:30:00.000Z';
@@ -345,6 +346,228 @@ Future<void> _expectV3HistoryUsable(AppDatabase db, String vehicleId) async {
   expect(await _count(db, 'SELECT COUNT(*) AS c FROM log_entries'), 1);
 }
 
+// ---------------------------------------------------------------------------
+// Rows written at v3.
+// ---------------------------------------------------------------------------
+
+/// A second creation instant, so the initial readings are checked against
+/// more than one `created_at`. Noon UTC: the same local day in any timezone
+/// within ±11 hours.
+const String _ts2 = '2025-06-15T12:00:00.000Z';
+
+/// Writes rows covering every v3 table using plain SQL against the v3
+/// schema: owners (one soft-deleted), vehicles of every kind (one
+/// soft-deleted, one at 0 km), history entries of several types with and
+/// without km and cost (one soft-deleted, one of the deleted vehicle) and
+/// the audit log with `logEntry` rows.
+Future<void> _insertV3Rows(GeneratedDatabase oldDb) async {
+  await oldDb.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, first_name, '
+    'last_name, birth_date, nationality, phone, email, notes, photo_path) '
+    "VALUES ('o1', '$_ts', '$_ts', 0, 'Javier', 'Muñoz', '1987-05-20', "
+    "'ES', '+39 333 7654321', NULL, NULL, NULL), "
+    "('o2', '$_ts', '$_ts', 1, 'Borrado', NULL, NULL, NULL, NULL, NULL, NULL, "
+    'NULL)',
+  );
+  await oldDb.customStatement(
+    'INSERT INTO vehicles (id, created_at, updated_at, deleted, plate, kind, '
+    'make, make_slug, model, model_slug, model_year, version, nickname, '
+    'owner_id, current_odometer_km, fuel_type, recommended_engine_oil, '
+    'manufacturer_notes, photo_path) VALUES '
+    "('v1', '$_ts', '$_ts2', 0, 'AB123CD', 'car', 'Fiat', 'fiat', 'Punto', "
+    "'punto', 2012, '1.2 69 CV Lounge', 'Punto', 'o1', 123456, 'petrolLpg', "
+    "'5W-40', NULL, NULL), "
+    "('v2', '$_ts2', '$_ts2', 1, 'CD456EF', 'van', 'Fiat', 'fiat', 'Doblò', "
+    "'doblo', 2015, NULL, NULL, 'o1', 99000, 'diesel', NULL, NULL, NULL), "
+    "('v3', '$_ts2', '$_ts2', 0, 'EX12345', 'motorcycle', 'Honda', 'honda', "
+    "'SH125', 'sh125', 2020, NULL, NULL, 'o1', 12000, 'petrol', NULL, NULL, "
+    'NULL), '
+    "('v4', '$_ts', '$_ts', 0, 'X7Y8Z9', 'moped', 'Malagùti', NULL, "
+    "'Fifty Top', NULL, NULL, NULL, NULL, 'o1', 0, 'petrol', NULL, NULL, "
+    'NULL)',
+  );
+  await oldDb.customStatement(
+    'INSERT INTO log_entries (id, created_at, updated_at, deleted, '
+    'vehicle_id, entry_date, km, type, description, cost_cents) VALUES '
+    "('e1', '$_ts', '$_ts', 0, 'v1', '2026-03-01', 120000, 'maintenance', "
+    "'Tagliando: olio e filtri', 18950), "
+    "('e2', '$_ts', '$_ts', 0, 'v1', '2026-04-10', NULL, 'legalDue', "
+    "'Bollo auto', 21230), "
+    "('e3', '$_ts', '$_ts2', 0, 'v1', '2026-05-02', 121500, 'refuel', NULL, "
+    '0), '
+    "('e4', '$_ts', '$_ts', 1, 'v1', '2026-05-03', 121600, 'repair', "
+    "'Borrada', NULL), "
+    "('e5', '$_ts2', '$_ts2', 0, 'v2', '2026-01-15', NULL, 'note', "
+    "'Multa per eccesso di velocità', NULL), "
+    "('e6', '$_ts2', '$_ts2', 0, 'v3', '2026-02-20', 11800, 'genericCheck', "
+    "'Pressione gomme', NULL)",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO audit_log (id, entity_type, entity_id, operation, at) '
+    "VALUES ('a1', 'owner', 'o1', 'create', '$_ts'), "
+    "('a2', 'vehicle', 'v1', 'create', '$_ts'), "
+    "('a3', 'vehicle', 'v2', 'create', '$_ts2'), "
+    "('a4', 'vehicle', 'v2', 'delete', '$_ts2'), "
+    "('a5', 'logEntry', 'e1', 'create', '$_ts'), "
+    "('a6', 'logEntry', 'e4', 'create', '$_ts'), "
+    "('a7', 'logEntry', 'e4', 'delete', '$_ts'), "
+    "('a8', 'logEntry', 'e3', 'update', '$_ts2')",
+  );
+}
+
+/// Checks every row and value written by [_insertV3Rows] after an upgrade
+/// to v4 or later.
+Future<void> _expectV3RowsIntact(AppDatabase db) async {
+  final owners = await db.ownersDao.getLive();
+  expect([for (final o in owners) o.id], ['o1']);
+  final owner = owners.single;
+  expect((owner.firstName, owner.lastName), ('Javier', 'Muñoz'));
+  expect(owner.birthDate, const CalendarDate(1987, 5, 20));
+  expect(owner.phone, '+39 333 7654321');
+
+  final vehicles = {
+    for (final v in await db.vehiclesDao.getLive()) v.id: v,
+  };
+  expect(vehicles.keys, unorderedEquals(['v1', 'v3', 'v4']));
+  final punto = vehicles['v1']!;
+  expect((punto.make, punto.model, punto.modelYear), ('Fiat', 'Punto', 2012));
+  expect((punto.makeSlug, punto.modelSlug), ('fiat', 'punto'));
+  expect(punto.version, '1.2 69 CV Lounge');
+  expect(punto.currentOdometerKm, 123456);
+  expect(punto.fuelType, FuelType.petrolLpg);
+  expect(punto.createdAt, _tsUtc);
+  expect(punto.updatedAt, DateTime.utc(2025, 6, 15, 12));
+  expect(vehicles['v3']!.kind, VehicleKind.motorcycle);
+  expect(vehicles['v4']!.currentOdometerKm, 0);
+  final van = await db.vehiclesDao.getDeletedById('v2');
+  expect(van?.model, 'Doblò');
+  expect(van?.currentOdometerKm, 99000);
+
+  final entries = await db.logEntriesDao.getLiveByVehicle('v1');
+  expect([for (final e in entries) e.id], ['e3', 'e2', 'e1']);
+  final service = entries.last;
+  expect(service.type, LogEntryType.maintenance);
+  expect(service.date, const CalendarDate(2026, 3, 1));
+  expect(service.km, 120000);
+  expect(service.description, 'Tagliando: olio e filtri');
+  expect(service.costCents, 18950);
+  final tax = entries[1];
+  expect(
+    (tax.type, tax.km, tax.costCents),
+    (LogEntryType.legalDue, null, 21230),
+  );
+  final refuel = entries.first;
+  expect(
+    (refuel.type, refuel.description, refuel.costCents),
+    (LogEntryType.refuel, null, 0),
+  );
+  expect(refuel.updatedAt, DateTime.utc(2025, 6, 15, 12));
+  expect(await db.logEntriesDao.getDeletedById('e4'), isNotNull);
+  final check = await db.logEntriesDao.getLiveByVehicle('v3');
+  expect(check.single.type, LogEntryType.genericCheck);
+  expect(check.single.description, 'Pressione gomme');
+  // The entry of the deleted vehicle is on disk but hidden, as before.
+  expect(await db.logEntriesDao.getLiveById('e5'), isNull);
+
+  final e4Audit =
+      await db.auditLogDao.getForEntity(AuditEntityType.logEntry, 'e4');
+  expect(
+    [for (final e in e4Audit) (e.id, e.operation, e.at)],
+    [
+      ('a6', AuditOperation.create, _tsUtc),
+      ('a7', AuditOperation.delete, _tsUtc),
+    ],
+  );
+
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM owners'), 2);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM vehicles'), 4);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM log_entries'), 6);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM audit_log'), 8);
+  await _expectForeignKeysValid(db);
+}
+
+/// Checks the initial readings inserted by the v3 → v4 upgrade: every
+/// vehicle row, deleted or not, has exactly one live reading with its
+/// `current_odometer_km`, dated on the local day of its `created_at`, with
+/// its `created_at` as timestamps. The upgrade adds no audit row, so the
+/// audit log still has its [auditRows] rows.
+Future<void> _expectInitialReadings(AppDatabase db, int auditRows) async {
+  final vehicles = await db
+      .customSelect('SELECT id, created_at, current_odometer_km FROM vehicles')
+      .get();
+  expect(vehicles, isNotEmpty);
+  for (final vehicle in vehicles) {
+    final id = vehicle.read<String>('id');
+    final readings = await db.customSelect(
+      'SELECT id, created_at, updated_at, deleted, reading_date, km '
+      'FROM mileage_readings WHERE vehicle_id = ?',
+      variables: [Variable(id)],
+    ).get();
+    expect(readings, hasLength(1), reason: 'readings of $id');
+    final reading = readings.single;
+    final createdAt = vehicle.read<String>('created_at');
+    expect(reading.read<int>('km'), vehicle.read<int>('current_odometer_km'));
+    expect(
+      reading.read<String>('reading_date'),
+      CalendarDate.localDayOf(DateTime.parse(createdAt)).toIso8601String(),
+    );
+    expect(reading.read<String>('created_at'), createdAt);
+    expect(reading.read<String>('updated_at'), createdAt);
+    expect(reading.read<bool>('deleted'), isFalse);
+    // A UUID v4, like every id written by the app.
+    expect(reading.read<String>('id'), hasLength(36));
+  }
+  expect(
+    await _count(db, 'SELECT COUNT(*) AS c FROM mileage_readings'),
+    vehicles.length,
+  );
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM audit_log'), auditRows);
+  await _expectForeignKeysValid(db);
+}
+
+/// Checks that the v4 odometer table enforces its rules on an upgraded
+/// database: foreign key, CHECK, and the new `mileageReading` audit code.
+Future<void> _expectV4ReadingsUsable(AppDatabase db, String vehicleId) async {
+  final reading = MileageReading(
+    id: 'r-new',
+    vehicleId: vehicleId,
+    date: const CalendarDate(2026, 10, 19),
+    km: 200000,
+    createdAt: _tsUtc,
+    updatedAt: _tsUtc,
+  );
+  await db.mileageReadingsDao.insertReading(reading);
+  expect(await db.mileageReadingsDao.getLiveById('r-new'), reading);
+  await db.auditLogDao.insertEntry(
+    AuditEntry(
+      id: 'a-r-new',
+      entityType: AuditEntityType.mileageReading,
+      entityId: 'r-new',
+      operation: AuditOperation.create,
+      at: _tsUtc,
+    ),
+  );
+  final audit = await db.auditLogDao
+      .getForEntity(AuditEntityType.mileageReading, 'r-new');
+  expect(audit.single.operation, AuditOperation.create);
+
+  // Foreign key to vehicles, and the CHECK constraint.
+  for (final (id, vehicle, km) in [
+    ('r-bad-1', 'no-such-vehicle', 1),
+    ('r-bad-2', vehicleId, -1),
+  ]) {
+    await expectLater(
+      db.customStatement(
+        'INSERT INTO mileage_readings (id, created_at, updated_at, '
+        "vehicle_id, reading_date, km) VALUES ('$id', '$_ts', '$_ts', "
+        "'$vehicle', '2026-10-19', $km)",
+      ),
+      throwsA(anything),
+      reason: 'should be refused: $id',
+    );
+  }
+}
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late SchemaVerifier verifier;
@@ -391,13 +614,39 @@ void main() {
       () async {
     final db = await upgrade(1, latestVersion, _insertV1Rows);
     await _expectV1RowsIntact(db);
+    await _expectInitialReadings(db, 4);
     await _expectV3HistoryUsable(db, 'v1');
+    await _expectV4ReadingsUsable(db, 'v1');
   });
 
   test('rows written at v2 are intact at v3', () async {
     final db = await upgrade(2, 3, _insertV2Rows);
     await _expectV2RowsIntact(db);
     await _expectV3HistoryUsable(db, 'v1');
+  });
+
+  test('rows written at v2 are intact at v$latestVersion (chain)', () async {
+    final db = await upgrade(2, latestVersion, _insertV2Rows);
+    await _expectV2RowsIntact(db);
+    await _expectInitialReadings(db, 12);
+    await _expectV4ReadingsUsable(db, 'v1');
+  });
+
+  test('rows written at v3 are intact at v4, each vehicle with one reading',
+      () async {
+    final db = await upgrade(3, 4, _insertV3Rows);
+    await _expectV3RowsIntact(db);
+    await _expectInitialReadings(db, 8);
+
+    // Through the DAO: the live vehicle shows its one reading, the deleted
+    // one shows nothing, but its reading is on disk for a future restore.
+    final punto = await db.mileageReadingsDao.getLiveByVehicle('v1');
+    expect([for (final r in punto) r.km], [123456]);
+    expect(punto.single.createdAt, _tsUtc);
+    expect(await db.mileageReadingsDao.getLiveByVehicle('v2'), isEmpty);
+    expect(await db.mileageReadingsDao.countLive('v2'), 1);
+
+    await _expectV4ReadingsUsable(db, 'v1');
   });
 
   /// Writes [insert]'s rows into a real file at [fromVersion], opens it with
@@ -443,10 +692,11 @@ void main() {
     final copyVersion =
         await copy.customSelect('PRAGMA user_version').getSingle();
     expect(copyVersion.read<int>('user_version'), fromVersion);
+    // The table added by v4 is in the copy of no older file.
     final tables = await copy
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
-          "AND name = 'log_entries'",
+          "AND name = 'mileage_readings'",
         )
         .get();
     expect(tables, isEmpty);
@@ -462,5 +712,17 @@ void main() {
 
   test('a real upgrade of a v2 file first copies it', () async {
     await realUpgrade(2, _insertV2Rows, _expectV2RowsIntact, vehicleRows: 5);
+  });
+
+  test('a real upgrade of a v3 file first copies it', () async {
+    await realUpgrade(
+      3,
+      _insertV3Rows,
+      (db) async {
+        await _expectV3RowsIntact(db);
+        await _expectInitialReadings(db, 8);
+      },
+      vehicleRows: 4,
+    );
   });
 }

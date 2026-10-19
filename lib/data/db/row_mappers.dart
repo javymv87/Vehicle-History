@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../models/audit_entry.dart';
 import '../models/log_entry.dart';
+import '../models/mileage_reading.dart';
 import '../models/owner.dart';
 import '../models/vehicle.dart';
 import 'app_database.dart';
@@ -174,6 +175,43 @@ extension LogEntryCompanionMapping on LogEntry {
         type: Value(type),
         description: Value(description),
         costCents: Value(costCents),
+      );
+}
+
+/// Maps a `mileage_readings` row to the domain model.
+extension MileageReadingRowMapping on MileageReadingRow {
+  /// Converts this row into a [MileageReading]. Timestamps are forced to
+  /// UTC.
+  MileageReading toModel() => MileageReading(
+        id: id,
+        vehicleId: vehicleId,
+        date: readingDate,
+        km: km,
+        createdAt: createdAt.toUtc(),
+        updatedAt: updatedAt.toUtc(),
+      );
+}
+
+/// Maps the domain model to `mileage_readings` companions.
+extension MileageReadingCompanionMapping on MileageReading {
+  /// Full row for an insert. The row starts live (`deleted = 0`).
+  MileageReadingsCompanion toInsertCompanion() =>
+      MileageReadingsCompanion.insert(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vehicleId: vehicleId,
+        readingDate: date,
+        km: km,
+      );
+
+  /// The day, the km and `updated_at`. Leaves `id`, `vehicle_id`,
+  /// `created_at` and `deleted` untouched: a reading never moves to another
+  /// vehicle, and keeps its place among the readings of the same day.
+  MileageReadingsCompanion toUpdateCompanion() => MileageReadingsCompanion(
+        updatedAt: Value(updatedAt),
+        readingDate: Value(date),
+        km: Value(km),
       );
 }
 

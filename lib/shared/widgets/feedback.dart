@@ -111,3 +111,61 @@ Future<void> showInfoDialog(
     ),
   );
 }
+
+/// How long an offer, such as "Update the odometer?", stays on screen.
+const Duration offerSnackBarDuration = Duration(seconds: 8);
+
+/// Shows [message] with one action, [actionLabel], that calls [onAction].
+///
+/// For an optional next step offered after a save (`Docs/03_features.md`,
+/// E3): it disappears on its own and nothing happens if it is ignored.
+void showOfferSnackBar(
+  ScaffoldMessengerState messenger,
+  String message, {
+  required String actionLabel,
+  required VoidCallback onAction,
+}) {
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: offerSnackBarDuration,
+        // A snackbar with an action persists by default; an offer must not.
+        persist: false,
+        action: SnackBarAction(label: actionLabel, onPressed: onAction),
+      ),
+    );
+}
+
+/// Asks the user to confirm a value that looks wrong but is allowed, such
+/// as a very large odometer jump.
+///
+/// Resolves to `true` only when the user taps [confirmLabel]; cancel is the
+/// safe default.
+Future<bool> confirmAction(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.actionCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return confirmed ?? false;
+}

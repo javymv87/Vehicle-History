@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/entries/pages/log_entry_detail_page.dart';
 import '../../features/entries/pages/log_entry_form_page.dart';
+import '../../features/mileage/pages/mileage_reading_form_page.dart';
 import '../../features/owners/pages/owner_detail_page.dart';
 import '../../features/owners/pages/owner_form_page.dart';
 import '../../features/owners/pages/owner_list_page.dart';
+import '../../features/vehicles/controllers/vehicle_tab_controller.dart';
 import '../../features/vehicles/pages/vehicle_detail_page.dart';
 import '../../features/vehicles/pages/vehicle_form_page.dart';
 import '../../features/vehicles/pages/vehicle_list_page.dart';
@@ -27,9 +29,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// details and forms are top-level routes, so they are pushed full screen on
 /// top of it. `/vehicles/new`, `/owners/new` and `entries/new` are declared
 /// before the matching `:id` routes so that "new" is never read as an id.
-/// The history entries live under their vehicle
-/// (`/vehicles/:id/entries/...`), so pushing one keeps the vehicle page
-/// below it.
+/// The history entries and the odometer readings live under their vehicle
+/// (`/vehicles/:id/entries/...`, `/vehicles/:id/mileage/...`), so pushing
+/// one keeps the vehicle page below it. The vehicle page reads its tab from
+/// the `tab` query parameter.
 GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
   return GoRouter(
     initialLocation: initialLocation,
@@ -66,13 +69,28 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
       ),
       GoRoute(
         path: '${AppRoutes.vehicles}/:id',
-        builder: (context, state) =>
-            VehicleDetailPage(vehicleId: state.pathParameters['id']!),
+        builder: (context, state) => VehicleDetailPage(
+          vehicleId: state.pathParameters['id']!,
+          initialTab: VehicleTab.fromQuery(state.uri.queryParameters['tab']),
+        ),
         routes: [
           GoRoute(
             path: 'edit',
             builder: (context, state) =>
                 VehicleFormPage(vehicleId: state.pathParameters['id']),
+          ),
+          GoRoute(
+            path: 'mileage/new',
+            builder: (context, state) => MileageReadingFormPage(
+              vehicleId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: 'mileage/:readingId/edit',
+            builder: (context, state) => MileageReadingFormPage(
+              vehicleId: state.pathParameters['id']!,
+              readingId: state.pathParameters['readingId'],
+            ),
           ),
           GoRoute(
             path: 'entries/new',

@@ -55,6 +55,10 @@ extension ActionErrorMessage on ActionError {
         ActionError.ownerNotFound => l10n.errorOwnerNotFound,
         ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
         ActionError.entryNotFound => l10n.errorEntryNotFound,
+        ActionError.readingNotFound => l10n.errorReadingNotFound,
+        ActionError.readingNotDeletable => l10n.errorReadingNotDeletable,
+        ActionError.readingNotEditable => l10n.errorReadingNotEditable,
+        ActionError.newerReadingExists => l10n.errorNewerReadingExists,
         ActionError.invalidInput => l10n.errorInvalidInput,
         ActionError.unexpected => l10n.errorUnexpected,
       };

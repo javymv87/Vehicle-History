@@ -36,7 +36,9 @@ abstract interface class LogEntryRepository {
   /// inside the entry: it never changes the vehicle's odometer.
   ///
   /// Throws `InvalidFieldException` when [km] is missing for [type] or
-  /// negative, or [costCents] is negative, and `EntityNotFoundException`
+  /// negative, [costCents] is negative, or [date] is after today for a type
+  /// whose [LogEntryType.allowsFutureDate] is false, and
+  /// `EntityNotFoundException`
   /// when the vehicle is missing or deleted.
   Future<LogEntry> create({
     required String vehicleId,

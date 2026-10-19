@@ -16,6 +16,8 @@ List<Override> fakeDataOverrides(FakeStore store) => [
       vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
       logEntryRepositoryProvider
           .overrideWithValue(FakeLogEntryRepository(store)),
+      mileageReadingRepositoryProvider
+          .overrideWithValue(FakeMileageReadingRepository(store)),
       vehicleCatalogProvider
           .overrideWith((ref) async => vehicleCatalogFixture()),
       countryNamesProvider.overrideWith((ref) async => countryNamesFixture()),

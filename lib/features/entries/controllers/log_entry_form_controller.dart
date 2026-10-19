@@ -4,6 +4,7 @@ import '../../../data/data_providers.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../data/models/log_entry_type.dart';
+import '../../../data/models/mileage_reading.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../shared/utils/action_result.dart';
 
@@ -12,10 +13,15 @@ import '../../../shared/utils/action_result.dart';
 typedef LogEntryFormKey = ({String vehicleId, String? entryId});
 
 /// What the entry form needs once loaded: the vehicle (for the "Use current
-/// km" chip) and the entry being edited.
+/// km" chip), its last odometer reading (for the km checks E2 and E3) and
+/// the entry being edited.
 class LogEntryFormData {
   /// Creates the loaded form data.
-  const LogEntryFormData({required this.vehicle, required this.entry});
+  const LogEntryFormData({
+    required this.vehicle,
+    required this.entry,
+    this.lastReading,
+  });
 
   /// The vehicle, or `null` when no live vehicle has the id in the path.
   final Vehicle? vehicle;
@@ -23,6 +29,10 @@ class LogEntryFormData {
   /// The entry being edited; `null` when creating, or when the id in the
   /// path matches no live entry of this vehicle.
   final LogEntry? entry;
+
+  /// The vehicle's last odometer reading; `null` when the vehicle is
+  /// missing.
+  final MileageReading? lastReading;
 }
 
 /// The values typed into the entry form, before they are saved.
@@ -68,15 +78,25 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
   Future<LogEntryFormData> build() async {
     final vehicle =
         await ref.watch(vehicleRepositoryProvider).getById(key.vehicleId);
+    if (vehicle == null) {
+      return const LogEntryFormData(vehicle: null, entry: null);
+    }
+    final lastReading =
+        await ref.watch(mileageReadingRepositoryProvider).getLast(vehicle.id);
     final entryId = key.entryId;
-    if (vehicle == null || entryId == null) {
-      return LogEntryFormData(vehicle: vehicle, entry: null);
+    if (entryId == null) {
+      return LogEntryFormData(
+        vehicle: vehicle,
+        entry: null,
+        lastReading: lastReading,
+      );
     }
     final entry = await ref.watch(logEntryRepositoryProvider).getById(entryId);
     // An entry reached through another vehicle's path is not found here.
     return LogEntryFormData(
       vehicle: vehicle,
       entry: entry?.vehicleId == vehicle.id ? entry : null,
+      lastReading: lastReading,
     );
   }
 

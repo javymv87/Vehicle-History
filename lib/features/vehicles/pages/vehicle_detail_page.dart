@@ -15,19 +15,29 @@ import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
+import '../../mileage/widgets/mileage_history_view.dart';
 import '../controllers/vehicle_deletion_controller.dart';
 import '../controllers/vehicle_detail_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
+import '../controllers/vehicle_tab_controller.dart';
 
-/// The page of one vehicle: its history first, its details in a second tab.
-/// The vehicle id comes from the path; an unknown or deleted id shows a
-/// not-found page.
+/// The page of one vehicle: its history first, then its odometer readings
+/// and its details. The vehicle id comes from the path; an unknown or
+/// deleted id shows a not-found page.
 class VehicleDetailPage extends ConsumerWidget {
-  /// Creates the page for the vehicle with [vehicleId].
-  const VehicleDetailPage({super.key, required this.vehicleId});
+  /// Creates the page for the vehicle with [vehicleId], opened on
+  /// [initialTab].
+  const VehicleDetailPage({
+    super.key,
+    required this.vehicleId,
+    this.initialTab = VehicleTab.history,
+  });
 
   /// Id of the vehicle, from the path.
   final String vehicleId;
+
+  /// Tab shown when the page opens, from the `tab` query parameter (U15).
+  final VehicleTab initialTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,18 +55,19 @@ class VehicleDetailPage extends ConsumerWidget {
       ),
       data: (item) => item == null
           ? NotFoundPage(message: l10n.vehicleNotFound)
-          : _VehicleDetailView(item: item),
+          : _VehicleDetailView(item: item, initialTab: initialTab),
     );
   }
 }
 
-/// The loaded vehicle page (`Docs/03_features.md`, U1–U2): a compact
-/// header, then two tabs, History (shown first) and Details, and the "New
-/// entry" button.
+/// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15): a
+/// compact header, then three tabs, History (the default), Mileage and
+/// Details, and a button that adds what the tab shows.
 class _VehicleDetailView extends ConsumerStatefulWidget {
-  const _VehicleDetailView({required this.item});
+  const _VehicleDetailView({required this.item, required this.initialTab});
 
   final VehicleWithOwner item;
+  final VehicleTab initialTab;
 
   @override
   ConsumerState<_VehicleDetailView> createState() => _VehicleDetailViewState();
@@ -64,14 +75,18 @@ class _VehicleDetailView extends ConsumerStatefulWidget {
 
 class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     with SingleTickerProviderStateMixin {
-  /// Index of the history tab, the default one.
-  static const int _historyTab = 0;
-
-  late final TabController _tabs = TabController(length: 2, vsync: this)
-    // The filter button belongs to the history: shown only on that tab.
+  late final TabController _tabs = TabController(
+    length: VehicleTab.values.length,
+    initialIndex: widget.initialTab.index,
+    vsync: this,
+  )
+    // The filter button and the FAB depend on the tab.
     ..addListener(() {
       if (!_tabs.indexIsChanging) setState(() {});
     });
+
+  /// The tab currently shown.
+  VehicleTab get _tab => VehicleTab.values[_tabs.index];
 
   @override
   void dispose() {
@@ -120,10 +135,16 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     final l10n = AppLocalizations.of(context);
     final vehicle = widget.item.vehicle;
     final filter = ref.watch(logEntryFilterProvider(vehicle.id));
+    // An action that outlived its page (the odometer offer) asks for a tab.
+    ref.listen(vehicleTabRequestProvider, (previous, request) {
+      if (request != null && request.vehicleId == vehicle.id) {
+        _tabs.animateTo(request.tab.index);
+      }
+    });
     return Scaffold(
       appBar: AppBar(
         actions: [
-          if (_tabs.index == _historyTab)
+          if (_tab == VehicleTab.history)
             IconButton(
               tooltip: l10n.filterAction,
               // A dot on the icon tells that filters are active.
@@ -145,12 +166,24 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: AppRoutes.newEntry(vehicle.id),
-        onPressed: () => context.push(AppRoutes.newEntry(vehicle.id)),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.addEntry),
-      ),
+      floatingActionButton: switch (_tab) {
+        // On Details the button keeps adding entries, as before step 5.
+        VehicleTab.history ||
+        VehicleTab.details =>
+          FloatingActionButton.extended(
+            heroTag: AppRoutes.newEntry(vehicle.id),
+            onPressed: () => context.push(AppRoutes.newEntry(vehicle.id)),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addEntry),
+          ),
+        VehicleTab.mileage => FloatingActionButton.extended(
+            heroTag: AppRoutes.newMileageReading(vehicle.id),
+            onPressed: () =>
+                context.push(AppRoutes.newMileageReading(vehicle.id)),
+            icon: const Icon(Icons.speed),
+            label: Text(l10n.addMileageReading),
+          ),
+      },
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -159,6 +192,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
             controller: _tabs,
             tabs: [
               Tab(text: l10n.tabHistory),
+              Tab(text: l10n.tabMileage),
               Tab(text: l10n.tabDetails),
             ],
           ),
@@ -167,6 +201,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
               controller: _tabs,
               children: [
                 LogEntryHistoryView(vehicleId: vehicle.id),
+                MileageHistoryView(vehicleId: vehicle.id),
                 _VehicleInfo(item: widget.item),
               ],
             ),

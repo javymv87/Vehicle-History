@@ -1,3 +1,5 @@
+import '../../features/vehicles/controllers/vehicle_tab_controller.dart';
+
 /// Paths of every screen, in one place.
 ///
 /// Identifiers always travel in the path, so any screen can be opened
@@ -18,8 +20,14 @@ abstract final class AppRoutes {
   /// vehicle form can select it.
   static const String newOwner = '/owners/new';
 
-  /// Detail of the vehicle with [id].
-  static String vehicle(String id) => '$vehicles/${Uri.encodeComponent(id)}';
+  /// Detail of the vehicle with [id], opened on [tab] (the history when
+  /// omitted, which adds no query parameter).
+  static String vehicle(String id, {VehicleTab? tab}) {
+    final path = '$vehicles/${Uri.encodeComponent(id)}';
+    return tab == null || tab == VehicleTab.history
+        ? path
+        : '$path?tab=${tab.queryValue}';
+  }
 
   /// Form that edits the vehicle with [id].
   static String editVehicle(String id) => '${vehicle(id)}/edit';
@@ -39,6 +47,15 @@ abstract final class AppRoutes {
   /// [vehicleId].
   static String editEntry(String vehicleId, String entryId) =>
       '${entry(vehicleId, entryId)}/edit';
+
+  /// Form that adds an odometer reading to the vehicle with [vehicleId].
+  static String newMileageReading(String vehicleId) =>
+      '${vehicle(vehicleId)}/mileage/new';
+
+  /// Form that corrects the reading [readingId] of the vehicle with
+  /// [vehicleId], allowed only while it is the vehicle's sole reading.
+  static String editMileageReading(String vehicleId, String readingId) =>
+      '${vehicle(vehicleId)}/mileage/${Uri.encodeComponent(readingId)}/edit';
 
   /// Detail of the owner with [id].
   static String owner(String id) => '$owners/${Uri.encodeComponent(id)}';
