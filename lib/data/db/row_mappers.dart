@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../models/audit_entry.dart';
+import '../models/log_entry.dart';
 import '../models/owner.dart';
 import '../models/vehicle.dart';
 import 'app_database.dart';
@@ -129,6 +130,50 @@ extension VehicleCompanionMapping on Vehicle {
         recommendedEngineOil: Value(recommendedEngineOil),
         manufacturerNotes: Value(manufacturerNotes),
         photoPath: Value(photoPath),
+      );
+}
+
+/// Maps a `log_entries` row to the domain model.
+extension LogEntryRowMapping on LogEntryRow {
+  /// Converts this row into a [LogEntry]. Timestamps are forced to UTC.
+  LogEntry toModel() => LogEntry(
+        id: id,
+        vehicleId: vehicleId,
+        date: entryDate,
+        km: km,
+        type: type,
+        description: description,
+        costCents: costCents,
+        createdAt: createdAt.toUtc(),
+        updatedAt: updatedAt.toUtc(),
+      );
+}
+
+/// Maps the domain model to `log_entries` companions.
+extension LogEntryCompanionMapping on LogEntry {
+  /// Full row for an insert. The row starts live (`deleted = 0`).
+  LogEntriesCompanion toInsertCompanion() => LogEntriesCompanion.insert(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vehicleId: vehicleId,
+        entryDate: date,
+        km: Value(km),
+        type: type,
+        description: Value(description),
+        costCents: Value(costCents),
+      );
+
+  /// User-editable fields plus `updated_at`. Leaves `id`, `vehicle_id`,
+  /// `created_at` and `deleted` untouched: an entry never moves to another
+  /// vehicle.
+  LogEntriesCompanion toUpdateCompanion() => LogEntriesCompanion(
+        updatedAt: Value(updatedAt),
+        entryDate: Value(date),
+        km: Value(km),
+        type: Value(type),
+        description: Value(description),
+        costCents: Value(costCents),
       );
 }
 

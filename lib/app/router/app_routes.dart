@@ -24,6 +24,22 @@ abstract final class AppRoutes {
   /// Form that edits the vehicle with [id].
   static String editVehicle(String id) => '${vehicle(id)}/edit';
 
+  /// Form that creates a history entry for the vehicle with [vehicleId].
+  static String newEntry(String vehicleId) =>
+      '${vehicle(vehicleId)}/entries/new';
+
+  /// Detail of the history entry [entryId] of the vehicle with [vehicleId].
+  ///
+  /// Both ids travel in the path, so a future reminder notification can open
+  /// the entry that produced it directly.
+  static String entry(String vehicleId, String entryId) =>
+      '${vehicle(vehicleId)}/entries/${Uri.encodeComponent(entryId)}';
+
+  /// Form that edits the history entry [entryId] of the vehicle with
+  /// [vehicleId].
+  static String editEntry(String vehicleId, String entryId) =>
+      '${entry(vehicleId, entryId)}/edit';
+
   /// Detail of the owner with [id].
   static String owner(String id) => '$owners/${Uri.encodeComponent(id)}';
 

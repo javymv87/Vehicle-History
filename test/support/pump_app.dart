@@ -14,6 +14,8 @@ List<Override> fakeDataOverrides(FakeStore store) => [
       databaseReadyProvider.overrideWith((ref) async {}),
       ownerRepositoryProvider.overrideWithValue(FakeOwnerRepository(store)),
       vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
+      logEntryRepositoryProvider
+          .overrideWithValue(FakeLogEntryRepository(store)),
       vehicleCatalogProvider
           .overrideWith((ref) async => vehicleCatalogFixture()),
       countryNamesProvider.overrideWith((ref) async => countryNamesFixture()),

@@ -57,8 +57,9 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v2: `owners`, `vehicles`, `audit_log`; v2
-added the vehicle kind, make / model, model year and version):
+Settled for the database (schema v3: `owners`, `vehicles`, `audit_log`,
+`log_entries`; v2 added the vehicle kind, make / model, model year and
+version; v3 added `log_entries`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -70,16 +71,22 @@ added the vehicle kind, make / model, model year and version):
   `build.yaml`, set from v1: changing it later is a data migration.
 - **Foreign keys** are enabled with `PRAGMA foreign_keys = ON` in
   `beforeOpen` (SQLite leaves them off). `vehicles.owner_id` →
-  `owners.id`, `ON DELETE RESTRICT`.
+  `owners.id` and `log_entries.vehicle_id` → `vehicles.id`, both
+  `ON DELETE RESTRICT`.
 - **Soft delete.** Main tables carry `deleted` (default `false`), shared with
   `id`, `created_at`, `updated_at` through the `TechnicalColumns` mixin.
   Every read filters `deleted = 0` unless the method name says otherwise;
   delete means soft delete. The audit log is append-only and has no flag.
+  Child rows of a soft-deleted parent are **not** cascaded: the entries of a
+  deleted vehicle keep their own flag, and the `log_entries` reads also
+  require a live vehicle, so they come back when the vehicle is restored.
 - **Audit log from v1.** Every repository write adds its `audit_log` row in
   the same transaction. Operations: `create`, `update`, `delete`, `restore`
-  (Undo after a delete). `operation` is plain text with no CHECK, so a new
-  code only needs `AuditOperationConverter`, not a schema change; an older
-  build that meets an unknown code throws when reading the audit log.
+  (Undo after a delete). `operation` and `entity_type` are plain
+  text with no CHECK, so a new code only needs its converter
+  (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
+  this way in v3), not a schema change; an older build that meets an unknown
+  code throws when reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
   as `DriftNativeOptions.databaseDirectory`), never in the documents
@@ -99,6 +106,13 @@ added the vehicle kind, make / model, model year and version):
   `ALTER TABLE … ADD COLUMN` carries its CHECK as the column's
   `customConstraint('NULL CHECK (…)')` (e.g. `vehicles.model_year`), since a
   table constraint cannot be added without recreating the table.
+- **History entries** (`log_entries`) are one table for every type. The
+  km-required rule per type lives in `LogEntryType.requiresKm` and is
+  enforced by the repository as well as the form. Filters: date range and
+  types in SQL (indexes `(vehicle_id, entry_date)`, `(vehicle_id, type)`),
+  text in Dart through `LogEntryFilter.matchesText` / `foldForSearch`, since
+  SQLite ignores neither accents nor non-ASCII case. `LogEntryFilter.matches`
+  is the reference both paths are tested against.
 - **Make and model** are stored as the display name (always) plus an
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches
@@ -292,6 +306,9 @@ code generation (`freezed` and similar are not used).
   `ActionResult`; controllers map exceptions to `ActionError` and widgets
   turn it into a localised message (`shared/utils/`). Never show raw
   exceptions.
+- Screen-scoped state that is not in the database, such as the history
+  filters, is a `Notifier` family keyed by the id from the path and
+  auto-disposed with the page (`logEntryFilterProvider`).
 - Deletion controllers (`…DeletionController`) are **kept alive**: the Undo
   snackbar outlives the page that deleted, so its callback holds the
   notifier, read before popping, never the page's `ref`.
@@ -307,7 +324,10 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
 - The lists live in a `StatefulShellRoute` under the `NavigationBar`
   (`HomeShell`, which also owns the add FAB). Details and forms are
   top-level routes pushed full screen on top of it; `…/new` is declared
-  before `…/:id`.
+  before `…/:id`. History entries are nested under their vehicle
+  (`/vehicles/:id/entries/new`, `…/entries/:entryId`, `…/:entryId/edit`), so
+  both ids are in the path; an entry reached through another vehicle's path
+  is not found. The vehicle page owns its own "New entry" FAB.
 - Screens are opened with `context.push`, so Back returns to where the user
   was. A form pops with the saved id (`context.popOrGo`), which is how the
   vehicle form gets the owner created through "New owner".
@@ -468,6 +488,14 @@ Coverage percentage is not a target and must not be used as one.
   with `adb exec-out screencap -p` when useful; the owner reports what they
   see, and the assistant fixes and reinstalls until the owner is satisfied.
   Test data only until roadmap step 6 (export / import and the release key).
+- **Phone safety.** Install and run **only** on the owner's phone, Xiaomi
+  model `22101316G`. Before every install, check `adb devices -l` and the
+  model (`adb -s <serial> shell getprop ro.product.model`); always pass
+  `-s <serial>` / `-d <id>`. If another device is listed or the model does
+  not match, **stop and ask**. Never connect to, install on, or run commands
+  against any other device found on the network. Install over the existing
+  app (`adb install -r` / `fvm flutter run`), **never uninstall**: that
+  deletes the data.
 - **Language of communication.** The assistant talks to the owner in
   **Spanish**. Code, identifiers, comments, commit messages and PR texts stay
   in **English**; `Docs/` is in **Spanish**.
@@ -513,7 +541,11 @@ Floating point accumulates error across sums, and this app sums costs in the
 expense report, the fuel report and the per-vehicle totals.
 
 Conversion happens only at the boundary: in the formatter on the way out and in
-the input parser on the way in. Never do arithmetic on a formatted value.
+the input parser on the way in (`shared/utils/money.dart`). Never do
+arithmetic on a formatted value. The parser takes at most two decimals and
+either `,` or `.` as the decimal separator (some keyboards offer only one),
+never a thousands separator, so an ambiguous `1.234` is refused rather than
+misread.
 
 The currency is the **euro**, fixed — there is no currency column and no
 currency setting (see `Docs/02_data_model.md`). Formatting still follows the

@@ -5,6 +5,9 @@ enum AuditEntityType {
 
   /// A `Vehicle`.
   vehicle,
+
+  /// A `LogEntry` of a vehicle's history.
+  logEntry,
 }
 
 /// Kind of write an [AuditEntry] records.

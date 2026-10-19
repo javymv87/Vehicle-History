@@ -471,5 +471,233 @@
   "aboutCountryData": "Country names from Unicode CLDR (Unicode License v3).",
   "@aboutCountryData": {
     "description": "Credit for the bundled country names. Keep \"Unicode CLDR\" untranslated."
+  },
+  "tabHistory": "History",
+  "@tabHistory": {
+    "description": "Vehicle page tab with the list of history entries (shown first)."
+  },
+  "tabDetails": "Details",
+  "@tabDetails": {
+    "description": "Vehicle page tab with the vehicle's own data."
+  },
+  "vehicleHeaderSummary": "{plate} · {km} km",
+  "@vehicleHeaderSummary": {
+    "description": "Compact vehicle header: plate and current odometer.",
+    "placeholders": {
+      "plate": {
+        "type": "String"
+      },
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "addEntry": "New entry",
+  "@addEntry": {
+    "description": "Floating button on the vehicle page that opens the form to record a history entry."
+  },
+  "newEntryTitle": "New entry",
+  "@newEntryTitle": {
+    "description": "App bar title of the history entry form when creating."
+  },
+  "editEntryTitle": "Edit entry",
+  "@editEntryTitle": {
+    "description": "App bar title of the history entry form when editing."
+  },
+  "entryTypeMaintenance": "Maintenance",
+  "@entryTypeMaintenance": {
+    "description": "History entry type: ordinary, scheduled maintenance."
+  },
+  "entryTypeRepair": "Repair",
+  "@entryTypeRepair": {
+    "description": "History entry type: repair or extraordinary work."
+  },
+  "entryTypeLegalDue": "Legal deadline",
+  "@entryTypeLegalDue": {
+    "description": "History entry type: road tax, compulsory inspection, insurance."
+  },
+  "entryTypeRefuel": "Refuelling",
+  "@entryTypeRefuel": {
+    "description": "History entry type: refuelling."
+  },
+  "entryTypeExpense": "Expense",
+  "@entryTypeExpense": {
+    "description": "History entry type: generic expense (tolls, car wash, accessories)."
+  },
+  "entryTypeMeasuredCheck": "Measured check",
+  "@entryTypeMeasuredCheck": {
+    "description": "History entry type: a check with a measured value (not offered yet)."
+  },
+  "entryTypeGenericCheck": "Check",
+  "@entryTypeGenericCheck": {
+    "description": "History entry type: generic, unclassified check."
+  },
+  "entryTypeNote": "Note",
+  "@entryTypeNote": {
+    "description": "History entry type: note or event (accident, fine, free reminder)."
+  },
+  "fieldEntryType": "Type",
+  "@fieldEntryType": {
+    "description": "Label of the entry type choice in the entry form."
+  },
+  "fieldEntryDate": "Date",
+  "@fieldEntryDate": {
+    "description": "Entry field: the day of the event."
+  },
+  "fieldEntryKm": "Km",
+  "@fieldEntryKm": {
+    "description": "Entry field: odometer reading at the event, required for this type."
+  },
+  "fieldEntryKmOptional": "Km (optional)",
+  "@fieldEntryKmOptional": {
+    "description": "Entry field: odometer reading at the event, optional for this type."
+  },
+  "fieldEntryCost": "Cost",
+  "@fieldEntryCost": {
+    "description": "Entry field: total cost in euros (optional)."
+  },
+  "fieldEntryDescription": "Description",
+  "@fieldEntryDescription": {
+    "description": "Entry field: free text describing the event."
+  },
+  "useCurrentKm": "Use current km ({km})",
+  "@useCurrentKm": {
+    "description": "Chip under the km field that copies the vehicle's current odometer into it.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "entryKmNote": "Recorded on this entry only: it does not change the vehicle's km.",
+  "@entryKmNote": {
+    "description": "Note under the km on the entry detail: entry km never updates the odometer."
+  },
+  "validationEntryTypeRequired": "Choose the type",
+  "@validationEntryTypeRequired": {
+    "description": "Error under the entry type choice when none is selected."
+  },
+  "validationEntryKmRequired": "Enter the km for this type of entry",
+  "@validationEntryKmRequired": {
+    "description": "Error under the entry km field when the selected type requires it."
+  },
+  "validationCostInvalid": "Enter an amount of 0 or more, with at most 2 decimals",
+  "@validationCostInvalid": {
+    "description": "Error under the cost field when the amount is not valid."
+  },
+  "entrySaved": "Entry saved",
+  "@entrySaved": {
+    "description": "Brief confirmation after saving a history entry."
+  },
+  "entryDeleted": "Entry deleted",
+  "@entryDeleted": {
+    "description": "Snackbar after deleting a history entry, shown with an Undo action."
+  },
+  "deleteEntryTitle": "Delete entry?",
+  "@deleteEntryTitle": {
+    "description": "Title of the dialog that confirms deleting a history entry."
+  },
+  "deleteEntryMessage": "This entry will be deleted. You can undo it for a few seconds afterwards.",
+  "@deleteEntryMessage": {
+    "description": "Body of the dialog that confirms deleting a history entry."
+  },
+  "entryNotFound": "This entry does not exist or has been deleted.",
+  "@entryNotFound": {
+    "description": "Body of the entry page when the id in the path matches no live entry."
+  },
+  "errorEntryNotFound": "The entry no longer exists. Nothing was saved.",
+  "@errorEntryNotFound": {
+    "description": "Error when the history entry involved was deleted in the meantime."
+  },
+  "historyEmpty": "Nothing recorded yet. Add the first entry with the button below.",
+  "@historyEmpty": {
+    "description": "Empty state of a vehicle's history."
+  },
+  "historyNoMatches": "No entries match these filters",
+  "@historyNoMatches": {
+    "description": "Shown in the history when the active filters match nothing."
+  },
+  "clearFilters": "Clear filters",
+  "@clearFilters": {
+    "description": "Button that removes every history filter at once."
+  },
+  "filterAction": "Filter",
+  "@filterAction": {
+    "description": "Tooltip of the button that opens the history filters."
+  },
+  "filtersTitle": "Filters",
+  "@filtersTitle": {
+    "description": "Title of the history filters sheet."
+  },
+  "filterDates": "Dates",
+  "@filterDates": {
+    "description": "Filters sheet: section title of the date range."
+  },
+  "filterAnyDate": "Any date",
+  "@filterAnyDate": {
+    "description": "Filters sheet: shown when no date range is set."
+  },
+  "filterChooseDates": "Choose dates",
+  "@filterChooseDates": {
+    "description": "Filters sheet: button that opens the date range picker."
+  },
+  "filterClearDates": "Clear dates",
+  "@filterClearDates": {
+    "description": "Filters sheet: tooltip of the button that removes the date range."
+  },
+  "filterTypes": "Types",
+  "@filterTypes": {
+    "description": "Filters sheet: section title of the entry type choice."
+  },
+  "filterText": "Text in the description",
+  "@filterText": {
+    "description": "Filters sheet: label of the free text search field."
+  },
+  "filterApply": "Apply",
+  "@filterApply": {
+    "description": "Filters sheet: button that applies the chosen filters."
+  },
+  "dateRangeValue": "{from} – {to}",
+  "@dateRangeValue": {
+    "description": "A date range, e.g. in the active filter chip.",
+    "placeholders": {
+      "from": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "to": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "filterTextChip": "“{text}”",
+  "@filterTextChip": {
+    "description": "Active filter chip showing the searched text.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFilter": "Remove filter",
+  "@removeFilter": {
+    "description": "Tooltip of the delete button of an active filter chip."
+  },
+  "entryDateAndKm": "{date} · {km} km",
+  "@entryDateAndKm": {
+    "description": "History row: date of the entry and its km.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }

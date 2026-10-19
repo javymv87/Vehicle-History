@@ -13,7 +13,7 @@ class AuditLog extends Table {
   /// Device-generated UUID v4 of the audit row.
   TextColumn get id => text()();
 
-  /// Kind of the audited entity (`owner`, `vehicle`).
+  /// Kind of the audited entity (`owner`, `vehicle`, `logEntry`).
   TextColumn get entityType => text().map(const AuditEntityTypeConverter())();
 
   /// Id of the audited entity.

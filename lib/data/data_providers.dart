@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'catalog/country_names.dart';
 import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
+import 'repositories/drift_log_entry_repository.dart';
 import 'repositories/drift_owner_repository.dart';
 import 'repositories/drift_vehicle_repository.dart';
+import 'repositories/log_entry_repository.dart';
 import 'repositories/owner_repository.dart';
 import 'repositories/vehicle_repository.dart';
 
@@ -41,6 +43,12 @@ final ownerRepositoryProvider = Provider<OwnerRepository>((ref) {
 final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DriftVehicleRepository(db.vehiclesDao, db.auditLogDao);
+});
+
+/// The [LogEntryRepository] on the app database.
+final logEntryRepositoryProvider = Provider<LogEntryRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftLogEntryRepository(db.logEntriesDao, db.auditLogDao);
 });
 
 /// Asset holding the make / model catalogue (see `tool/`).

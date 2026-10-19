@@ -46,7 +46,10 @@ vehículos y propietarios (Riverpod + `go_router`: listas, fichas,
 formularios, borrar con confirmación y Deshacer). El paso 3b añadió el tipo
 de vehículo (coche, furgoneta, moto, ciclomotor), el catálogo de marcas y
 modelos, el año, la versión y el selector de nacionalidad, con la primera
-migración real del esquema (v1 → v2). Lo siguiente es el paso 4.
+migración real del esquema (v1 → v2). El paso 4 añadió el historial de
+cada vehículo (esquema v3): el vehículo se abre en su historial, con
+creación rápida de entradas, agrupación por mes, detalle, edición, borrado
+con Deshacer y filtros por fechas, tipo y texto. Lo siguiente es el paso 5.
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -54,7 +57,7 @@ Hoja de ruta hasta la primera versión usable:
 | --- | --- |
 | 3 | ~~Pantallas de vehículos **y propietarios** (Riverpod + `go_router`) — un vehículo requiere un propietario~~ — hecho |
 | 3b | ~~Tipo de vehículo, catálogo de marcas / modelos, año, versión, selector de nacionalidad (esquema v2)~~ — hecho |
-| 4 | Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar |
+| 4 | ~~Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar (esquema v3)~~ — hecho |
 | 5 | Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas |
 | 6 | Exportar / importar el archivo de la base de datos, y una clave fija de firma de release guardada fuera del repositorio |
 

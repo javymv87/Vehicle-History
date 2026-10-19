@@ -1,4 +1,5 @@
 import '../../data/models/fuel_type.dart';
+import '../../data/models/log_entry_type.dart';
 import '../../data/models/vehicle_kind.dart';
 import '../../l10n/app_localizations.dart';
 import 'action_result.dart';
@@ -29,6 +30,21 @@ extension VehicleKindLabel on VehicleKind {
       };
 }
 
+/// Localised label of a [LogEntryType].
+extension LogEntryTypeLabel on LogEntryType {
+  /// The name of this entry type in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        LogEntryType.maintenance => l10n.entryTypeMaintenance,
+        LogEntryType.repair => l10n.entryTypeRepair,
+        LogEntryType.legalDue => l10n.entryTypeLegalDue,
+        LogEntryType.refuel => l10n.entryTypeRefuel,
+        LogEntryType.expense => l10n.entryTypeExpense,
+        LogEntryType.measuredCheck => l10n.entryTypeMeasuredCheck,
+        LogEntryType.genericCheck => l10n.entryTypeGenericCheck,
+        LogEntryType.note => l10n.entryTypeNote,
+      };
+}
+
 /// Localised message of an [ActionError].
 extension ActionErrorMessage on ActionError {
   /// The message shown to the user for this error, in the language of
@@ -38,6 +54,7 @@ extension ActionErrorMessage on ActionError {
         ActionError.ownerHasVehicles => l10n.errorOwnerHasVehicles,
         ActionError.ownerNotFound => l10n.errorOwnerNotFound,
         ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
+        ActionError.entryNotFound => l10n.errorEntryNotFound,
         ActionError.invalidInput => l10n.errorInvalidInput,
         ActionError.unexpected => l10n.errorUnexpected,
       };

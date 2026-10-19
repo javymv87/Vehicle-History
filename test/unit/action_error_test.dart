@@ -31,6 +31,12 @@ void main() {
         ActionError.vehicleNotFound,
       );
       expect(
+        actionErrorOf(
+          const EntityNotFoundException(AuditEntityType.logEntry, 'e'),
+        ),
+        ActionError.entryNotFound,
+      );
+      expect(
         actionErrorOf(const InvalidFieldException('plate', 'blank')),
         ActionError.invalidInput,
       );
