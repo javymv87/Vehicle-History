@@ -27,11 +27,14 @@ void main() {
 
   setUp(() async {
     db = openTestDatabase();
-    clock = FakeClock();
+    // After every entry date used below: work entries cannot be dated in
+    // the future (E1). Noon UTC, the same local day in any timezone.
+    clock = FakeClock(DateTime.utc(2026, 11, 2, 12));
     final owners =
         DriftOwnerRepository(db.ownersDao, db.auditLogDao, clock: clock.call);
     vehicles = DriftVehicleRepository(
       db.vehiclesDao,
+      db.mileageReadingsDao,
       db.auditLogDao,
       clock: clock.call,
     );
@@ -583,6 +586,57 @@ void main() {
           )
           .getSingle();
       expect(count.read<int>('c'), 0);
+    });
+  });
+
+  group('future dates per type (E1)', () {
+    /// The day after the fake clock's day.
+    const tomorrow = CalendarDate(2026, 11, 3);
+
+    for (final type in LogEntryType.values) {
+      if (type.allowsFutureDate) {
+        test('${type.name} accepts a future date', () async {
+          final entry = await add(type: type, date: tomorrow);
+          expect(entry.date, tomorrow);
+        });
+      } else {
+        test('${type.name} refuses a future date, on create and update',
+            () async {
+          expect(
+            () => add(type: type, date: tomorrow),
+            throwsA(
+              isA<InvalidFieldException>()
+                  .having((e) => e.field, 'field', 'date')
+                  .having(
+                    (e) => e.reason,
+                    'reason',
+                    InvalidFieldException.inFuture,
+                  ),
+            ),
+          );
+          final today =
+              await add(type: type, date: const CalendarDate(2026, 11, 2));
+          expect(
+            () => entries.update(
+              today.id,
+              date: tomorrow,
+              km: today.km,
+              type: type,
+            ),
+            throwsA(isA<InvalidFieldException>()),
+          );
+        });
+      }
+    }
+
+    test('only legal deadlines, expenses and notes allow future dates', () {
+      expect(
+        {
+          for (final t in LogEntryType.values)
+            if (t.allowsFutureDate) t,
+        },
+        {LogEntryType.legalDue, LogEntryType.expense, LogEntryType.note},
+      );
     });
   });
 }

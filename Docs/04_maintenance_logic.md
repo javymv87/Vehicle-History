@@ -163,6 +163,44 @@ del tiempo, para el informe "km recorridos frente a tiempo". Reglas:
   (comportamiento "deshacer hacia atrás"). Nunca quitar lecturas intermedias:
   la serie se mantiene siempre coherente y creciente.
 
+### Cómo funciona hoy (paso 5)
+
+- **Lectura inicial:** cada vehículo empieza su serie con una lectura: el km
+  escrito al crearlo, con la fecha de ese día (los vehículos anteriores al
+  paso 5 la recibieron en la migración). Es la más antigua y **nunca se
+  borra**: un vehículo siempre tiene al menos una lectura.
+- **Nueva lectura:** fecha entre la de la última lectura y hoy (ambas
+  incluidas); km igual o mayor que el de la última (igual se acepta). Lo
+  aplica el formulario y también el repositorio.
+- **Umbral de confirmación: 50.000 km.** Si la nueva lectura supera la
+  última en más de 50.000 km, la app pregunta "¿Seguro? Son X km más que la
+  última lectura" antes de guardar. Nunca se prohíbe.
+- **Borrar:** solo la última, y nunca la inicial. El km actual vuelve a la
+  lectura anterior. Se puede **deshacer** durante unos segundos, siempre que
+  la lectura borrada vuelva a ser la última (si mientras tanto se ha añadido
+  otra más reciente, se rechaza: "Ya hay una lectura más reciente") y el
+  vehículo no se haya borrado.
+- **Corregir:** solo mientras el vehículo tiene **una única lectura** (la
+  inicial): se pueden corregir sus km y su fecha (no posterior a hoy). Las
+  demás lecturas no se editan: se borran (de la última hacia atrás) y se
+  vuelven a escribir.
+- **Oferta desde las entradas:** el km de una entrada nunca entra solo en
+  la serie. Después de guardar una entrada cuyo km supera el km actual,
+  fechada hoy o antes y no antes de la última lectura, la app **ofrece**
+  actualizar el cuentakilómetros con ese km y esa fecha; solo si el usuario
+  pulsa "Actualizar" se crea la lectura (con la misma confirmación de los
+  50.000 km).
+- **Entradas con km demasiado alto para su fecha:** si alguna lectura de
+  un día posterior a la fecha de la entrada tiene menos km que la entrada,
+  es casi seguro un error (el cuentakilómetros no va hacia atrás): la app
+  avisa y deja guardar igualmente. Basta con mirar la primera lectura
+  posterior a esa fecha, que es la de menos km entre las posteriores; así
+  también se detecta el error frente a lecturas intermedias, no solo frente
+  a la última.
+- **Fechas futuras por tipo:** solo vencimientos legales, gastos y notas
+  pueden tener fecha futura; mantenimientos, reparaciones, repostajes y
+  controles no (ver `02_data_model.md`).
+
 ## Especificaciones de fábrica del vehículo
 
 En la ficha del vehículo se registran los datos recomendados por el

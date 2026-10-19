@@ -8,6 +8,9 @@ enum AuditEntityType {
 
   /// A `LogEntry` of a vehicle's history.
   logEntry,
+
+  /// A `MileageReading` of a vehicle's odometer history.
+  mileageReading,
 }
 
 /// Kind of write an [AuditEntry] records.

@@ -5,6 +5,7 @@ import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/features/vehicles/controllers/vehicle_tab_controller.dart';
 
 import '../support/fake_repositories.dart';
 import '../support/pump_app.dart';
@@ -51,11 +52,18 @@ void main() {
       date: const CalendarDate(2026, 9, 1),
       type: LogEntryType.genericCheck,
     );
+    store.addReading(
+      vehicleId,
+      date: const CalendarDate(2026, 10, 1),
+      km: 1299999,
+    );
   });
 
   final locations = <String, String Function()>{
     'vehicle list': () => AppRoutes.vehicles,
     'vehicle detail': () => AppRoutes.vehicle(vehicleId),
+    'mileage tab': () => AppRoutes.vehicle(vehicleId, tab: VehicleTab.mileage),
+    'mileage form': () => AppRoutes.newMileageReading(vehicleId),
     'vehicle form': () => AppRoutes.newVehicle,
     'vehicle edit': () => AppRoutes.editVehicle(vehicleId),
     'entry form': () => AppRoutes.newEntry(vehicleId),

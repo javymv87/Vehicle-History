@@ -78,7 +78,10 @@ catalogue, model year, version and the nationality picker, with the first real
 schema migration (v1 → v2). Step 4 added the vehicle history (schema v3):
 each vehicle opens on its history, with quick entry creation, month grouping,
 detail, edit, delete with Undo, and filters by date range, type and text.
-Next is step 5.
+Step 5 added the odometer (schema v4): a Mileage tab with the readings, one
+initial reading per vehicle, "Update km", delete-last with Undo, the offer
+to update the odometer from an entry, and future dates allowed per entry
+type. Next is step 5b (Trash), then step 6.
 
 Roadmap to the first usable version:
 
@@ -87,7 +90,8 @@ Roadmap to the first usable version:
 | 3 | ~~Vehicles **and owners** screens (Riverpod + `go_router`) — a vehicle requires an owner~~ — done |
 | 3b | ~~Vehicle kind, make / model catalogue, year, version, nationality picker (schema v2)~~ — done |
 | 4 | ~~Basic log entries: date, km, type, cost, notes; list, filters, undo on delete (schema v3)~~ — done |
-| 5 | Odometer: update current km + `MileageReading` history with its rules |
+| 5 | ~~Odometer: update current km + `MileageReading` history with its rules (schema v4)~~ — done |
+| 5b | Trash: deleted vehicles, restore, permanent delete, 30-day cleanup |
 | 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
 
 Then, in an order decided while using the app: settings, maintenance,

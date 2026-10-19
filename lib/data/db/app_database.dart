@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
@@ -13,9 +14,11 @@ import 'audit_log_table.dart';
 import 'converters.dart';
 import 'daos/audit_log_dao.dart';
 import 'daos/log_entries_dao.dart';
+import 'daos/mileage_readings_dao.dart';
 import 'daos/owners_dao.dart';
 import 'daos/vehicles_dao.dart';
 import 'log_entries_table.dart';
+import 'mileage_readings_table.dart';
 import 'owners_table.dart';
 import 'upgrade_safety.dart';
 import 'vehicles_table.dart';
@@ -28,8 +31,14 @@ part 'app_database.g.dart';
 /// [schemaVersion], add a migration step and commit the new schema dump
 /// (see CLAUDE.md §2).
 @DriftDatabase(
-  tables: [Owners, Vehicles, AuditLog, LogEntries],
-  daos: [OwnersDao, VehiclesDao, AuditLogDao, LogEntriesDao],
+  tables: [Owners, Vehicles, AuditLog, LogEntries, MileageReadings],
+  daos: [
+    OwnersDao,
+    VehiclesDao,
+    AuditLogDao,
+    LogEntriesDao,
+    MileageReadingsDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens the on-device database file `vehicle_history.sqlite` via
@@ -95,7 +104,53 @@ class AppDatabase extends _$AppDatabase {
       await m.createIndex(schema.logEntriesVehicleDate);
       await m.createIndex(schema.logEntriesVehicleType);
     },
+    // v4: the odometer history (`mileage_readings`) and its index, plus one
+    // initial reading per vehicle so every vehicle starts with exactly one.
+    // Only new objects and new rows: no existing row is touched.
+    from3To4: (m, schema) async {
+      await m.createTable(schema.mileageReadings);
+      await m.createIndex(schema.mileageReadingsVehicleDate);
+      await insertInitialReadings(m.database);
+    },
   );
+
+  /// Inserts the initial reading of every vehicle, for the v3 → v4 upgrade.
+  ///
+  /// One reading per vehicle row, **soft-deleted vehicles included**, so a
+  /// vehicle restored later still has its reading: km = the vehicle's
+  /// `current_odometer_km`, day = the local calendar day of its
+  /// `created_at`, and `created_at` / `updated_at` copied from the vehicle,
+  /// so the reading sorts as the oldest. Plain SQL against the v4 shape, and
+  /// no audit row: the user did not write these, the upgrade did.
+  ///
+  /// Runs inside the upgrade transaction of [runSafeUpgrade]: if anything
+  /// fails, no reading is inserted and the database stays at v3.
+  @visibleForTesting
+  static Future<void> insertInitialReadings(GeneratedDatabase db) async {
+    final vehicles = await db
+        .customSelect(
+          'SELECT id, created_at, current_odometer_km FROM vehicles',
+        )
+        .get();
+    for (final vehicle in vehicles) {
+      final createdAt = vehicle.read<String>('created_at');
+      final day = const CalendarDateConverter().toSql(
+        CalendarDate.localDayOf(DateTime.parse(createdAt)),
+      );
+      await db.customStatement(
+        'INSERT INTO mileage_readings (id, created_at, updated_at, deleted, '
+        'vehicle_id, reading_date, km) VALUES (?, ?, ?, 0, ?, ?, ?)',
+        [
+          const Uuid().v4(),
+          createdAt,
+          createdAt,
+          vehicle.read<String>('id'),
+          day,
+          vehicle.read<int>('current_odometer_km'),
+        ],
+      );
+    }
+  }
 
   /// Steps run by [runSafeUpgrade] when the file is older than the app.
   final OnUpgrade _upgradeSteps;
@@ -104,7 +159,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// Opens the connection now, running any pending migration.
   ///

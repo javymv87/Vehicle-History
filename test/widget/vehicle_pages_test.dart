@@ -159,12 +159,12 @@ void main() {
       expect(find.byType(VehicleDetailPage), findsOneWidget);
       // The header always shows the km; the history tab comes first.
       expect(find.text('12,345 km'), findsOneWidget);
-      expect(find.textContaining('odometer section'), findsNothing);
+      expect(find.textContaining('from the Mileage tab'), findsNothing);
 
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
       expect(find.text('12,345 km'), findsNWidgets(2));
-      expect(find.textContaining('odometer section'), findsOneWidget);
+      expect(find.textContaining('from the Mileage tab'), findsOneWidget);
     });
 
     testWidgets('edit form has no km field', (tester) async {

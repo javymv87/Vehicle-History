@@ -108,9 +108,11 @@ Reglas:
   mayúsculas. Es **única entre los vehículos no borrados**: la matrícula de un
   vehículo borrado se puede volver a usar.
 - **Km actual**: obligatorio al crear el vehículo, número entero, nunca
-  negativo. **No se modifica desde el formulario del vehículo**: cambiarlo
-  corresponde a la futura función de kilometraje, con las reglas de
-  `MileageReading` (ver `04_maintenance_logic.md`).
+  negativo. **No se modifica desde el formulario del vehículo**: cambia solo
+  con las lecturas del cuentakilómetros (`MileageReading`, ver abajo y
+  `04_maintenance_logic.md`). Es una copia de trabajo: siempre igual a los km
+  de la última lectura válida. Al crear el vehículo, el km escrito se guarda
+  también como su **lectura inicial**, con la fecha de hoy.
 - **Tipo de combustible**: obligatorio, uno de: gasolina, diésel,
   gasolina + GLP, gasolina + GNC (metano), híbrido, híbrido enchufable,
   eléctrico, otro. Los bifuel GLP / GNC son comunes en Italia.
@@ -182,11 +184,18 @@ vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
   (`genericCheck`) y nota (`note`). El control con medición existe en el
   esquema pero **el formulario todavía no lo ofrece**: sin su medición sería
   un control genérico. Llegará con el paso de las mediciones.
+- **Fechas futuras según el tipo:** solo el vencimiento legal, el gasto y la
+  nota pueden tener una fecha posterior a hoy (algo que se planifica). El
+  mantenimiento, la reparación, el repostaje y los controles se registran
+  cuando ya han ocurrido: su fecha es hoy o anterior. Lo aplican el
+  formulario y el repositorio; las filas que ya existían no se tocan.
 - **Km obligatorio según el tipo:** obligatorio para mantenimiento,
   reparación, repostaje y control genérico (y el control con medición);
   opcional para vencimiento legal, gasto y nota. La regla la aplica el
   formulario y también el repositorio. Este km **nunca** alimenta
-  `MileageReading` ni cambia el km actual del vehículo.
+  `MileageReading` ni cambia el km actual del vehículo por sí solo: el único
+  puente es la oferta explícita "¿Actualizar el cuentakilómetros?" después de
+  guardar (ver `03_features.md`, E3).
 - **Sin recordatorio todavía:** los campos del recordatorio se añadirán con su
   propia migración en el paso de los recordatorios. Guardar un recordatorio
   que nunca avisa engañaría al usuario.
@@ -286,15 +295,42 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 - Se actualiza **solo** cuando el usuario actualiza el cuentakilómetros total
   de forma explícita. El km escrito en cada entrada NO entra aquí.
 
+**Lo que existe hoy (esquema v4).** La tabla `mileage_readings` guarda los
+campos técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la
+referencia al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON
+DELETE RESTRICT`), la **fecha** (`reading_date`, fecha de calendario, texto
+`yyyy-MM-dd`) y los **km** (entero, nunca negativo). No hay campo de nota.
+Índice: `(vehicle_id, reading_date)`.
+
+- **Lectura inicial:** todo vehículo tiene siempre al menos una lectura
+  válida. Al crear un vehículo se guarda en la misma transacción (hoy, con el
+  km escrito). Para los vehículos que ya existían, la migración v3 → v4 creó
+  una por vehículo — **también para los borrados**, para que una
+  restauración futura sea coherente — con su km actual y la fecha del día en
+  que se creó el vehículo. La lectura inicial es la más antigua; no hay
+  columna que la marque.
+- **Última lectura:** la lectura válida con la fecha más reciente y, en el
+  mismo día, la creada más tarde.
+- **Km actual como copia:** `vehicles.current_odometer_km` se mantiene y es
+  siempre igual a los km de la última lectura válida. Cada escritura de
+  lecturas (crear, borrar, deshacer, corregir) lo actualiza en la misma
+  transacción.
+- **Vehículo borrado:** sus lecturas se quedan tal cual y no se ven (sin
+  borrado en cascada).
+- **Historial de operaciones:** tipo de entidad `mileageReading`, con
+  creación, modificación, borrado y restauración. Las lecturas creadas por
+  la migración no tienen fila en el historial: no las escribió el usuario.
+
 ### AuditLog (historial de operaciones)
 
 Registro ligero de todas las operaciones realizadas sobre las entradas,
 consultable y útil también en el futuro. Existe **desde la primera versión
 del esquema**: cada creación, modificación, borrado y restauración (deshacer
-un borrado) de un Owner, un Vehicle o una LogEntry
+un borrado) de un Owner, un Vehicle, una LogEntry o una MileageReading
 añade su fila en la misma transacción. El tipo de entidad es texto sin
 restricción CHECK, así que añadir las entradas del historial (`logEntry`, en
-la v3) no ha requerido tocar esta tabla. Es solo de añadir: sus filas no se
+la v3) y las lecturas del cuentakilómetros (`mileageReading`, en la v4) no ha
+requerido tocar esta tabla. Es solo de añadir: sus filas no se
 modifican ni se borran.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)

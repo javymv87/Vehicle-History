@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../models/calendar_date.dart';
 import 'repository_exceptions.dart';
 
 /// Returns the current instant in UTC. Injected so tests control time.
@@ -25,6 +26,13 @@ DateTime utcNow(UtcClock clock) {
   }
   return now;
 }
+
+/// Today's calendar day on the phone, read from [clock].
+///
+/// The UTC instant is converted to local time before taking the day, so
+/// "today" is the day the user sees on the phone.
+CalendarDate localToday(UtcClock clock) =>
+    CalendarDate.localDayOf(utcNow(clock));
 
 /// Trims [value] and turns an empty result into `null`.
 ///

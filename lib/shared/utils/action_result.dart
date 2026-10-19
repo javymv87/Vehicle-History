@@ -24,6 +24,19 @@ enum ActionError {
   /// The history entry involved is missing or deleted.
   entryNotFound,
 
+  /// The odometer reading involved is missing or deleted.
+  readingNotFound,
+
+  /// The reading is not the last one, or is the initial one, and cannot be
+  /// deleted.
+  readingNotDeletable,
+
+  /// The reading cannot be corrected: its vehicle has more than one.
+  readingNotEditable,
+
+  /// The deleted reading cannot come back: a more recent one exists.
+  newerReadingExists,
+
   /// The data layer refused a value that the form let through.
   invalidInput,
 
@@ -45,6 +58,18 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.vehicleNotFound,
     EntityNotFoundException(entityType: AuditEntityType.logEntry) =>
       ActionError.entryNotFound,
+    EntityNotFoundException(entityType: AuditEntityType.mileageReading) =>
+      ActionError.readingNotFound,
+    MileageReadingRuleException(
+      rule: MileageReadingRule.notLast || MileageReadingRule.initial,
+    ) =>
+      ActionError.readingNotDeletable,
+    MileageReadingRuleException(rule: MileageReadingRule.notSoleReading) =>
+      ActionError.readingNotEditable,
+    MileageReadingRuleException(
+      rule: MileageReadingRule.newerReadingExists,
+    ) =>
+      ActionError.newerReadingExists,
     InvalidFieldException() => ActionError.invalidInput,
     _ => _unexpected(error, stackTrace),
   };

@@ -57,9 +57,10 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v3: `owners`, `vehicles`, `audit_log`,
-`log_entries`; v2 added the vehicle kind, make / model, model year and
-version; v3 added `log_entries`):
+Settled for the database (schema v4: `owners`, `vehicles`, `audit_log`,
+`log_entries`, `mileage_readings`; v2 added the vehicle kind, make / model,
+model year and version; v3 added `log_entries`; v4 added
+`mileage_readings` with one initial reading per vehicle):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -71,21 +72,23 @@ version; v3 added `log_entries`):
   `build.yaml`, set from v1: changing it later is a data migration.
 - **Foreign keys** are enabled with `PRAGMA foreign_keys = ON` in
   `beforeOpen` (SQLite leaves them off). `vehicles.owner_id` →
-  `owners.id` and `log_entries.vehicle_id` → `vehicles.id`, both
+  `owners.id`, `log_entries.vehicle_id` → `vehicles.id` and
+  `mileage_readings.vehicle_id` → `vehicles.id`, all
   `ON DELETE RESTRICT`.
 - **Soft delete.** Main tables carry `deleted` (default `false`), shared with
   `id`, `created_at`, `updated_at` through the `TechnicalColumns` mixin.
   Every read filters `deleted = 0` unless the method name says otherwise;
   delete means soft delete. The audit log is append-only and has no flag.
   Child rows of a soft-deleted parent are **not** cascaded: the entries of a
-  deleted vehicle keep their own flag, and the `log_entries` reads also
-  require a live vehicle, so they come back when the vehicle is restored.
+  deleted vehicle keep their own flag, and the `log_entries` and
+  `mileage_readings` reads also require a live vehicle, so they come back
+  when the vehicle is restored.
 - **Audit log from v1.** Every repository write adds its `audit_log` row in
   the same transaction. Operations: `create`, `update`, `delete`, `restore`
   (Undo after a delete). `operation` and `entity_type` are plain
   text with no CHECK, so a new code only needs its converter
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
-  this way in v3), not a schema change; an older build that meets an unknown
+  this way in v3, `mileageReading` in v4), not a schema change; an older build that meets an unknown
   code throws when reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
@@ -113,6 +116,32 @@ version; v3 added `log_entries`):
   text in Dart through `LogEntryFilter.matchesText` / `foldForSearch`, since
   SQLite ignores neither accents nor non-ASCII case. `LogEntryFilter.matches`
   is the reference both paths are tested against.
+- **Future dates** of entries: only `legalDue`, `expense` and `note`
+  (`LogEntryType.allowsFutureDate`); work types must be dated today or
+  earlier, in the form and the repository. "Today" is
+  `CalendarDate.localDayOf` of the injected UTC clock (`localToday`), the
+  one explicit timestamp → day conversion.
+- **Odometer readings** (`mileage_readings`, v4) are independent of the
+  entries: an entry's km never writes a reading by itself; the only bridge
+  is the explicit "Update" offer after saving an entry
+  (`shouldOfferOdometerUpdate`). Every vehicle has at least one live
+  reading, its initial one (the oldest, no flag column): inserted by
+  `DriftVehicleRepository.create` in the same transaction, and for existing
+  vehicles, deleted ones included, by the v3 → v4 migration
+  (`AppDatabase.insertInitialReadings`, no audit row). The last reading is
+  the greatest `(reading_date, created_at)`. `vehicles.current_odometer_km`
+  is a cache always equal to the last live reading's km: every reading
+  write (`create`, `updateInitial`, `deleteLast`, `restore`) updates it in
+  the same transaction, without touching the vehicle's `updated_at`. Rules
+  (`MileageReadingRepository`): a new reading is on or after the last day,
+  never after today, with km ≥ the last; only the last reading is
+  deletable, never the initial one; Undo only while it would again be the
+  last; correcting only while it is the sole reading. Refusals are
+  `InvalidFieldException` reasons or `MileageReadingRuleException`. A jump
+  above `bigOdometerJumpKm` (50 000) is accepted by the repository and
+  confirmed by the UI (`odometer_checks.dart`). The entry form warns, never
+  blocks, when an entry has more km than the first reading of a later day
+  (`laterReadingBelowEntryKm`).
 - **Make and model** are stored as the display name (always) plus an
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches
@@ -183,6 +212,10 @@ updating the pin in the script, the spot-check test and this section.
 Tests use small fixtures (`test/support/catalog_fixtures.dart`) through
 `vehicleCatalogProvider` / `countryNamesProvider` overrides; only the
 spot-check tests read the real assets.
+
+Line endings: `.gitattributes` stores every text file with LF (`* text=auto
+eol=lf`), Windows scripts with CRLF and images, fonts and keystores as binary,
+so a Windows checkout produces the same bytes as CI.
 
 Releases: the Android `versionCode` (the build number after `+` in
 `pubspec.yaml`) must increase with every release, and release builds are
@@ -327,7 +360,13 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
   before `…/:id`. History entries are nested under their vehicle
   (`/vehicles/:id/entries/new`, `…/entries/:entryId`, `…/:entryId/edit`), so
   both ids are in the path; an entry reached through another vehicle's path
-  is not found. The vehicle page owns its own "New entry" FAB.
+  is not found. Odometer readings follow the same pattern
+  (`/vehicles/:id/mileage/new`, `…/mileage/:readingId/edit`). The vehicle
+  page has three tabs (`VehicleTab`: history, mileage, details), opened
+  through the `tab` query parameter (`AppRoutes.vehicle(id, tab: …)`, e.g.
+  `?tab=mileage`), and owns its FAB: "Update km" on Mileage, "New entry"
+  otherwise. An action that outlives its page (the odometer offer) asks the
+  open vehicle page for a tab through `vehicleTabRequestProvider`.
 - Screens are opened with `context.push`, so Back returns to where the user
   was. A form pops with the saved id (`context.popOrGo`), which is how the
   vehicle form gets the owner created through "New owner".
@@ -343,6 +382,9 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
   with a pinned "Other…" option for free text: the list helps, never blocks.
 - Long forms use `SingleChildScrollView` + `Column`, not a lazy `ListView`:
   `Form.validate` only checks fields that are built.
+- An offer after a save (`showOfferSnackBar`, 8 s) runs its action after
+  the form is gone: it captures the messenger, the `GoRouter` (whose
+  navigator shows any dialog) and a kept-alive controller before popping.
 
 ---
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/router/app_routes.dart';
@@ -8,6 +9,8 @@ import '../../../app/router/navigation.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../data/models/log_entry_type.dart';
+import '../../../data/models/mileage_reading.dart';
+import '../../../data/models/odometer_checks.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -17,11 +20,13 @@ import '../../../shared/utils/money.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../mileage/controllers/odometer_update_offer_controller.dart';
+import '../../mileage/widgets/odometer_update_offer.dart';
 import '../controllers/log_entry_form_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
 
 /// Form that creates a history entry for a vehicle (no [entryId]) or edits
-/// one (`Docs/03_features.md`, U3–U5 and U10).
+/// one (`Docs/03_features.md`, U3–U5, U10 and E1–E3).
 ///
 /// Built for few taps: type, date (today by default), km with a one-tap
 /// "use current km" chip, cost and description, with Save always in the app
@@ -63,6 +68,7 @@ class LogEntryFormPage extends ConsumerWidget {
         return _LogEntryForm(
           formKey: key,
           vehicle: vehicle,
+          readings: data.readings,
           initial: data.entry,
           title: title,
         );
@@ -76,12 +82,14 @@ class _LogEntryForm extends ConsumerStatefulWidget {
   const _LogEntryForm({
     required this.formKey,
     required this.vehicle,
+    required this.readings,
     required this.initial,
     required this.title,
   });
 
   final LogEntryFormKey formKey;
   final Vehicle vehicle;
+  final List<MileageReading> readings;
   final LogEntry? initial;
   final String title;
 
@@ -105,6 +113,9 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   /// anything else.
   late CalendarDate _date =
       widget.initial?.date ?? calendarDateOf(DateTime.now());
+
+  /// Shown under the date when the type does not allow a future day (E1).
+  String? _dateError;
 
   /// Whether a save is running; the save button is disabled meanwhile.
   bool _saving = false;
@@ -157,8 +168,24 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
-      setState(() => _date = calendarDateOf(picked));
+      setState(() {
+        _date = calendarDateOf(picked);
+        _dateError = null;
+      });
     }
+  }
+
+  /// Today's calendar day on the phone.
+  CalendarDate get _today => calendarDateOf(DateTime.now());
+
+  /// The date error, or `null`: only legal deadlines, expenses and notes
+  /// may be dated after today (E1).
+  String? _validateDate(AppLocalizations l10n) {
+    final type = _type;
+    if (type == null || type.allowsFutureDate || !_date.isAfter(_today)) {
+      return null;
+    }
+    return l10n.validationEntryDateFuture;
   }
 
   /// Checks the km: a whole number ≥ 0, required for some types (U10).
@@ -179,13 +206,44 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     return tryParseEuroCents(text) == null ? l10n.validationCostInvalid : null;
   }
 
-  /// Validates the fields and saves through the controller.
+  /// Validates the fields, asks about a suspicious km (E2) and saves
+  /// through the controller; then offers to update the odometer (E3).
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    final dateError = _validateDate(l10n);
+    setState(() => _dateError = dateError);
+    final fieldsValid = _formKey.currentState!.validate();
+    if (!fieldsValid || dateError != null) return;
     final kmText = _km.text.trim();
     final costText = _cost.text.trim();
+    final km = kmText.isEmpty ? null : int.parse(kmText);
+    final currentKm = widget.vehicle.currentOdometerKm;
+    final lastReadingDate = widget.readings.firstOrNull?.date;
+
+    // E2: more km than a reading taken on a later day is almost surely a
+    // typo, since the odometer never goes backwards. Ask, never block.
+    final conflicting = laterReadingBelowEntryKm(
+      entryKm: km,
+      entryDate: _date,
+      readings: widget.readings,
+    );
+    if (conflicting != null) {
+      final confirmed = await confirmAction(
+        context,
+        title: l10n.entryKmAboveOdometerTitle,
+        message: l10n.entryKmAboveOdometerMessage(
+          conflicting.km,
+          conflicting.date.toLocalDateTime(),
+        ),
+        confirmLabel: l10n.actionSaveAnyway,
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    // Captured now: the offer's "Update" runs after this form is gone.
+    final router = GoRouter.of(context);
+    final offer = ref.read(odometerUpdateOfferControllerProvider.notifier);
     setState(() => _saving = true);
     final result = await ref
         .read(logEntryFormControllerProvider(widget.formKey).notifier)
@@ -193,7 +251,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
           LogEntryDraft(
             date: _date,
             type: _type!,
-            km: kmText.isEmpty ? null : int.parse(kmText),
+            km: km,
             description: _description.text,
             costCents: costText.isEmpty ? null : tryParseEuroCents(costText),
           ),
@@ -202,7 +260,28 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     setState(() => _saving = false);
     switch (result) {
       case ActionSuccess(:final value):
-        showSavedSnackBar(messenger, l10n.entrySaved);
+        final entryKm = value.km;
+        if (entryKm != null &&
+            shouldOfferOdometerUpdate(
+              entryKm: entryKm,
+              entryDate: value.date,
+              currentOdometerKm: currentKm,
+              lastReadingDate: lastReadingDate,
+              today: _today,
+            )) {
+          showOdometerUpdateOffer(
+            messenger: messenger,
+            router: router,
+            l10n: l10n,
+            offer: offer,
+            vehicleId: value.vehicleId,
+            date: value.date,
+            km: entryKm,
+            currentKm: currentKm,
+          );
+        } else {
+          showSavedSnackBar(messenger, l10n.entrySaved);
+        }
         context.popOrGo(AppRoutes.vehicle(value.vehicleId), value.id);
       case ActionFailure(:final error):
         showErrorSnackBar(messenger, error.message(l10n));
@@ -237,10 +316,13 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
               _TypeChoice(
                 types: _offeredTypes,
                 selected: _type,
-                onChanged: (type) => setState(() => _type = type),
+                onChanged: (type) => setState(() {
+                  _type = type;
+                  _dateError = null;
+                }),
               ),
               gap,
-              _DateField(date: _date, onTap: _pickDate),
+              _DateField(date: _date, error: _dateError, onTap: _pickDate),
               gap,
               TextFormField(
                 key: const ValueKey('entry-km-field'),
@@ -373,9 +455,14 @@ class _TypeChoice extends StatelessWidget {
 /// The required entry date: the day formatted for the locale, opening the
 /// Material date picker when tapped.
 class _DateField extends StatelessWidget {
-  const _DateField({required this.date, required this.onTap});
+  const _DateField({
+    required this.date,
+    required this.error,
+    required this.onTap,
+  });
 
   final CalendarDate date;
+  final String? error;
   final VoidCallback onTap;
 
   @override
@@ -387,6 +474,8 @@ class _DateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: l10n.fieldEntryDate,
+          errorText: error,
+          errorMaxLines: 3,
           border: const OutlineInputBorder(),
           suffixIcon: const Icon(Icons.calendar_today),
         ),

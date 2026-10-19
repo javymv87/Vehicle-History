@@ -41,6 +41,18 @@ class CalendarDate implements Comparable<CalendarDate> {
     return CalendarDate(year, month, day);
   }
 
+  /// The local calendar day on which the [instant] falls, in the phone's
+  /// current timezone.
+  ///
+  /// The one explicit conversion from a technical timestamp to a day
+  /// (CLAUDE.md §11): used for "today" from the UTC clock, and for the day a
+  /// row was created. [instant] may be UTC or local; it is converted to
+  /// local time first, never truncated as it is.
+  factory CalendarDate.localDayOf(DateTime instant) {
+    final local = instant.toLocal();
+    return CalendarDate(local.year, local.month, local.day);
+  }
+
   /// Exactly four, two and two digits separated by dashes.
   static final RegExp _isoPattern = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
 

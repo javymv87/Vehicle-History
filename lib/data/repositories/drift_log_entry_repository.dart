@@ -67,8 +67,14 @@ class DriftLogEntryRepository implements LogEntryRepository {
     String? description,
     int? costCents,
   }) async {
-    _checkValues(type: type, km: km, costCents: costCents);
     final now = utcNow(_clock);
+    _checkValues(
+      type: type,
+      date: date,
+      today: localToday(_clock),
+      km: km,
+      costCents: costCents,
+    );
     final entry = LogEntry(
       id: newId(),
       vehicleId: vehicleId,
@@ -97,8 +103,14 @@ class DriftLogEntryRepository implements LogEntryRepository {
     String? description,
     int? costCents,
   }) async {
-    _checkValues(type: type, km: km, costCents: costCents);
     final now = utcNow(_clock);
+    _checkValues(
+      type: type,
+      date: date,
+      today: localToday(_clock),
+      km: km,
+      costCents: costCents,
+    );
     return _entries.transaction(() async {
       final current = await _requireLive(id);
       final updated = current.copyWith(
@@ -143,15 +155,21 @@ class DriftLogEntryRepository implements LogEntryRepository {
   }
 
   /// Refuses values the form should already have caught: a missing km for a
-  /// type that requires it, a negative km and a negative cost.
+  /// type that requires it, a negative km, a negative cost, and a date after
+  /// [today] for a type that does not allow one.
   ///
   /// Throws [InvalidFieldException]. Enforced here too so no caller can
   /// write an entry that breaks the rules of `Docs/02_data_model.md`.
   static void _checkValues({
     required LogEntryType type,
+    required CalendarDate date,
+    required CalendarDate today,
     required int? km,
     required int? costCents,
   }) {
+    if (!type.allowsFutureDate && date.isAfter(today)) {
+      throw const InvalidFieldException('date', InvalidFieldException.inFuture);
+    }
     if (km == null && type.requiresKm) {
       throw InvalidFieldException('km', 'required for ${type.name}');
     }

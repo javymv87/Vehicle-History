@@ -118,7 +118,8 @@ class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
 /// Stores an [AuditEntityType] as a stable text code.
 ///
 /// The column has no CHECK constraint, so a new entity type (such as
-/// `logEntry`, added with schema v3) needs only a new code here.
+/// `logEntry`, added with schema v3, or `mileageReading`, added with v4)
+/// needs only a new code here.
 class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditEntityTypeConverter();
@@ -128,6 +129,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         'owner' => AuditEntityType.owner,
         'vehicle' => AuditEntityType.vehicle,
         'logEntry' => AuditEntityType.logEntry,
+        'mileageReading' => AuditEntityType.mileageReading,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit entity type in database: $fromDb'),
       };
@@ -137,6 +139,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         AuditEntityType.owner => 'owner',
         AuditEntityType.vehicle => 'vehicle',
         AuditEntityType.logEntry => 'logEntry',
+        AuditEntityType.mileageReading => 'mileageReading',
       };
 }
 

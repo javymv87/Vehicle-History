@@ -6,10 +6,12 @@ import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry.dart';
 import 'package:vehicle_history/data/models/log_entry_filter.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
+import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/log_entry_repository.dart';
+import 'package:vehicle_history/data/repositories/mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/owner_repository.dart';
 import 'package:vehicle_history/data/repositories/repository_exceptions.dart';
 import 'package:vehicle_history/data/repositories/vehicle_repository.dart';
@@ -38,6 +40,12 @@ class FakeStore {
 
   /// Ids of soft-deleted entries.
   final Set<String> deletedEntries = {};
+
+  /// Live and deleted odometer readings, by id.
+  final Map<String, MileageReading> readings = {};
+
+  /// Ids of soft-deleted readings.
+  final Set<String> deletedReadings = {};
 
   /// When set, every write throws it instead of writing.
   Exception? failWritesWith;
@@ -74,6 +82,54 @@ class FakeStore {
         final byCreation = b.createdAt.compareTo(a.createdAt);
         return byCreation != 0 ? byCreation : b.id.compareTo(a.id);
       });
+  }
+
+  /// Live readings of the live vehicle [vehicleId], newest first, like the
+  /// real DAO.
+  List<MileageReading> liveReadingsOf(String vehicleId) {
+    if (deletedVehicles.contains(vehicleId)) return [];
+    return [
+      for (final r in readings.values)
+        if (r.vehicleId == vehicleId && !deletedReadings.contains(r.id)) r,
+    ]..sort((a, b) => b.isAfter(a) ? 1 : (a.isAfter(b) ? -1 : 0));
+  }
+
+  /// Adds a live reading and moves the vehicle's odometer to it, without
+  /// checks or notification. Each reading is created one minute after the
+  /// previous one, so readings of the same day keep their order.
+  MileageReading insertReading(
+    String vehicleId,
+    CalendarDate date,
+    int km,
+  ) {
+    final created = _now.add(Duration(minutes: readings.length));
+    final reading = MileageReading(
+      id: newId('reading'),
+      vehicleId: vehicleId,
+      date: date,
+      km: km,
+      createdAt: created,
+      updatedAt: created,
+    );
+    readings[reading.id] = reading;
+    setOdometer(vehicleId, km);
+    return reading;
+  }
+
+  /// Writes the odometer cache of the vehicle [vehicleId].
+  void setOdometer(String vehicleId, int km) {
+    vehicles[vehicleId] = vehicles[vehicleId]!.copyWith(currentOdometerKm: km);
+  }
+
+  /// Adds a live reading directly, for test setup.
+  MileageReading addReading(
+    String vehicleId, {
+    required CalendarDate date,
+    required int km,
+  }) {
+    final reading = insertReading(vehicleId, date, km);
+    _changes.add(null);
+    return reading;
   }
 
   /// Emits [read] now and after every change.
@@ -169,6 +225,13 @@ class FakeStore {
       updatedAt: _now,
     );
     vehicles[vehicle.id] = vehicle;
+    // Like the real repository: every vehicle starts with its initial
+    // reading.
+    insertReading(
+      vehicle.id,
+      CalendarDate(_now.year, _now.month, _now.day),
+      km,
+    );
     _changes.add(null);
     return vehicle;
   }
@@ -342,6 +405,7 @@ class FakeVehicleRepository implements VehicleRepository {
         );
         _check(vehicle);
         store.vehicles[vehicle.id] = vehicle;
+        store.insertReading(vehicle.id, _today(), currentOdometerKm);
         return vehicle;
       });
 
@@ -468,7 +532,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     int? costCents,
   }) =>
       store.write(() {
-        _check(type, km);
+        _check(type, km, date);
         if (!store.liveVehicles.any((v) => v.id == vehicleId)) {
           throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
         }
@@ -498,7 +562,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     int? costCents,
   }) =>
       store.write(() {
-        _check(type, km);
+        _check(type, km, date);
         final current = _live(id);
         if (current == null) {
           throw EntityNotFoundException(AuditEntityType.logEntry, id);
@@ -538,13 +602,144 @@ class FakeLogEntryRepository implements LogEntryRepository {
         return entry;
       });
 
-  /// Refuses a missing km for a type that requires it.
-  void _check(LogEntryType type, int? km) {
+  /// Refuses a missing km for a type that requires it, and a future date
+  /// for a type that does not allow one.
+  void _check(LogEntryType type, int? km, CalendarDate date) {
     if (km == null && type.requiresKm) {
       throw const InvalidFieldException('km', 'required');
     }
+    if (!type.allowsFutureDate && date.isAfter(_today())) {
+      throw const InvalidFieldException('date', InvalidFieldException.inFuture);
+    }
   }
 }
+
+/// [MileageReadingRepository] on a [FakeStore], with the series rules of
+/// the real repository and the real "today".
+class FakeMileageReadingRepository implements MileageReadingRepository {
+  /// Creates the repository on [store].
+  FakeMileageReadingRepository(this.store);
+
+  /// The shared data.
+  final FakeStore store;
+
+  @override
+  Stream<List<MileageReading>> watchByVehicle(String vehicleId) =>
+      store.watch(() => store.liveReadingsOf(vehicleId));
+
+  @override
+  Future<List<MileageReading>> getByVehicle(String vehicleId) async =>
+      store.liveReadingsOf(vehicleId);
+
+  @override
+  Future<MileageReading?> getLast(String vehicleId) async =>
+      store.liveReadingsOf(vehicleId).firstOrNull;
+
+  @override
+  Future<MileageReading> create({
+    required String vehicleId,
+    required CalendarDate date,
+    required int km,
+  }) =>
+      store.write(() {
+        _requireLiveVehicle(vehicleId);
+        final last = store.liveReadingsOf(vehicleId).firstOrNull;
+        if (date.isAfter(_today())) {
+          throw const InvalidFieldException(
+            'date',
+            InvalidFieldException.inFuture,
+          );
+        }
+        if (last != null && date.isBefore(last.date)) {
+          throw const InvalidFieldException(
+            'date',
+            InvalidFieldException.beforeLastReading,
+          );
+        }
+        if (last != null && km < last.km) {
+          throw const InvalidFieldException(
+            'km',
+            InvalidFieldException.belowLastReading,
+          );
+        }
+        return store.insertReading(vehicleId, date, km);
+      });
+
+  @override
+  Future<MileageReading> updateInitial(
+    String id, {
+    required CalendarDate date,
+    required int km,
+  }) =>
+      store.write(() {
+        final current = _live(id);
+        if (store.liveReadingsOf(current.vehicleId).length != 1) {
+          throw MileageReadingRuleException(
+            id,
+            MileageReadingRule.notSoleReading,
+          );
+        }
+        final updated = current.copyWith(date: date, km: km);
+        store.readings[id] = updated;
+        store.setOdometer(current.vehicleId, km);
+        return updated;
+      });
+
+  @override
+  Future<void> deleteLast(String id) => store.write(() {
+        final reading = _live(id);
+        final all = store.liveReadingsOf(reading.vehicleId);
+        if (all.first.id != id) {
+          throw MileageReadingRuleException(id, MileageReadingRule.notLast);
+        }
+        if (all.length == 1) {
+          throw MileageReadingRuleException(id, MileageReadingRule.initial);
+        }
+        store.deletedReadings.add(id);
+        store.setOdometer(reading.vehicleId, all[1].km);
+      });
+
+  @override
+  Future<MileageReading> restore(String id) => store.write(() {
+        if (!store.deletedReadings.contains(id)) {
+          throw EntityNotFoundException(AuditEntityType.mileageReading, id);
+        }
+        final reading = store.readings[id]!;
+        _requireLiveVehicle(reading.vehicleId);
+        final last = store.liveReadingsOf(reading.vehicleId).firstOrNull;
+        if (last != null && !reading.isAfter(last)) {
+          throw MileageReadingRuleException(
+            id,
+            MileageReadingRule.newerReadingExists,
+          );
+        }
+        store.deletedReadings.remove(id);
+        store.setOdometer(reading.vehicleId, reading.km);
+        return reading;
+      });
+
+  /// The live reading with [id] of a live vehicle, or throws.
+  MileageReading _live(String id) {
+    final reading = store.readings[id];
+    if (reading == null ||
+        store.deletedReadings.contains(id) ||
+        store.deletedVehicles.contains(reading.vehicleId)) {
+      throw EntityNotFoundException(AuditEntityType.mileageReading, id);
+    }
+    return reading;
+  }
+
+  /// Throws unless the vehicle with [vehicleId] is live.
+  void _requireLiveVehicle(String vehicleId) {
+    if (!store.liveVehicles.any((v) => v.id == vehicleId)) {
+      throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
+    }
+  }
+}
+
+/// Today's calendar day on the machine running the tests, like the real
+/// repositories' default clock.
+CalendarDate _today() => CalendarDate.localDayOf(DateTime.now());
 
 /// Trims [value] and turns blank into `null`, like the real repositories.
 String? _clean(String? value) {

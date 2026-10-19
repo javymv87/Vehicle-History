@@ -1,0 +1,21 @@
+# Normalise line endings: LF in the repository and in every checkout, so a
+# Windows clone produces the same bytes as CI (dart format, schema dumps).
+* text=auto eol=lf
+
+# Windows scripts need CRLF to run correctly under cmd.exe / PowerShell.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files: never touch their bytes, never diff them as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.ttf binary
+*.otf binary

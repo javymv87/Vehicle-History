@@ -32,6 +32,9 @@ abstract interface class VehicleRepository {
 
   /// Creates a vehicle and returns it with its id and timestamps set.
   ///
+  /// In the same transaction it adds the vehicle's initial odometer reading:
+  /// [currentOdometerKm], dated today.
+  ///
   /// [plate] is stored trimmed and upper-case; other text fields are trimmed,
   /// and optional ones left blank are stored as `null`.
   ///

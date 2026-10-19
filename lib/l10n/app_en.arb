@@ -303,7 +303,7 @@
   "@errorUnexpected": {
     "description": "Error for any unexpected failure while saving, deleting or restoring."
   },
-  "vehicleKmNote": "Changed only from the odometer section, available in a later version.",
+  "vehicleKmNote": "Changed only from the Mileage tab.",
   "@vehicleKmNote": {
     "description": "Note under the current km on the vehicle detail: the form cannot change it."
   },
@@ -699,5 +699,188 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "tabMileage": "Mileage",
+  "@tabMileage": {
+    "description": "Vehicle page tab: the odometer readings."
+  },
+  "addMileageReading": "Update km",
+  "@addMileageReading": {
+    "description": "Floating button of the Mileage tab: adds an odometer reading."
+  },
+  "newMileageReadingTitle": "Update km",
+  "@newMileageReadingTitle": {
+    "description": "Title of the form that adds an odometer reading."
+  },
+  "editMileageReadingTitle": "Correct reading",
+  "@editMileageReadingTitle": {
+    "description": "Title of the form that corrects the sole (initial) reading."
+  },
+  "fieldReadingKm": "Odometer km",
+  "@fieldReadingKm": {
+    "description": "Reading field: total odometer value."
+  },
+  "fieldReadingDate": "Date",
+  "@fieldReadingDate": {
+    "description": "Reading field: day of the reading."
+  },
+  "lastReadingHint": "Last: {km} km on {date}",
+  "@lastReadingHint": {
+    "description": "Helper under the km field: the last reading.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "validationReadingKmBelowLast": "At least {km} km: the odometer never goes backwards",
+  "@validationReadingKmBelowLast": {
+    "description": "Reading km below the last reading.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "validationReadingDateOutOfRange": "Choose a day between the last reading and today",
+  "@validationReadingDateOutOfRange": {
+    "description": "Reading date before the last reading or after today."
+  },
+  "bigJumpTitle": "Are you sure?",
+  "@bigJumpTitle": {
+    "description": "Confirmation title for a reading far above the last one."
+  },
+  "bigJumpMessage": "That is {km} km more than the last reading.",
+  "@bigJumpMessage": {
+    "description": "Confirmation for a reading far above the last one: the difference.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "actionSaveAnyway": "Save anyway",
+  "@actionSaveAnyway": {
+    "description": "Button that confirms saving a suspicious value."
+  },
+  "readingSaved": "Reading saved",
+  "@readingSaved": {
+    "description": "Snackbar after saving a reading."
+  },
+  "readingDeleted": "Reading deleted",
+  "@readingDeleted": {
+    "description": "Snackbar with Undo after deleting a reading."
+  },
+  "readingDifference": "+{km} km",
+  "@readingDifference": {
+    "description": "Mileage row: km driven since the previous reading.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "initialReading": "Initial reading",
+  "@initialReading": {
+    "description": "Mileage row: the oldest reading, from the vehicle creation."
+  },
+  "readingCorrect": "Correct",
+  "@readingCorrect": {
+    "description": "Bottom sheet action that corrects the sole reading."
+  },
+  "readingOnlyLastDeletable": "Only the last reading can be deleted. To change an older one, delete the newer ones first.",
+  "@readingOnlyLastDeletable": {
+    "description": "Bottom sheet of a reading that is not the last."
+  },
+  "deleteReadingTitle": "Delete the reading?",
+  "@deleteReadingTitle": {
+    "description": "Confirmation title before deleting a reading."
+  },
+  "deleteReadingMessage": "The reading of {km} km will be deleted. You can undo it for a few seconds.",
+  "@deleteReadingMessage": {
+    "description": "Confirmation before deleting a reading.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "errorNewerReadingExists": "There is already a more recent reading. Nothing was changed.",
+  "@errorNewerReadingExists": {
+    "description": "Undo of a reading refused: a newer reading exists."
+  },
+  "errorReadingNotDeletable": "Only the last reading can be deleted, never the initial one. Nothing was deleted.",
+  "@errorReadingNotDeletable": {
+    "description": "Delete of a reading refused by the series rules."
+  },
+  "errorReadingNotEditable": "Only the sole reading of a vehicle can be corrected. Nothing was saved.",
+  "@errorReadingNotEditable": {
+    "description": "Correction refused: the vehicle has more than one reading."
+  },
+  "errorReadingNotFound": "The reading no longer exists. Nothing was saved.",
+  "@errorReadingNotFound": {
+    "description": "The reading involved is missing or deleted."
+  },
+  "entryKmAboveOdometerTitle": "Check the km",
+  "@entryKmAboveOdometerTitle": {
+    "description": "Confirmation title for a past entry with km above the current odometer."
+  },
+  "entryKmAboveOdometerMessage": "This km is higher than the reading of {date} ({km} km), dated after this entry. Save anyway?",
+  "@entryKmAboveOdometerMessage": {
+    "description": "Confirmation for an entry with more km than a reading taken on a later day.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "updateOdometerOffer": "Entry saved. Update the odometer to {km} km?",
+  "@updateOdometerOffer": {
+    "description": "Snackbar after saving an entry with km above the odometer.",
+    "placeholders": {
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "actionUpdate": "Update",
+  "@actionUpdate": {
+    "description": "Snackbar action that adds the reading offered after saving an entry."
+  },
+  "validationEntryDateFuture": "This type of entry cannot be dated in the future",
+  "@validationEntryDateFuture": {
+    "description": "Entry date after today for a type that does not allow it."
+  },
+  "readingRowSubtitle": "{date} · {difference}",
+  "@readingRowSubtitle": {
+    "description": "Mileage row: day of the reading and the difference with the previous one (or 'Initial reading').",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "difference": {
+        "type": "String"
+      }
+    }
+  },
+  "readingNotCorrectable": "This reading does not exist or can no longer be corrected: only the sole reading of a vehicle can be.",
+  "@readingNotCorrectable": {
+    "description": "Page shown when the reading to correct is missing or no longer the sole one."
   }
 }

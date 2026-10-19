@@ -31,6 +31,17 @@ class InvalidFieldException extends RepositoryException {
   /// [reason]. The UI shows its own localised message.
   const InvalidFieldException(this.field, this.reason);
 
+  /// [reason] of a date after today, for a reading or an entry type that
+  /// does not accept future dates.
+  static const String inFuture = 'must not be in the future';
+
+  /// [reason] of a reading dated before the last reading of its vehicle.
+  static const String beforeLastReading = 'must not be before the last reading';
+
+  /// [reason] of a reading with fewer km than the last reading of its
+  /// vehicle: the odometer never goes backwards.
+  static const String belowLastReading = 'must not be below the last reading';
+
   /// Name of the offending field, as in the domain model (e.g. `plate`).
   final String field;
 
@@ -67,4 +78,40 @@ class OwnerHasVehiclesException extends RepositoryException {
   @override
   String toString() =>
       'OwnerHasVehiclesException(id: $ownerId, vehicles: $vehicleCount)';
+}
+
+/// Why a mileage reading cannot be deleted, edited or restored.
+enum MileageReadingRule {
+  /// Only the last reading of a vehicle can be deleted.
+  notLast,
+
+  /// The initial reading (the oldest) is never deleted: every vehicle keeps
+  /// at least one reading.
+  initial,
+
+  /// A reading can be corrected only while it is the only one of its
+  /// vehicle.
+  notSoleReading,
+
+  /// A deleted reading comes back only if it would again be the last one; a
+  /// more recent reading was added in the meantime.
+  newerReadingExists,
+}
+
+/// A mileage reading operation was refused by one of the series rules of
+/// `Docs/04_maintenance_logic.md`. Nothing was written.
+class MileageReadingRuleException extends RepositoryException {
+  /// Creates the exception for the reading with [readingId], refused by
+  /// [rule].
+  const MileageReadingRuleException(this.readingId, this.rule);
+
+  /// Id of the reading the operation targeted.
+  final String readingId;
+
+  /// The rule that refused the operation.
+  final MileageReadingRule rule;
+
+  @override
+  String toString() =>
+      'MileageReadingRuleException(id: $readingId, rule: ${rule.name})';
 }
