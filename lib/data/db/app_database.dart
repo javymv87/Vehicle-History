@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -236,7 +238,21 @@ class AppDatabase extends _$AppDatabase {
   /// The import closes the live database before replacing its file, and the
   /// provider closes the same instance again when it is disposed.
   @override
-  Future<void> close() => _closing ??= super.close();
+  Future<void> close() => _closing ??= _closeConnection();
+
+  /// Closes the connection without waiting for the stream queries.
+  ///
+  /// Drift's own close first waits until every stream query has delivered
+  /// its "done" event, and only then closes the connection. A paused
+  /// listener never takes that event (Riverpod pauses the providers of
+  /// screens that are not visible, such as the list below the Backup page),
+  /// so that wait could last forever and the import would hang. The streams
+  /// are shut down in the background instead, and the connection is closed
+  /// right away; closing it again from drift's own close is a no-op.
+  Future<void> _closeConnection() async {
+    unawaited(super.close());
+    await executor.close();
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

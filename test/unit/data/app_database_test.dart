@@ -49,6 +49,26 @@ void main() {
 
   tearDown(() => db.close());
 
+  group('close', () {
+    test('does not wait for a paused stream listener', () async {
+      final db = openTestDatabase();
+      // A screen that is not visible: Riverpod pauses its subscription.
+      final subscription = db.ownersDao.watchLive().listen((_) {});
+      await pumpEventQueue();
+      subscription.pause();
+
+      await db.close().timeout(const Duration(seconds: 5));
+      await subscription.cancel();
+    });
+
+    test('is idempotent', () async {
+      final db = openTestDatabase();
+      await db.open();
+      await db.close();
+      await db.close();
+    });
+  });
+
   group('foreign keys', () {
     test('are enabled on the connection', () async {
       final row = await db.customSelect('PRAGMA foreign_keys').getSingle();
