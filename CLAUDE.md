@@ -195,7 +195,10 @@ make / model, model year and version; v3 added `log_entries`; v4 added
   `BackupRestoreFailedException` and the copy stays. Temporary files
   (`*.tmp`) never start with `vehicle_history.pre_v`, so the pre-upgrade
   rotation never touches them.
-- **Closing and reopening at runtime:** `AppDatabase.close` is idempotent.
+- **Closing and reopening at runtime:** `AppDatabase.close` is idempotent
+  and closes the connection without waiting for the stream queries: drift's
+  own close waits for every stream's done event, which a listener paused by
+  Riverpod (a screen that is not visible) never takes, so it could hang.
   After an import (success or failure, not a rejection) the controller
   invalidates `appDatabaseProvider` and awaits `databaseReadyProvider`: a new
   `AppDatabase` opens the file, the cleanup runs as on any start, and every
