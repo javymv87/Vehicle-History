@@ -118,8 +118,8 @@ class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
 /// Stores an [AuditEntityType] as a stable text code.
 ///
 /// The column has no CHECK constraint, so a new entity type (such as
-/// `logEntry`, added with schema v3, or `mileageReading`, added with v4)
-/// needs only a new code here.
+/// `logEntry`, added with schema v3, `mileageReading`, added with v4, or
+/// `database`, added with v6) needs only a new code here.
 class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditEntityTypeConverter();
@@ -130,6 +130,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         'vehicle' => AuditEntityType.vehicle,
         'logEntry' => AuditEntityType.logEntry,
         'mileageReading' => AuditEntityType.mileageReading,
+        'database' => AuditEntityType.database,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit entity type in database: $fromDb'),
       };
@@ -140,13 +141,15 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         AuditEntityType.vehicle => 'vehicle',
         AuditEntityType.logEntry => 'logEntry',
         AuditEntityType.mileageReading => 'mileageReading',
+        AuditEntityType.database => 'database',
       };
 }
 
 /// Stores an [AuditOperation] as a stable text code.
 ///
 /// The column has no CHECK constraint, so a new operation (such as `purge`,
-/// added with schema v5) needs only a new code here.
+/// added with schema v5, or `import`, added with v6) needs only a new code
+/// here.
 class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditOperationConverter();
@@ -158,6 +161,7 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         'delete' => AuditOperation.delete,
         'restore' => AuditOperation.restore,
         'purge' => AuditOperation.purge,
+        'import' => AuditOperation.import,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit operation in database: $fromDb'),
       };
@@ -169,5 +173,6 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         AuditOperation.delete => 'delete',
         AuditOperation.restore => 'restore',
         AuditOperation.purge => 'purge',
+        AuditOperation.import => 'import',
       };
 }

@@ -378,7 +378,8 @@ cuando la entidad a la que apuntan se borra físicamente.
 
 ### Settings (ajustes)
 
-Configuración de la app, no vinculada a un vehículo.
+Configuración de la app, no vinculada a un vehículo. Desde el esquema v6 es
+la tabla clave / valor `settings`, descrita en `06_settings_and_i18n.md`.
 
 - Idioma (IT / ES / EN)
 - Tema (Sistema / Claro / Oscuro)

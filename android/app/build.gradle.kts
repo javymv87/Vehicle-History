@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// The fixed signing key (CLAUDE.md, "Signing"). `android/key.properties`
+// points to a keystore kept outside the repository; both are git-ignored and
+// never committed. When the file is absent (CI, a PC without the key) the
+// build falls back to Gradle's default debug signing and still succeeds.
+val keyPropertiesFile = rootProject.file("key.properties")
+val keyProperties = Properties().apply {
+    if (keyPropertiesFile.exists()) {
+        keyPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val hasFixedKey = keyPropertiesFile.exists()
 
 android {
     namespace = "io.github.javymv87.vehicle_history"
@@ -25,11 +39,27 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasFixedKey) {
+            create("fixed") {
+                storeFile = file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
+        // Debug and release share the fixed key, so every build installs over
+        // the previous one: a different signature would force an uninstall,
+        // which deletes the data.
+        val signing = signingConfigs.getByName(if (hasFixedKey) "fixed" else "debug")
+        debug {
+            signingConfig = signing
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signing
         }
     }
 }

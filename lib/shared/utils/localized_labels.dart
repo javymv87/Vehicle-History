@@ -59,7 +59,8 @@ extension LogEntryTypeLabel on LogEntryType {
 /// Localised message of an [ActionError].
 extension ActionErrorMessage on ActionError {
   /// The message shown to the user for this error, in the language of
-  /// [l10n]. Every message says explicitly that nothing was changed.
+  /// [l10n]. Every message says explicitly what happened to the data:
+  /// nothing was changed, except after an import that could not be undone.
   String message(AppLocalizations l10n) => switch (this) {
         ActionError.duplicatePlate => l10n.errorDuplicatePlate,
         ActionError.ownerHasVehicles => l10n.errorOwnerHasVehicles,
@@ -73,6 +74,12 @@ extension ActionErrorMessage on ActionError {
         ActionError.readingNotEditable => l10n.errorReadingNotEditable,
         ActionError.newerReadingExists => l10n.errorNewerReadingExists,
         ActionError.invalidInput => l10n.errorInvalidInput,
+        ActionError.backupNotAPackage => l10n.errorBackupNotAPackage,
+        ActionError.backupFromNewerApp => l10n.errorBackupFromNewerApp,
+        ActionError.backupCorrupt => l10n.errorBackupCorrupt,
+        ActionError.exportFailed => l10n.errorExportFailed,
+        ActionError.importFailed => l10n.errorImportFailed,
+        ActionError.importRestoreFailed => l10n.errorImportRestoreFailed,
         ActionError.unexpected => l10n.errorUnexpected,
       };
 }

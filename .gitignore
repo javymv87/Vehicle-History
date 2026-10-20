@@ -58,3 +58,8 @@ lib/l10n/app_localizations*.dart
 
 # FVM Version Cache
 .fvm/
+# Signing secrets (CLAUDE.md, "Signing"): the key properties and any
+# keystore are never committed. android/.gitignore lists them too.
+android/key.properties
+*.jks
+*.keystore

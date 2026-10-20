@@ -7,23 +7,43 @@ import 'package:vehicle_history/app/router/app_router.dart';
 import 'package:vehicle_history/data/data_providers.dart';
 
 import 'catalog_fixtures.dart';
+import 'fake_backup.dart';
 import 'fake_repositories.dart';
 
-/// Provider overrides that run the app on [store] instead of a database.
-List<Override> fakeDataOverrides(FakeStore store) => [
-      databaseReadyProvider.overrideWith((ref) async {}),
-      ownerRepositoryProvider.overrideWithValue(FakeOwnerRepository(store)),
-      vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
-      logEntryRepositoryProvider
-          .overrideWithValue(FakeLogEntryRepository(store)),
-      mileageReadingRepositoryProvider
-          .overrideWithValue(FakeMileageReadingRepository(store)),
-      vehicleCatalogProvider
-          .overrideWith((ref) async => vehicleCatalogFixture()),
-      countryNamesProvider.overrideWith((ref) async => countryNamesFixture()),
-    ];
+/// The fakes behind the Backup page, so tests can configure and inspect
+/// them.
+class BackupFakes {
+  /// The settings, where the export writes `last_export_at`.
+  final FakeSettingsRepository settings = FakeSettingsRepository();
 
-/// Pumps the whole app on [store], starting at [location], in English.
+  /// The export / import service.
+  final FakeBackupService service = FakeBackupService();
+
+  /// The save / open dialogs.
+  final FakeBackupFilePicker picker = FakeBackupFilePicker();
+}
+
+/// Provider overrides that run the app on [store] instead of a database,
+/// with [backup] (fresh fakes by default) behind the Backup page.
+List<Override> fakeDataOverrides(FakeStore store, {BackupFakes? backup}) {
+  final fakes = backup ?? BackupFakes();
+  return [
+    databaseReadyProvider.overrideWith((ref) async {}),
+    ownerRepositoryProvider.overrideWithValue(FakeOwnerRepository(store)),
+    vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
+    logEntryRepositoryProvider.overrideWithValue(FakeLogEntryRepository(store)),
+    mileageReadingRepositoryProvider
+        .overrideWithValue(FakeMileageReadingRepository(store)),
+    vehicleCatalogProvider.overrideWith((ref) async => vehicleCatalogFixture()),
+    countryNamesProvider.overrideWith((ref) async => countryNamesFixture()),
+    settingsRepositoryProvider.overrideWithValue(fakes.settings),
+    backupServiceProvider.overrideWithValue(fakes.service),
+    backupFilePickerProvider.overrideWithValue(fakes.picker),
+  ];
+}
+
+/// Pumps the whole app on [store], starting at [location], in English, with
+/// [backup] behind the Backup page.
 ///
 /// Returns the [ProviderContainer] so tests can inspect the router.
 Future<ProviderContainer> pumpApp(
@@ -31,12 +51,13 @@ Future<ProviderContainer> pumpApp(
   FakeStore store, {
   String location = '/vehicles',
   Locale locale = const Locale('en'),
+  BackupFakes? backup,
 }) async {
   tester.platformDispatcher.localesTestValue = [locale];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
   final container = ProviderContainer(
     overrides: [
-      ...fakeDataOverrides(store),
+      ...fakeDataOverrides(store, backup: backup),
       routerProvider.overrideWith((ref) {
         final router = buildAppRouter(initialLocation: location);
         ref.onDispose(router.dispose);

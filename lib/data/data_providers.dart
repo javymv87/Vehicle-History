@@ -1,6 +1,9 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../shared/constants/app_version.dart';
+import 'backup/backup_file_picker.dart';
+import 'backup/backup_service.dart';
 import 'catalog/country_names.dart';
 import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
@@ -12,11 +15,18 @@ import 'repositories/log_entry_repository.dart';
 import 'repositories/mileage_reading_repository.dart';
 import 'repositories/owner_repository.dart';
 import 'repositories/repository_support.dart';
+import 'repositories/settings_repository.dart';
 import 'repositories/trash_cleanup_service.dart';
 import 'repositories/vehicle_repository.dart';
 
 /// The single [AppDatabase] of the app, opened once and closed when the
 /// [ProviderScope] is disposed.
+///
+/// Invalidating it is how the database is closed and reopened at runtime,
+/// after an import replaced the file: the old instance is closed (again,
+/// harmlessly), a new one is created on the same file, [databaseReadyProvider]
+/// opens it and runs the cleanup as on any start, and every repository and
+/// screen provider that depends on it is rebuilt on the new connection.
 ///
 /// Tests override it with an in-memory database, or override the repository
 /// providers below with fakes.
@@ -83,6 +93,27 @@ final mileageReadingRepositoryProvider =
   final db = ref.watch(appDatabaseProvider);
   return DriftMileageReadingRepository(db.mileageReadingsDao, db.auditLogDao);
 });
+
+/// The [SettingsRepository] on the app database.
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftSettingsRepository(db.settingsDao);
+});
+
+/// The [BackupService] on the app database. The import opens new
+/// connections on the same file with [AppDatabase.new].
+final backupServiceProvider = Provider<BackupService>((ref) {
+  return BackupService(
+    database: ref.watch(appDatabaseProvider),
+    openDatabase: AppDatabase.new,
+    appVersion: appVersion,
+  );
+});
+
+/// The system dialogs that save and open backup packages.
+final backupFilePickerProvider = Provider<BackupFilePicker>(
+  (ref) => const PlatformBackupFilePicker(),
+);
 
 /// Asset holding the make / model catalogue (see `tool/`).
 const String vehicleCatalogAsset = 'assets/catalog/vehicle_catalog.json';

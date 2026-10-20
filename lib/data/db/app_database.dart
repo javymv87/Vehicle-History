@@ -13,14 +13,17 @@ import 'app_database.steps.dart';
 import 'audit_log_table.dart';
 import 'converters.dart';
 import 'daos/audit_log_dao.dart';
+import 'daos/backup_dao.dart';
 import 'daos/log_entries_dao.dart';
 import 'daos/mileage_readings_dao.dart';
 import 'daos/owners_dao.dart';
+import 'daos/settings_dao.dart';
 import 'daos/trash_dao.dart';
 import 'daos/vehicles_dao.dart';
 import 'log_entries_table.dart';
 import 'mileage_readings_table.dart';
 import 'owners_table.dart';
+import 'settings_table.dart';
 import 'upgrade_safety.dart';
 import 'vehicles_table.dart';
 
@@ -32,7 +35,14 @@ part 'app_database.g.dart';
 /// [schemaVersion], add a migration step and commit the new schema dump
 /// (see CLAUDE.md §2).
 @DriftDatabase(
-  tables: [Owners, Vehicles, AuditLog, LogEntries, MileageReadings],
+  tables: [
+    Owners,
+    Vehicles,
+    AuditLog,
+    LogEntries,
+    MileageReadings,
+    Settings,
+  ],
   daos: [
     OwnersDao,
     VehiclesDao,
@@ -40,6 +50,8 @@ part 'app_database.g.dart';
     LogEntriesDao,
     MileageReadingsDao,
     TrashDao,
+    SettingsDao,
+    BackupDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -129,6 +141,11 @@ class AppDatabase extends _$AppDatabase {
       }
       await backfillDeletedAt(m.database);
     },
+    // v6: the `settings` key / value table, created empty. Only a new
+    // table: no existing table or row is touched.
+    from5To6: (m, schema) async {
+      await m.createTable(schema.settings);
+    },
   );
 
   /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
@@ -202,7 +219,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   /// Opens the connection now, running any pending migration.
   ///
@@ -210,6 +227,16 @@ class AppDatabase extends _$AppDatabase {
   /// surfaces a refused or failed upgrade (such as
   /// [DatabaseNewerThanAppException]) before any screen tries to read data.
   Future<void> open() => customSelect('SELECT 1').get();
+
+  /// The pending or finished [close], so that closing twice is harmless.
+  Future<void>? _closing;
+
+  /// Closes the connection. Idempotent: a second call waits for the first.
+  ///
+  /// The import closes the live database before replacing its file, and the
+  /// provider closes the same instance again when it is disposed.
+  @override
+  Future<void> close() => _closing ??= super.close();
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
