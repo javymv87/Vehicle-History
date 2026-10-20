@@ -1012,5 +1012,118 @@
   "errorOwnerHasTrashedVehicles": "This owner has vehicles in the Trash: restore them or empty the Trash.",
   "@errorOwnerHasTrashedVehicles": {
     "description": "Error when deleting an owner whose only vehicles are in the Trash. Nothing was deleted."
+  },
+  "backupMenuItem": "Backup",
+  "@backupMenuItem": {
+    "description": "Overflow menu item of the home lists that opens the Backup page (U20)."
+  },
+  "backupTitle": "Backup",
+  "@backupTitle": {
+    "description": "Title of the Backup page, which exports and imports the backup package (U20)."
+  },
+  "backupLastExport": "Last export: {date}, {time}",
+  "@backupLastExport": {
+    "description": "Backup page: day and time of the last successful export.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      }
+    }
+  },
+  "backupNeverExported": "Last export: never",
+  "@backupNeverExported": {
+    "description": "Backup page: shown until the first successful export."
+  },
+  "backupExplanation": "The backup is a single .zip file with all your data: owners, vehicles, history, odometer readings, the Trash and the change log. Keep it somewhere safe, such as Google Drive or your computer.",
+  "@backupExplanation": {
+    "description": "Backup page: what the exported package contains and where to keep it."
+  },
+  "backupImportExplanation": "Importing a backup replaces all the data on this phone.",
+  "@backupImportExplanation": {
+    "description": "Backup page: what importing does."
+  },
+  "actionExport": "Export",
+  "@actionExport": {
+    "description": "Backup page button that builds the package and asks where to save it."
+  },
+  "actionImport": "Import",
+  "@actionImport": {
+    "description": "Backup page button that picks a package to import; also the confirm button of the import dialog."
+  },
+  "backupExporting": "Exporting…",
+  "@backupExporting": {
+    "description": "Backup page: shown with the progress indicator while the package is built and saved."
+  },
+  "backupImporting": "Importing…",
+  "@backupImporting": {
+    "description": "Backup page: shown with the progress indicator while a package is checked or imported."
+  },
+  "backupExported": "Backup exported",
+  "@backupExported": {
+    "description": "Snackbar after the package was saved."
+  },
+  "backupImported": "Backup imported",
+  "@backupImported": {
+    "description": "Snackbar after a package replaced the data."
+  },
+  "importConfirmTitle": "Import this backup?",
+  "@importConfirmTitle": {
+    "description": "Title of the dialog that confirms an import."
+  },
+  "importConfirmContents": "This file contains {vehicles, plural, =1{1 vehicle} other{{vehicles} vehicles}}, {entries, plural, =1{1 entry} other{{entries} entries}} and {readings, plural, =1{1 reading} other{{readings} readings}}; last modified {date}.",
+  "@importConfirmContents": {
+    "description": "Import dialog: the live vehicles, history entries and odometer readings in the package, and the day of its last change.",
+    "placeholders": {
+      "vehicles": {
+        "type": "int"
+      },
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "importConfirmContentsEmpty": "This file contains no data.",
+  "@importConfirmContentsEmpty": {
+    "description": "Import dialog: the package holds an empty database."
+  },
+  "importConfirmWarning": "Importing replaces all the current data.",
+  "@importConfirmWarning": {
+    "description": "Import dialog: the warning, shown in bold, that the current data will be replaced."
+  },
+  "errorBackupNotAPackage": "This file is not a Vehicle History backup. Nothing was changed.",
+  "@errorBackupNotAPackage": {
+    "description": "Error when the file chosen for an import is not a backup package."
+  },
+  "errorBackupFromNewerApp": "This file comes from a newer version of the app. Update the app to import it. Nothing was changed.",
+  "@errorBackupFromNewerApp": {
+    "description": "Error when the package was written by a newer version of the app."
+  },
+  "errorBackupCorrupt": "The backup file is damaged and cannot be imported. Nothing was changed.",
+  "@errorBackupCorrupt": {
+    "description": "Error when the database inside the package fails the integrity check."
+  },
+  "errorExportFailed": "The backup could not be exported. Your data has not changed.",
+  "@errorExportFailed": {
+    "description": "Error when building or saving the package failed."
+  },
+  "errorImportFailed": "The import failed; your data has not changed.",
+  "@errorImportFailed": {
+    "description": "Error when a valid package could not be imported and the previous data was put back."
+  },
+  "errorImportRestoreFailed": "The import failed and your previous data could not be reopened. Close and reopen the app; a copy of your data is kept on the phone.",
+  "@errorImportRestoreFailed": {
+    "description": "Error when the import failed and putting the previous data back failed too. The copy is vehicle_history.pre_import.sqlite."
   }
 }

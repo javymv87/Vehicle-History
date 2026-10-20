@@ -84,7 +84,11 @@ to update the odometer from an entry, and future dates allowed per entry
 type. Step 5b added the Trash (schema v5): `deleted_at` on every
 soft-deletable table, a delete dialog that says what goes with the vehicle,
 the Trash screen (restore, delete permanently, empty) and the automatic
-30-day cleanup at app start. Next is step 6.
+30-day cleanup at app start. Step 6 added the backup package (export /
+import of all the data as a `.zip`, with validation, a newer-schema refusal,
+migration of older ones and a safety copy that is restored if the import
+fails), the `settings` table (schema v6), the Backup screen and a fixed
+signing key for debug and release builds. Next is step 7 (in-app language).
 
 Roadmap to the first usable version:
 
@@ -95,10 +99,13 @@ Roadmap to the first usable version:
 | 4 | ~~Basic log entries: date, km, type, cost, notes; list, filters, undo on delete (schema v3)~~ — done |
 | 5 | ~~Odometer: update current km + `MileageReading` history with its rules (schema v4)~~ — done |
 | 5b | ~~Trash: deleted vehicles, restore, permanent delete, 30-day cleanup (schema v5)~~ — done |
-| 6 | Export / import the database file, and a fixed release signing key kept outside the repo |
+| 6 | ~~Export / import as a package, `settings` table (schema v6), fixed signing key for debug and release~~ — done |
+| 7 | Settings screen: in-app language |
+| 8 | Attachments (entries, vehicles, owners) |
+| 9 | Google Drive backup |
 
-Then, in an order decided while using the app: settings, maintenance,
-refuelling, documents, photos, reminders, PDF reports, Google Drive backup.
+Then, in an order decided while using the app: maintenance, refuelling,
+documents, reminders, PDF reports.
 
 Why the signing key matters: each PC has its own debug key, so installing
 from another PC forces an uninstall, which deletes the data.

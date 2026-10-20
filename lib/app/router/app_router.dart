@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/backup/pages/backup_page.dart';
 import '../../features/entries/pages/log_entry_detail_page.dart';
 import '../../features/entries/pages/log_entry_form_page.dart';
 import '../../features/mileage/pages/mileage_reading_form_page.dart';
@@ -119,6 +120,10 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
       GoRoute(
         path: AppRoutes.trash,
         builder: (context, state) => const TrashPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.backup,
+        builder: (context, state) => const BackupPage(),
       ),
       GoRoute(
         path: AppRoutes.newOwner,

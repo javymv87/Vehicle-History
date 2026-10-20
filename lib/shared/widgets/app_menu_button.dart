@@ -5,8 +5,8 @@ import '../../app/router/app_routes.dart';
 import '../../l10n/app_localizations.dart';
 
 /// The overflow menu of the home lists' app bars: "Trash" (vehicle list
-/// only, with the number of vehicles in it) and "About", which shows the
-/// credits and the licences of the bundled data.
+/// only, with the number of vehicles in it), "Backup" (U20) and "About",
+/// which shows the credits and the licences of the bundled data.
 class AppMenuButton extends StatelessWidget {
   /// Creates the menu button. A non-null [trashCount] adds the "Trash"
   /// entry.
@@ -28,6 +28,10 @@ class AppMenuButton extends StatelessWidget {
             value: () => context.push(AppRoutes.trash),
             child: Text(l10n.trashMenuItem(trashCount)),
           ),
+        PopupMenuItem(
+          value: () => context.push(AppRoutes.backup),
+          child: Text(l10n.backupMenuItem),
+        ),
         PopupMenuItem(
           value: () => showAppAboutDialog(context),
           child: Text(l10n.aboutAction),

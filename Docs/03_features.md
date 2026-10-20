@@ -220,6 +220,32 @@ Los vehículos borrados (paso 5b de la hoja de ruta). Reglas de datos en
   (eliminar, eliminar definitivamente, vaciar) usan el color de error. Los
   diálogos se pueden desplazar cuando el texto grande no cabe.
 
+## Copia de seguridad
+
+Exportar e importar todos los datos como un paquete (paso 6 de la hoja de
+ruta). Formato del paquete, validación y red de seguridad en
+`05_sync_and_storage.md` ("Exportar / importar: el paquete de copia").
+
+- **U20 — Pantalla Copia de seguridad** (ruta `/backup`), desde el menú de
+  las listas de inicio: "Última exportación: 20 oct 2026, 18:30" (o
+  "Última exportación: nunca"), una explicación breve de lo que contiene el
+  paquete y de que importar sustituye todos los datos, y los botones
+  **Exportar** e **Importar**. Mientras trabaja, un indicador de progreso con
+  "Exportando…" / "Importando…" y los botones desactivados.
+  - Exportar: el diálogo del sistema para elegir dónde guardar; cancelar no
+    es un error; al guardar, toast "Copia exportada" y la fecha se
+    actualiza.
+  - Importar: el selector de archivos (zip); un archivo que no vale se
+    rechaza con un mensaje claro y no cambia nada; si vale, diálogo de
+    confirmación con lo que contiene ("Este archivo contiene 2 vehículos, 41
+    entradas y 7 lecturas; última modificación 18 oct 2026.") y, en negrita,
+    "Importar sustituye todos los datos actuales.", con el botón en color de
+    error. Al terminar, la app vuelve a la lista de vehículos con el toast
+    "Copia importada"; si falla, "No se pudo importar; tus datos no han
+    cambiado".
+  - Diseño: Material 3, botones de al menos 48 dp, modo oscuro, texto grande
+    y 360 dp de ancho.
+
 ## Filtros y búsqueda
 
 En el historial se puede filtrar por:

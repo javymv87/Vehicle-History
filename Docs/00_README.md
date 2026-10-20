@@ -56,7 +56,12 @@ oferta de actualizar desde las entradas y las fechas futuras según el tipo.
 El paso 5b añadió la papelera (esquema v5): `deleted_at` en las tablas, el
 diálogo de borrado con lo que se va con el vehículo, la pantalla Papelera
 (restaurar, eliminar definitivamente, vaciar) y la limpieza automática a los
-30 días al arrancar. Lo siguiente es el paso 6.
+30 días al arrancar. El paso 6 añadió el paquete de copia (exportar e
+importar todos los datos como un `.zip`, con validación, rechazo de los
+esquemas más recientes, migración de los anteriores y una copia de seguridad
+que se restaura si la importación falla), la tabla `settings` (esquema v6),
+la pantalla Copia de seguridad y una clave fija de firma para debug y
+release. Lo siguiente es el paso 7 (idioma dentro de la app).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -67,11 +72,13 @@ Hoja de ruta hasta la primera versión usable:
 | 4 | ~~Entradas básicas del historial: fecha, km, tipo, coste, notas; lista, filtros, deshacer al borrar (esquema v3)~~ — hecho |
 | 5 | ~~Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas (esquema v4)~~ — hecho |
 | 5b | ~~Papelera: vehículos borrados, restaurar, borrado definitivo, limpieza a los 30 días (esquema v5)~~ — hecho |
-| 6 | Exportar / importar el archivo de la base de datos, y una clave fija de firma de release guardada fuera del repositorio |
+| 6 | ~~Exportar / importar como paquete, tabla `settings` (esquema v6), clave fija de firma para debug y release~~ — hecho |
+| 7 | Pantalla de ajustes: idioma dentro de la app |
+| 8 | Adjuntos (entradas, vehículos, propietarios) |
+| 9 | Copia de seguridad en Google Drive |
 
-Después, en el orden que se decida usando la app: ajustes, mantenimiento,
-repostajes, documentos, fotos, recordatorios, informes PDF, copia de
-seguridad en Google Drive.
+Después, en el orden que se decida usando la app: mantenimiento, repostajes,
+documentos, recordatorios, informes PDF.
 
 Por qué importa la clave de firma: cada PC tiene su propia clave de debug, así
 que instalar desde otro PC obliga a desinstalar la app, y eso borra los datos.

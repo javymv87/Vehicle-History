@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../data/backup/backup_exceptions.dart';
 import '../../data/models/audit_entry.dart';
 import '../../data/repositories/repository_exceptions.dart';
 
@@ -43,6 +44,25 @@ enum ActionError {
   /// The data layer refused a value that the form let through.
   invalidInput,
 
+  /// The file chosen for an import is not a Vehicle History backup.
+  backupNotAPackage,
+
+  /// The backup was written by a newer version of the app.
+  backupFromNewerApp,
+
+  /// The database inside the backup is damaged.
+  backupCorrupt,
+
+  /// The backup could not be exported.
+  exportFailed,
+
+  /// The import failed; the previous data was put back.
+  importFailed,
+
+  /// The import failed and the previous data could not be reopened; it is
+  /// kept in the `pre_import` copy.
+  importRestoreFailed,
+
   /// Anything else, such as a disk or SQLite failure.
   unexpected,
 }
@@ -75,6 +95,15 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
     ) =>
       ActionError.newerReadingExists,
     InvalidFieldException() => ActionError.invalidInput,
+    BackupRejectedException(
+      reason: BackupRejection.newerSchema || BackupRejection.newerFormat,
+    ) =>
+      ActionError.backupFromNewerApp,
+    BackupRejectedException(reason: BackupRejection.corruptDatabase) =>
+      ActionError.backupCorrupt,
+    BackupRejectedException() => ActionError.backupNotAPackage,
+    BackupImportFailedException() => ActionError.importFailed,
+    BackupRestoreFailedException() => ActionError.importRestoreFailed,
     _ => _unexpected(error, stackTrace),
   };
 }

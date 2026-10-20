@@ -60,6 +60,9 @@ abstract final class AppRoutes {
   /// The Trash: the deleted vehicles, restorable for 30 days.
   static const String trash = '/trash';
 
+  /// The Backup page: export and import the backup package.
+  static const String backup = '/backup';
+
   /// Detail of the owner with [id].
   static String owner(String id) => '$owners/${Uri.encodeComponent(id)}';
 

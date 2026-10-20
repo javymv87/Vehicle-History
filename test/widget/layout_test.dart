@@ -83,6 +83,7 @@ void main() {
     'owner detail': () => AppRoutes.owner(ownerId),
     'owner form': () => AppRoutes.newOwner,
     'trash': () => AppRoutes.trash,
+    'backup': () => AppRoutes.backup,
   };
 
   for (final brightness in Brightness.values) {

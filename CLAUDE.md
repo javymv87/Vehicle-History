@@ -30,12 +30,21 @@ discrepancy instead of silently choosing.
 Flutter · Material 3 · Riverpod · `go_router` · Drift through `drift_flutter`
 (SQLite) · `googleapis` (Google Drive) · `google_sign_in` / `flutter_appauth` ·
 `flutter_secure_storage` · `flutter_local_notifications` · `gen_l10n` · `intl`
+· `file_picker` · `archive`
 
 Toolchain reference (recorded at scaffold time): **Flutter 3.44.8** (stable
 channel) · **Dart 3.12.2**. The version is pinned for this repository in
 `.fvmrc` through [FVM](https://fvm.app): run every local command as
 `fvm flutter ...` / `fvm dart ...`, never with a bare global `flutter` /
 `dart`, which may be a different version.
+
+Added in step 6 for the backup package: `file_picker` (the system "save
+as" / "open" dialogs, Android Storage Access Framework, so the app needs no
+storage permission and the user picks Downloads, Drive or any provider) and
+`archive` (builds and reads the `.zip` in pure Dart, so the package format is
+unit-tested without a device). The app version for the manifest is the
+constant `appVersion` (`lib/shared/constants/app_version.dart`), kept equal
+to `pubspec.yaml` by a test, rather than another plugin.
 
 Dependencies are added **one at a time, on explicit request**. Never add a
 package as a side effect of implementing a feature. Naming a package in this
@@ -57,11 +66,11 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v5: `owners`, `vehicles`, `audit_log`,
-`log_entries`, `mileage_readings`; v2 added the vehicle kind, make / model,
-model year and version; v3 added `log_entries`; v4 added
+Settled for the database (schema v6: `owners`, `vehicles`, `audit_log`,
+`log_entries`, `mileage_readings`, `settings`; v2 added the vehicle kind,
+make / model, model year and version; v3 added `log_entries`; v4 added
 `mileage_readings` with one initial reading per vehicle; v5 added
-`deleted_at` for the Trash):
+`deleted_at` for the Trash; v6 added `settings`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -105,8 +114,8 @@ model year and version; v3 added `log_entries`; v4 added
   (Undo after a delete). `operation` and `entity_type` are plain
   text with no CHECK, so a new code only needs its converter
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
-  this way in v3, `mileageReading` in v4, operation `purge` in v5), not a
-  schema change; an older build that meets an unknown code throws when
+  this way in v3, `mileageReading` in v4, operation `purge` in v5, operation
+  `import` with entity `database` in v6), not a schema change; an older build that meets an unknown code throws when
   reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
@@ -164,6 +173,38 @@ model year and version; v3 added `log_entries`; v4 added
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches
   the catalogue.
+- **Settings (v6)** are the key / value table `settings` (`key` text PK,
+  `value` nullable text, `updated_at` UTC), with no `deleted` flag and no
+  audit rows. Keys are `SettingKey` values with explicit codes
+  (`last_export_at`); `SettingsRepository` has `read`, `write`, `watch`,
+  plus typed accessors (`watchLastExportAt`, `writeLastExportAt`).
+- **Backup package** (`lib/data/backup/`, `Docs/05_sync_and_storage.md`): a
+  zip with `manifest.json`, `vehicle_history.sqlite` (a `VACUUM INTO` copy
+  through `BackupDao`) and an empty `attachments/`. `backup_package.dart` is
+  pure Dart (encode, decode, structural checks); `BackupService` does the
+  file work next to the database file, behind `BackupFiles` and
+  `DatabaseFileInspector` (which opens a foreign file with no migration). A
+  newer schema or format is rejected, an older one migrated by
+  `runSafeUpgrade`. Every rejection (`BackupRejectedException`) happens
+  before anything is touched.
+- **Import safety net:** `VACUUM INTO` → `vehicle_history.pre_import.sqlite`
+  (only the latest), close, replace the file (deleting the old `-wal` /
+  `-shm`), open a new connection (migration, startup cleanup, `import` audit
+  row). Any failure after the copy puts `pre_import` back and checks it opens
+  (`BackupImportFailedException`); if even that fails,
+  `BackupRestoreFailedException` and the copy stays. Temporary files
+  (`*.tmp`) never start with `vehicle_history.pre_v`, so the pre-upgrade
+  rotation never touches them.
+- **Closing and reopening at runtime:** `AppDatabase.close` is idempotent
+  and closes the connection without waiting for the stream queries: drift's
+  own close waits for every stream's done event, which a listener paused by
+  Riverpod (a screen that is not visible) never takes, so it could hang.
+  After an import (success or failure, not a rejection) the controller
+  invalidates `appDatabaseProvider` and awaits `databaseReadyProvider`: a new
+  `AppDatabase` opens the file, the cleanup runs as on any start, and every
+  repository and screen provider rebuilds on the new connection (the router
+  shows the progress indicator meanwhile). Anything that outlives this
+  captures its messenger and `GoRouter` before the import starts.
 
 ### Upgrade safety
 
@@ -236,9 +277,22 @@ eol=lf`), Windows scripts with CRLF and images, fonts and keystores as binary,
 so a Windows checkout produces the same bytes as CI.
 
 Releases: the Android `versionCode` (the build number after `+` in
-`pubspec.yaml`) must increase with every release, and release builds are
-signed with the fixed release key introduced in roadmap step 6 — a different
-signature forces an uninstall, which deletes the data.
+`pubspec.yaml`) must increase with every release. **Version convention:**
+every merged roadmap step bumps the minor version and the build number
+together (step 6 = `0.6.0+6`, then `0.7.0+7`, …), and updates `appVersion`
+(`lib/shared/constants/app_version.dart`) in the same change; a test fails if
+they differ.
+
+Signing (Android): `android/app/build.gradle.kts` loads
+`android/key.properties` **if present** and signs **both `debug` and
+`release`** with that fixed key, so every build installs over the previous
+one (a different signature forces an uninstall, which deletes the data). The
+keystore lives outside the repository (`C:\Keys\vehicle-history-release.jks`
+on the owner's PC); `key.properties` and every `*.jks` / `*.keystore` are
+git-ignored. Never read, print or commit them, and never ask for their
+passwords. Without the file (CI, another PC) the build falls back to the
+default debug signing and still succeeds. Release keeps the default minify /
+shrink settings; obfuscation is not enabled.
 
 ---
 
@@ -298,6 +352,8 @@ lib/
     reminders/           # pages/ widgets/ controllers/
     reports/             # pages/ widgets/ controllers/
     settings/            # pages/ widgets/ controllers/
+    trash/               # pages/ widgets/ controllers/
+    backup/              # pages/ widgets/ controllers/
   l10n/                  # .arb files, gen_l10n output
   shared/
     widgets/             # widgets reused across features

@@ -17,6 +17,28 @@ Contiene las configuraciones generales de la app (tabla `Settings`, doc 02):
 **La moneda no es configurable**: es siempre el euro (ver doc 02). Del idioma
 elegido solo depende el *formato* con el que se muestra el importe.
 
+## Tabla de ajustes (`settings`)
+
+Los ajustes se guardan en la base de datos, en la tabla `settings` (esquema
+v6): una fila por clave.
+
+| Columna | Contenido |
+| --- | --- |
+| `key` | Código estable del ajuste (clave primaria), p. ej. `last_export_at` |
+| `value` | Valor como texto; `NULL` si se ha borrado. Cada clave define su formato (un instante va en ISO-8601 UTC) |
+| `updated_at` | Instante UTC de la última escritura |
+
+- Sin borrado lógico y **sin historial de operaciones**: un ajuste no es un
+  dato del usuario y sobrescribirlo no pierde nada que no pueda volver a
+  elegir.
+- Las claves son códigos fijos en el código (nunca el nombre de un valor de
+  Dart), así que renombrar algo en el código no cambia lo que hay en disco.
+- Claves actuales: `last_export_at` (fecha de la última exportación del
+  paquete de copia, ver `05_sync_and_storage.md`). El idioma llega en el paso
+  7; el tema y la nube, más adelante.
+- La tabla viaja dentro del paquete de copia como el resto de la base de
+  datos.
+
 ## Idiomas
 
 La app admite tres idiomas, seleccionables por el usuario:

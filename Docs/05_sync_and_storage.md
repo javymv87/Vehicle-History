@@ -130,14 +130,79 @@ Además de la comprobación al arrancar, el usuario puede en cualquier momento:
 
 siempre con las mismas protecciones descritas arriba.
 
-### Mientras no exista la copia en Drive: exportar / importar
+### Exportar / importar: el paquete de copia
 
-Hasta que exista la copia de seguridad en Google Drive, el usuario puede
-**exportar** el archivo de la base de datos y **volver a importarlo**, con la
-misma regla de "una copia manda": importar **sustituye** los datos locales, y
-solo después de una confirmación explícita. Un archivo de una versión
-**anterior** de la app se migra al importarlo; uno de una versión **más
-reciente** se rechaza.
+Desde la pantalla **Copia de seguridad** (U20, `03_features.md`) el usuario
+puede **exportar** todos sus datos a un archivo y **volver a importarlo**, con
+la misma regla de "una copia manda": importar **sustituye** los datos locales,
+y solo después de una confirmación explícita. Sirve antes de que exista la
+copia en Google Drive y seguirá sirviendo después, como copia manual.
+
+**Formato del paquete** (versión de formato 1):
+
+- Un `.zip` llamado `vehicle-history-AAAAMMDD-HHmm.zip` (hora local del
+  teléfono).
+- Dentro: `manifest.json`, `vehicle_history.sqlite` y la carpeta
+  `attachments/`, vacía por ahora; los adjuntos la llenarán sin cambiar el
+  formato.
+- `manifest.json` lleva `format_version` (1), `schema_version` (versión del
+  esquema de la base de datos del paquete), `app_version` (versión de la app
+  que lo exportó, como en `pubspec.yaml`), `exported_at` (instante UTC,
+  ISO-8601), `counts` (propietarios, vehículos, entradas y lecturas **vivos**:
+  no borrados, y las entradas y lecturas además de un vehículo no borrado) y
+  `last_modified_at` (el `updated_at` más reciente de esas cuatro tablas,
+  borrados incluidos, o `null` si están vacías).
+- La base de datos es una copia **entera y coherente**, hecha con
+  `VACUUM INTO` en un archivo temporal junto a la base de datos (sea cual sea
+  el estado del WAL), con la papelera y el historial de operaciones dentro. El
+  temporal se borra al terminar, también si algo falla.
+
+**Exportar:** se construye el paquete y el diálogo del sistema pregunta dónde
+guardarlo (Descargas, Drive, cualquier proveedor del selector de Android); la
+app no necesita permisos de almacenamiento. Cancelar el diálogo no es un
+error. Al guardarse: toast "Copia exportada" y se anota la fecha
+(`last_export_at`, tabla `settings`, ver `06_settings_and_i18n.md`).
+
+**Importar** — antes de tocar nada se comprueba el archivo:
+
+- que sea un zip válido;
+- que `manifest.json` exista y tenga `format_version` 1 (uno mayor viene de
+  una app más nueva);
+- que `vehicle_history.sqlite` exista, sea un archivo SQLite y tenga la
+  versión de esquema que dice el manifiesto;
+- `PRAGMA integrity_check` = `ok` sobre una copia temporal;
+- que estén las tablas que corresponden a esa versión del esquema.
+
+Cualquier fallo → mensaje claro ("no es una copia de Vehicle History", "está
+dañado", …) y **nada cambia**.
+
+**Regla de versión: un esquema más reciente se rechaza, uno anterior se
+migra.** Un archivo de una versión del esquema **más reciente** que la de la
+app se rechaza ("Este archivo viene de una versión más nueva de la app"); uno
+de una versión **anterior** se importa y se migra con las protecciones de
+siempre (incluida su copia `pre_v<n>`).
+
+Si el archivo es válido, un diálogo con estilo destructivo muestra lo que
+contiene: "Este archivo contiene 2 vehículos, 41 entradas y 7 lecturas;
+última modificación 18 oct 2026. **Importar sustituye todos los datos
+actuales.**"
+
+**Red de seguridad** al confirmar:
+
+1. Los datos actuales se copian (con `VACUUM INTO`) a
+   `vehicle_history.pre_import.sqlite`, que sustituye a la de una importación
+   anterior; después se cierra la base de datos.
+2. El archivo importado ocupa el lugar de la base de datos; los `-wal` /
+   `-shm` del archivo anterior se borran.
+3. Se reabre como en cualquier arranque: si el esquema es anterior se migra,
+   y se ejecuta la limpieza de la papelera (30 días). Se añade una fila
+   `import` (entidad `database`) al historial de operaciones de la base de
+   datos importada.
+4. Si algo falla al reabrir o al migrar, la copia `pre_import` vuelve a su
+   sitio y se reabre: "No se pudo importar; tus datos no han cambiado". La
+   copia `pre_import` no se borra nunca automáticamente.
+5. Si todo va bien, la app vuelve a la lista de vehículos con el toast "Copia
+   importada".
 
 ## Preparación para el futuro (sin implementarla ahora)
 

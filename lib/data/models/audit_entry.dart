@@ -11,6 +11,11 @@ enum AuditEntityType {
 
   /// A `MileageReading` of a vehicle's odometer history.
   mileageReading,
+
+  /// The whole database, for operations that replace all of it, such as
+  /// importing a backup package. Its entity id is
+  /// [AuditEntry.databaseEntityId].
+  database,
 }
 
 /// Kind of write an [AuditEntry] records.
@@ -32,6 +37,11 @@ enum AuditOperation {
   /// owners only; the entries and readings removed with a vehicle get no
   /// row of their own.
   purge,
+
+  /// The whole database was replaced by the one in a backup package.
+  /// Written once, into the imported database, after the import succeeded;
+  /// recorded with [AuditEntityType.database].
+  import,
 }
 
 /// One row of the audit log: which entity was written, how, and when.
@@ -47,6 +57,10 @@ class AuditEntry {
     required this.operation,
     required this.at,
   });
+
+  /// Entity id of the rows about the whole database
+  /// ([AuditEntityType.database]): the name of the database file.
+  static const String databaseEntityId = 'vehicle_history';
 
   /// Device-generated UUID v4 of the audit row itself.
   final String id;
