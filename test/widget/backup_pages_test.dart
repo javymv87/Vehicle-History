@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsNothing);
-    expect(backup.settings.values, isEmpty);
+    expect(backup.settings.values[SettingKey.lastExportAt], isNull);
     expect(find.text('Last export: never'), findsOneWidget);
   });
 

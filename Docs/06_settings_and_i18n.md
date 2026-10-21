@@ -33,11 +33,36 @@ v6): una fila por clave.
   elegir.
 - Las claves son códigos fijos en el código (nunca el nombre de un valor de
   Dart), así que renombrar algo en el código no cambia lo que hay en disco.
-- Claves actuales: `last_export_at` (fecha de la última exportación del
-  paquete de copia, ver `05_sync_and_storage.md`). El idioma llega en el paso
-  7; el tema y la nube, más adelante.
+- Claves actuales:
+
+  | Clave | Valores | Sin fila |
+  | --- | --- | --- |
+  | `last_export_at` | Instante de la última exportación del paquete de copia (ver `05_sync_and_storage.md`) | nunca exportado |
+  | `language` | `system`, `it`, `es`, `en` | `system` |
+  | `theme` | `system`, `light`, `dark` | `system` |
+
+  Los valores también son códigos fijos. Un valor desconocido (por ejemplo,
+  escrito por una versión más nueva de la app) se lee como `system`. La nube
+  llegará más adelante.
 - La tabla viaja dentro del paquete de copia como el resto de la base de
-  datos.
+  datos: al importar un paquete llegan también su idioma y su tema, y la app
+  cambia en ese mismo momento, sin reiniciar.
+
+## Idioma y tema: cómo se aplican
+
+- **Al momento.** Elegir un idioma o un tema en Ajustes cambia toda la app
+  enseguida, sin reiniciar. Con el idioma cambian también las fechas, los
+  números y los importes (formato de `intl` del idioma elegido).
+- **Sistema** sigue al dispositivo: su idioma (con el inglés como respaldo,
+  ver abajo) o su modo claro / oscuro. Es el valor si no hay fila.
+- **Arranque.** Los ajustes se leen cuando la base de datos ya está abierta;
+  hasta entonces (la pantalla de carga) la app usa el idioma y el tema del
+  sistema. Así no aparece un idioma equivocado después del splash. Si la
+  lectura falla, se usa `system` y el error queda en el log.
+- **Importar un paquete.** Mientras la base de datos se reabre, la app
+  mantiene el idioma y el tema que tenía; después pasa a los del paquete.
+- Los temas claro y oscuro son los de `07_design_and_theming.md`: el ajuste
+  solo elige cuál se usa.
 
 ## Idiomas
 

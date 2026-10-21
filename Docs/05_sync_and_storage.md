@@ -160,8 +160,14 @@ copia en Google Drive y seguirá sirviendo después, como copia manual.
 **Exportar:** se construye el paquete y el diálogo del sistema pregunta dónde
 guardarlo (Descargas, Drive, cualquier proveedor del selector de Android); la
 app no necesita permisos de almacenamiento. Cancelar el diálogo no es un
-error. Al guardarse: toast "Copia exportada" y se anota la fecha
+error. Al guardarse: toast "Copia exportada" y la fecha queda anotada
 (`last_export_at`, tabla `settings`, ver `06_settings_and_i18n.md`).
+
+La fecha se escribe **antes** de la copia `VACUUM INTO`, así que el paquete
+lleva dentro su propia fecha de exportación: tras importarlo, Copia de
+seguridad muestra esa fecha y no "nunca". Si el usuario cancela el diálogo
+de guardar o la exportación falla, se vuelve a poner el valor anterior: la
+pantalla nunca muestra una exportación que no dejó ningún archivo.
 
 **Importar** — antes de tocar nada se comprueba el archivo:
 

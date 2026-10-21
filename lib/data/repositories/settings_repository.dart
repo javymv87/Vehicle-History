@@ -1,4 +1,5 @@
 import '../db/daos/settings_dao.dart';
+import '../models/app_preferences.dart';
 import '../models/setting_key.dart';
 import 'repository_support.dart';
 
@@ -48,9 +49,29 @@ extension TypedSettings on SettingsRepository {
   Stream<DateTime?> watchLastExportAt() =>
       watch(SettingKey.lastExportAt).map(_parseInstant);
 
-  /// Records [at] (UTC) as the instant of the last successful export.
+  /// Records [at] (UTC) as the instant of the last export.
   Future<void> writeLastExportAt(DateTime at) =>
       write(SettingKey.lastExportAt, at.toUtc().toIso8601String());
+
+  /// Emits the interface language now and after every change; an absent or
+  /// unknown value is [AppLanguage.system]. A write to another key emits
+  /// nothing.
+  Stream<AppLanguage> watchLanguage() =>
+      watch(SettingKey.language).map(AppLanguage.fromCode).distinct();
+
+  /// Stores [language] as the interface language.
+  Future<void> writeLanguage(AppLanguage language) =>
+      write(SettingKey.language, language.code);
+
+  /// Emits the light / dark mode now and after every change; an absent or
+  /// unknown value is [AppThemeMode.system]. A write to another key emits
+  /// nothing.
+  Stream<AppThemeMode> watchThemeMode() =>
+      watch(SettingKey.theme).map(AppThemeMode.fromCode).distinct();
+
+  /// Stores [mode] as the light / dark mode.
+  Future<void> writeThemeMode(AppThemeMode mode) =>
+      write(SettingKey.theme, mode.code);
 
   /// Parses an instant stored as ISO-8601 text; an unreadable value counts
   /// as unset rather than failing the screen that shows it.

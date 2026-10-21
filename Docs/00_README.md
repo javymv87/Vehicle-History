@@ -61,7 +61,10 @@ importar todos los datos como un `.zip`, con validación, rechazo de los
 esquemas más recientes, migración de los anteriores y una copia de seguridad
 que se restaura si la importación falla), la tabla `settings` (esquema v6),
 la pantalla Copia de seguridad y una clave fija de firma para debug y
-release. Lo siguiente es el paso 7 (idioma dentro de la app).
+release. El paso 7 añadió la pantalla Ajustes: idioma (Sistema, Italiano,
+Español, English) y tema (Sistema, Claro, Oscuro), que se aplican al
+momento y viajan dentro del paquete de copia. Lo siguiente es el paso 8
+(adjuntos).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -73,7 +76,7 @@ Hoja de ruta hasta la primera versión usable:
 | 5 | ~~Cuentakilómetros: actualizar el km actual + historial `MileageReading` con sus reglas (esquema v4)~~ — hecho |
 | 5b | ~~Papelera: vehículos borrados, restaurar, borrado definitivo, limpieza a los 30 días (esquema v5)~~ — hecho |
 | 6 | ~~Exportar / importar como paquete, tabla `settings` (esquema v6), clave fija de firma para debug y release~~ — hecho |
-| 7 | Pantalla de ajustes: idioma dentro de la app |
+| 7 | ~~Pantalla de ajustes: idioma y tema dentro de la app~~ — hecho |
 | 8 | Adjuntos (entradas, vehículos, propietarios) |
 | 9 | Copia de seguridad en Google Drive |
 

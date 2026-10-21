@@ -17,7 +17,7 @@ class BackupFakes {
   final FakeSettingsRepository settings = FakeSettingsRepository();
 
   /// The export / import service.
-  final FakeBackupService service = FakeBackupService();
+  late final FakeBackupService service = FakeBackupService(settings);
 
   /// The save / open dialogs.
   final FakeBackupFilePicker picker = FakeBackupFilePicker();

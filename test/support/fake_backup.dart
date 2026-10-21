@@ -73,6 +73,13 @@ final BackupManifest sampleManifest = BackupManifest(
 /// [BackupService] that does no file work: it exports [sampleManifest] and
 /// accepts or rejects packages as configured.
 class FakeBackupService implements BackupService {
+  /// Creates the service on [settings], where the export writes
+  /// `last_export_at`.
+  FakeBackupService(this.settings);
+
+  /// The settings the export writes to.
+  final SettingsRepository settings;
+
   /// When set, inspecting or importing a package throws it.
   Exception? rejectWith;
 
@@ -83,11 +90,21 @@ class FakeBackupService implements BackupService {
   int imports = 0;
 
   @override
-  Future<ExportedPackage> exportPackage() async => ExportedPackage(
-        fileName: 'vehicle-history-20261020-1830.zip',
-        bytes: Uint8List.fromList([1, 2, 3]),
-        manifest: sampleManifest,
-      );
+  Future<ExportedPackage> exportPackage() async {
+    // Like the real service: `last_export_at` is written before the copy.
+    final previous = await settings.read(SettingKey.lastExportAt);
+    await settings.writeLastExportAt(sampleManifest.exportedAt);
+    return ExportedPackage(
+      fileName: 'vehicle-history-20261020-1830.zip',
+      bytes: Uint8List.fromList([1, 2, 3]),
+      manifest: sampleManifest,
+      previousLastExportAt: previous,
+    );
+  }
+
+  @override
+  Future<void> discardExport(ExportedPackage package) =>
+      settings.write(SettingKey.lastExportAt, package.previousLastExportAt);
 
   @override
   Future<BackupManifest> inspectPackage(Uint8List bytes) async {

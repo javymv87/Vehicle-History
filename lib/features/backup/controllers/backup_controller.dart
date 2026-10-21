@@ -40,19 +40,24 @@ class BackupController extends Notifier<BackupTask?> {
 
   /// Builds the package and asks the user where to save it.
   ///
-  /// Succeeds with `true` once saved (and `last_export_at` written), or
-  /// `false` if the user cancelled the save dialog, which is not an error.
+  /// Succeeds with `true` once saved, or `false` if the user cancelled the
+  /// save dialog, which is not an error.
+  ///
+  /// The service writes `last_export_at` before copying the database, so
+  /// the package carries it; unless the package is saved, the previous
+  /// value is put back.
   Future<ActionResult<bool>> export() async {
     state = BackupTask.exporting;
     try {
-      final package = await ref.read(backupServiceProvider).exportPackage();
-      final saved = await ref
-          .read(backupFilePickerProvider)
-          .savePackage(package.fileName, package.bytes);
-      if (saved) {
-        await ref
-            .read(settingsRepositoryProvider)
-            .writeLastExportAt(package.manifest.exportedAt);
+      final service = ref.read(backupServiceProvider);
+      final package = await service.exportPackage();
+      var saved = false;
+      try {
+        saved = await ref
+            .read(backupFilePickerProvider)
+            .savePackage(package.fileName, package.bytes);
+      } finally {
+        if (!saved) await service.discardExport(package);
       }
       return ActionSuccess(saved);
     } on Exception catch (error, stackTrace) {

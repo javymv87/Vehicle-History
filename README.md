@@ -88,7 +88,10 @@ the Trash screen (restore, delete permanently, empty) and the automatic
 import of all the data as a `.zip`, with validation, a newer-schema refusal,
 migration of older ones and a safety copy that is restored if the import
 fails), the `settings` table (schema v6), the Backup screen and a fixed
-signing key for debug and release builds. Next is step 7 (in-app language).
+signing key for debug and release builds. Step 7 added the Settings screen:
+in-app language (System, Italiano, Español, English) and theme (System,
+Light, Dark), applied at once and carried inside the backup package. Next is
+step 8 (attachments).
 
 Roadmap to the first usable version:
 
@@ -100,7 +103,7 @@ Roadmap to the first usable version:
 | 5 | ~~Odometer: update current km + `MileageReading` history with its rules (schema v4)~~ — done |
 | 5b | ~~Trash: deleted vehicles, restore, permanent delete, 30-day cleanup (schema v5)~~ — done |
 | 6 | ~~Export / import as a package, `settings` table (schema v6), fixed signing key for debug and release~~ — done |
-| 7 | Settings screen: in-app language |
+| 7 | ~~Settings screen: in-app language and theme~~ — done |
 | 8 | Attachments (entries, vehicles, owners) |
 | 9 | Google Drive backup |
 

@@ -84,6 +84,7 @@ void main() {
     'owner form': () => AppRoutes.newOwner,
     'trash': () => AppRoutes.trash,
     'backup': () => AppRoutes.backup,
+    'settings': () => AppRoutes.settings,
   };
 
   for (final brightness in Brightness.values) {
@@ -231,6 +232,42 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Annulla'));
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets('Settings dialogs fit 360 dp with 2x text (${brightness.name})',
+        (tester) async {
+      tester.view
+        ..physicalSize = const Size(360, 720)
+        ..devicePixelRatio = 1;
+      tester.platformDispatcher
+        ..textScaleFactorTestValue = 2
+        ..platformBrightnessTestValue = brightness;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.settings,
+        locale: const Locale('it'),
+      );
+      for (final setting in ['Lingua', 'Tema']) {
+        await tester.tap(find.text(setting));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        // Every option is a tap target of at least 48 dp.
+        for (final tile in tester.widgetList<RadioListTile<Object?>>(
+          find.byWidgetPredicate((w) => w is RadioListTile),
+        )) {
+          expect(
+            tester.getSize(find.byWidget(tile)).height,
+            greaterThanOrEqualTo(48),
+          );
+        }
         await tester.tap(find.text('Annulla'));
         await tester.pumpAndSettle();
       }

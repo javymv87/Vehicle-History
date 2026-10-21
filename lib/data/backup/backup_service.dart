@@ -7,7 +7,9 @@ import '../db/database_file_inspector.dart';
 import '../db/upgrade_safety.dart';
 import '../models/audit_entry.dart';
 import '../models/backup_manifest.dart';
+import '../models/setting_key.dart';
 import '../repositories/repository_support.dart';
+import '../repositories/settings_repository.dart';
 import '../repositories/trash_cleanup_service.dart';
 import 'backup_exceptions.dart';
 import 'backup_files.dart';
@@ -20,6 +22,7 @@ class ExportedPackage {
     required this.fileName,
     required this.bytes,
     required this.manifest,
+    required this.previousLastExportAt,
   });
 
   /// Suggested file name, `vehicle-history-YYYYMMDD-HHmm.zip`.
@@ -30,6 +33,11 @@ class ExportedPackage {
 
   /// What the package holds, as written into its `manifest.json`.
   final BackupManifest manifest;
+
+  /// The `last_export_at` value the export replaced (raw text, `null` when
+  /// unset), put back by [BackupService.discardExport] if the package is
+  /// never saved.
+  final String? previousLastExportAt;
 }
 
 /// Tables a database at [schemaVersion] must have to be imported.
@@ -95,11 +103,19 @@ class BackupService {
   ///
   /// The copy is written with `VACUUM INTO` to a temporary file next to the
   /// database, which is deleted afterwards, also on failure.
+  ///
+  /// `last_export_at` is set to the export instant **before** the copy, so
+  /// the package carries its own export date and an import shows it. If the
+  /// package is then not saved, the caller puts the previous value back with
+  /// [discardExport]; a failure here puts it back itself.
   Future<ExportedPackage> exportPackage() async {
     final paths = await _paths();
     final dao = _database.backupDao;
+    final settings = _settings();
     final exportedAt = utcNow(_clock);
     await _files.deleteIfExists(paths.exportTemp);
+    final previousLastExportAt = await settings.read(SettingKey.lastExportAt);
+    await settings.writeLastExportAt(exportedAt);
     try {
       final counts = await dao.liveCounts();
       final lastModifiedAt = await dao.lastModifiedAt();
@@ -117,11 +133,25 @@ class BackupService {
         fileName: backupFileName(exportedAt.toLocal()),
         bytes: encodeBackupPackage(manifest, database),
         manifest: manifest,
+        previousLastExportAt: previousLastExportAt,
       );
+    } on Object {
+      await settings.write(SettingKey.lastExportAt, previousLastExportAt);
+      rethrow;
     } finally {
       await _files.deleteIfExists(paths.exportTemp);
     }
   }
+
+  /// Puts back the `last_export_at` value that [package] replaced, for a
+  /// package the user did not save (save dialog cancelled or failed): the
+  /// Backup page must not show an export that left no file anywhere.
+  Future<void> discardExport(ExportedPackage package) =>
+      _settings().write(SettingKey.lastExportAt, package.previousLastExportAt);
+
+  /// The settings of the live database, stamped with the service clock.
+  SettingsRepository _settings() =>
+      DriftSettingsRepository(_database.settingsDao, clock: _clock);
 
   /// Checks that [bytes] is a package this app can import, without touching
   /// the data, and returns its manifest for the confirmation dialog.

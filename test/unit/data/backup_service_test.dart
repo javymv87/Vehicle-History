@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/backup/backup_exceptions.dart';
+import 'package:vehicle_history/data/backup/backup_files.dart';
 import 'package:vehicle_history/data/backup/backup_package.dart';
 import 'package:vehicle_history/data/backup/backup_service.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
@@ -212,6 +213,69 @@ void main() {
       ];
       expect(names.where((n) => n.contains('.tmp')), isEmpty);
       expect(names.where((n) => n.contains('export')), isEmpty);
+    });
+
+    test(
+        'writes last_export_at before the copy, so the package carries its '
+        'own export date', () async {
+      await seed(db);
+      clock.advance(const Duration(hours: 2));
+
+      final exported = await serviceOf().exportPackage();
+
+      const exportedAt = '2026-10-01T14:00:00.000Z';
+      expect(exported.previousLastExportAt, isNull);
+      expect(
+        await db.settingsDao.readValue(SettingKey.lastExportAt),
+        exportedAt,
+      );
+      final copyPath = pathOf('copy.sqlite');
+      File(copyPath).writeAsBytesSync(
+        ZipDecoder()
+            .decodeBytes(exported.bytes)
+            .find(databaseEntryName)!
+            .content,
+      );
+      final copy = AppDatabase.forExecutor(NativeDatabase(File(copyPath)));
+      addTearDown(copy.close);
+      expect(
+        await copy.settingsDao.readValue(SettingKey.lastExportAt),
+        exportedAt,
+      );
+    });
+
+    test('discarding an unsaved package puts the previous date back', () async {
+      await serviceOf().exportPackage();
+      clock.advance(const Duration(days: 1));
+      final unsaved = await serviceOf().exportPackage();
+      expect(unsaved.previousLastExportAt, '2026-10-01T12:00:00.000Z');
+
+      await serviceOf().discardExport(unsaved);
+      expect(
+        await db.settingsDao.readValue(SettingKey.lastExportAt),
+        '2026-10-01T12:00:00.000Z',
+      );
+    });
+
+    test('discarding the first package leaves no export date', () async {
+      await serviceOf().discardExport(await serviceOf().exportPackage());
+      expect(await db.settingsDao.readValue(SettingKey.lastExportAt), isNull);
+    });
+
+    test('a failed export puts the previous date back', () async {
+      final service = BackupService(
+        database: db,
+        openDatabase: openFile,
+        appVersion: '9.9.9+99',
+        files: _UnreadableFiles(),
+        clock: clock.call,
+      );
+
+      await expectLater(
+        service.exportPackage(),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(await db.settingsDao.readValue(SettingKey.lastExportAt), isNull);
     });
 
     test('an empty database has no last modification', () async {
@@ -652,4 +716,12 @@ Future<Uint8List> _v4Package(String path) async {
     lastModifiedAt: DateTime.parse(ts),
   );
   return encodeBackupPackage(manifest, file.readAsBytesSync());
+}
+
+/// File operations that fail to read, to make an export fail after the
+/// database copy.
+class _UnreadableFiles extends IoBackupFiles {
+  @override
+  Future<Uint8List> readBytes(String path) async =>
+      throw FileSystemException('unreadable', path);
 }

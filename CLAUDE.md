@@ -51,6 +51,14 @@ package as a side effect of implementing a feature. Naming a package in this
 section records the decision; it does not authorise adding it to
 `pubspec.yaml` before it is actually used.
 
+**Two-week rule for versions.** A dependency version (new package, upgrade,
+or the version of a pinned tool or data source) must have been published on
+pub.dev **at least 14 days earlier**; check the release date on pub.dev
+(`https://pub.dev/api/packages/<name>` lists `published` per version). When
+the newest version is younger, pin the newest one that is old enough with an
+exact constraint (`archive: 4.3.0`, chosen in step 7: 4.4.0 and later were
+under two weeks old), and relax the pin once a newer one qualifies.
+
 ### Drift and schema migrations
 
 Drift is wired through `drift_flutter`, not through a hand-rolled
@@ -176,8 +184,35 @@ make / model, model year and version; v3 added `log_entries`; v4 added
 - **Settings (v6)** are the key / value table `settings` (`key` text PK,
   `value` nullable text, `updated_at` UTC), with no `deleted` flag and no
   audit rows. Keys are `SettingKey` values with explicit codes
-  (`last_export_at`); `SettingsRepository` has `read`, `write`, `watch`,
-  plus typed accessors (`watchLastExportAt`, `writeLastExportAt`).
+  (`last_export_at`, `language`, `theme`); `SettingsRepository` has `read`,
+  `write`, `watch`, plus typed accessors (`watchLastExportAt`,
+  `writeLastExportAt`, `watchLanguage` / `writeLanguage`,
+  `watchThemeMode` / `writeThemeMode`). `language` and `theme` hold the
+  stable codes of `AppLanguage` (`system`, `it`, `es`, `en`) and
+  `AppThemeMode` (`system`, `light`, `dark`, named so because `AppTheme`
+  holds the themes), `lib/data/models/app_preferences.dart`; absent or
+  unknown means `system`.
+- **Language and theme providers**
+  (`features/settings/controllers/settings_controller.dart`):
+  `languageSettingProvider` / `themeSettingProvider` stream the stored value
+  only once `databaseReadyProvider` is `AsyncData`, so at start the app
+  shows the device language and theme until the database is open (no wrong
+  language after the splash), and during the reopen after an import they
+  keep their previous value, then follow the imported rows (they depend on
+  `appDatabaseProvider` through the repository). A read error is logged and
+  swallowed (`handleError`), which leaves them without a value = `system`.
+  `appLocaleProvider` (`Locale?`, `null` = device) and
+  `appThemeModeProvider` (`ThemeMode`) feed `MaterialApp.locale` /
+  `themeMode`; `SettingsController` writes. Formatting follows the chosen
+  locale because it goes through `Localizations.localeOf` /
+  `l10n.localeName`, never `Intl.defaultLocale`.
+- **`last_export_at` and the package:** `BackupService.exportPackage`
+  writes it (the export instant) **before** `VACUUM INTO`, so the package
+  carries its own export date and an import shows it. If the package is not
+  saved (dialog cancelled or save failed) the controller calls
+  `discardExport`, which puts the previous value back (kept in
+  `ExportedPackage.previousLastExportAt`); a failure inside the export puts
+  it back itself. The Backup page never shows an export that left no file.
 - **Backup package** (`lib/data/backup/`, `Docs/05_sync_and_storage.md`): a
   zip with `manifest.json`, `vehicle_history.sqlite` (a `VACUUM INTO` copy
   through `BackupDao`) and an empty `attachments/`. `backup_package.dart` is
