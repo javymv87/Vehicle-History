@@ -1125,5 +1125,45 @@
   "errorImportRestoreFailed": "The import failed and your previous data could not be reopened. Close and reopen the app; a copy of your data is kept on the phone.",
   "@errorImportRestoreFailed": {
     "description": "Error when the import failed and putting the previous data back failed too. The copy is vehicle_history.pre_import.sqlite."
+  },
+  "settingsMenuItem": "Settings",
+  "@settingsMenuItem": {
+    "description": "Overflow menu item of the home lists that opens the Settings page (U21)."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the Settings page (U21)."
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Settings tile and dialog title for the interface language."
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Settings tile and dialog title for the light / dark mode."
+  },
+  "settingsSystemDefault": "System",
+  "@settingsSystemDefault": {
+    "description": "Settings value that follows the device: its language, or its light / dark mode."
+  },
+  "languageNameItalian": "Italiano",
+  "@languageNameItalian": {
+    "description": "The Italian language, always written in Italian whatever the interface language."
+  },
+  "languageNameSpanish": "Español",
+  "@languageNameSpanish": {
+    "description": "The Spanish language, always written in Spanish whatever the interface language."
+  },
+  "languageNameEnglish": "English",
+  "@languageNameEnglish": {
+    "description": "The English language, always written in English whatever the interface language."
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Settings value: always the light theme."
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Settings value: always the dark theme."
   }
 }

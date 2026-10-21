@@ -224,5 +224,15 @@
   "errorBackupCorrupt": "Il file del backup è danneggiato e non si può importare. Non è stato modificato nulla.",
   "errorExportFailed": "Impossibile esportare il backup. I tuoi dati non sono cambiati.",
   "errorImportFailed": "Impossibile importare; i tuoi dati non sono cambiati.",
-  "errorImportRestoreFailed": "Impossibile importare e i dati precedenti non si sono potuti riaprire. Chiudi e riapri l'app; una copia dei tuoi dati è conservata nel telefono."
+  "errorImportRestoreFailed": "Impossibile importare e i dati precedenti non si sono potuti riaprire. Chiudi e riapri l'app; una copia dei tuoi dati è conservata nel telefono.",
+  "settingsMenuItem": "Impostazioni",
+  "settingsTitle": "Impostazioni",
+  "settingsLanguage": "Lingua",
+  "settingsTheme": "Tema",
+  "settingsSystemDefault": "Sistema",
+  "languageNameItalian": "Italiano",
+  "languageNameSpanish": "Español",
+  "languageNameEnglish": "English",
+  "themeLight": "Chiaro",
+  "themeDark": "Scuro"
 }

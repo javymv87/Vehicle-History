@@ -245,6 +245,18 @@ ruta). Formato del paquete, validación y red de seguridad en
     cambiado".
   - Diseño: Material 3, botones de al menos 48 dp, modo oscuro, texto grande
     y 360 dp de ancho.
+- **U21 — Pantalla Ajustes** (ruta `/settings`), desde el menú de las listas
+  de inicio, junto a Copia de seguridad, Papelera y Acerca de. Dos ajustes,
+  cada uno una fila con su valor actual que abre un diálogo con botones de
+  opción:
+  - **Idioma**: Sistema, Italiano, Español, English. Cada idioma se escribe
+    en su propio idioma, sea cual sea el de la app.
+  - **Tema**: Sistema, Claro, Oscuro.
+  - Tocar una opción cierra el diálogo y la app cambia al momento (ver
+    `06_settings_and_i18n.md`); Cancelar no cambia nada. Sin toast: el
+    cambio ya se ve.
+  - Diseño: Material 3, opciones de al menos 48 dp, modo oscuro, texto
+    grande y 360 dp de ancho.
 
 ## Filtros y búsqueda
 

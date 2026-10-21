@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
+import 'package:vehicle_history/data/models/app_preferences.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/repositories/settings_repository.dart';
 
@@ -72,5 +73,56 @@ void main() {
       await settings.watchLastExportAt().first,
       DateTime.utc(2026, 10, 20, 18, 30),
     );
+  });
+
+  group('language and theme', () {
+    test('absent rows read as system', () async {
+      expect(await settings.watchLanguage().first, AppLanguage.system);
+      expect(await settings.watchThemeMode().first, AppThemeMode.system);
+    });
+
+    test('are stored as their stable codes', () async {
+      await settings.writeLanguage(AppLanguage.spanish);
+      await settings.writeThemeMode(AppThemeMode.dark);
+      expect(
+        await rows(),
+        unorderedEquals([
+          'language=es@2026-10-20T16:30:00.000Z',
+          'theme=dark@2026-10-20T16:30:00.000Z',
+        ]),
+      );
+      expect(await settings.watchLanguage().first, AppLanguage.spanish);
+      expect(await settings.watchThemeMode().first, AppThemeMode.dark);
+    });
+
+    test('emit every change', () async {
+      final languages = settings.watchLanguage();
+      final themes = settings.watchThemeMode();
+      expectLater(
+        languages,
+        emitsInOrder([
+          AppLanguage.system,
+          AppLanguage.italian,
+          AppLanguage.system,
+        ]),
+      );
+      expectLater(
+        themes,
+        emitsInOrder([AppThemeMode.system, AppThemeMode.light]),
+      );
+      await pumpEventQueue();
+      await settings.writeLanguage(AppLanguage.italian);
+      await settings.writeThemeMode(AppThemeMode.light);
+      await pumpEventQueue();
+      await settings.writeLanguage(AppLanguage.system);
+      await pumpEventQueue();
+    });
+
+    test('an unknown stored value reads as system', () async {
+      await settings.write(SettingKey.language, 'klingon');
+      await settings.write(SettingKey.theme, 'sepia');
+      expect(await settings.watchLanguage().first, AppLanguage.system);
+      expect(await settings.watchThemeMode().first, AppThemeMode.system);
+    });
   });
 }

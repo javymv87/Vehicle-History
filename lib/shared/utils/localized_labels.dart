@@ -1,3 +1,4 @@
+import '../../data/models/app_preferences.dart';
 import '../../data/models/fuel_type.dart';
 import '../../data/models/log_entry_type.dart';
 import '../../data/models/vehicle.dart';
@@ -53,6 +54,28 @@ extension LogEntryTypeLabel on LogEntryType {
         LogEntryType.measuredCheck => l10n.entryTypeMeasuredCheck,
         LogEntryType.genericCheck => l10n.entryTypeGenericCheck,
         LogEntryType.note => l10n.entryTypeNote,
+      };
+}
+
+/// Label of an [AppLanguage] in the Settings page.
+extension AppLanguageLabel on AppLanguage {
+  /// "System" in the language of [l10n]; each language by its own name
+  /// ("Italiano", "Español", "English"), whatever the interface language.
+  String label(AppLocalizations l10n) => switch (this) {
+        AppLanguage.system => l10n.settingsSystemDefault,
+        AppLanguage.italian => l10n.languageNameItalian,
+        AppLanguage.spanish => l10n.languageNameSpanish,
+        AppLanguage.english => l10n.languageNameEnglish,
+      };
+}
+
+/// Localised label of an [AppThemeMode].
+extension AppThemeModeLabel on AppThemeMode {
+  /// The name of this mode in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        AppThemeMode.system => l10n.settingsSystemDefault,
+        AppThemeMode.light => l10n.themeLight,
+        AppThemeMode.dark => l10n.themeDark,
       };
 }
 

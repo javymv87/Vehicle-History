@@ -224,5 +224,15 @@
   "errorBackupCorrupt": "El archivo de la copia está dañado y no se puede importar. No se ha cambiado nada.",
   "errorExportFailed": "No se pudo exportar la copia. Tus datos no han cambiado.",
   "errorImportFailed": "No se pudo importar; tus datos no han cambiado.",
-  "errorImportRestoreFailed": "No se pudo importar y tus datos anteriores no se han podido reabrir. Cierra y vuelve a abrir la app; hay una copia de tus datos en el teléfono."
+  "errorImportRestoreFailed": "No se pudo importar y tus datos anteriores no se han podido reabrir. Cierra y vuelve a abrir la app; hay una copia de tus datos en el teléfono.",
+  "settingsMenuItem": "Ajustes",
+  "settingsTitle": "Ajustes",
+  "settingsLanguage": "Idioma",
+  "settingsTheme": "Tema",
+  "settingsSystemDefault": "Sistema",
+  "languageNameItalian": "Italiano",
+  "languageNameSpanish": "Español",
+  "languageNameEnglish": "English",
+  "themeLight": "Claro",
+  "themeDark": "Oscuro"
 }

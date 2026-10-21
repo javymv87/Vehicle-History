@@ -63,6 +63,9 @@ abstract final class AppRoutes {
   /// The Backup page: export and import the backup package.
   static const String backup = '/backup';
 
+  /// The Settings page: interface language and light / dark mode.
+  static const String settings = '/settings';
+
   /// Detail of the owner with [id].
   static String owner(String id) => '$owners/${Uri.encodeComponent(id)}';
 
