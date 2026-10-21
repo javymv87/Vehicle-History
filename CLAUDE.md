@@ -30,7 +30,7 @@ discrepancy instead of silently choosing.
 Flutter · Material 3 · Riverpod · `go_router` · Drift through `drift_flutter`
 (SQLite) · `googleapis` (Google Drive) · `google_sign_in` / `flutter_appauth` ·
 `flutter_secure_storage` · `flutter_local_notifications` · `gen_l10n` · `intl`
-· `file_picker` · `archive`
+· `file_picker` · `archive` · `image_picker` · `open_filex`
 
 Toolchain reference (recorded at scaffold time): **Flutter 3.44.8** (stable
 channel) · **Dart 3.12.2**. The version is pinned for this repository in
@@ -45,6 +45,29 @@ storage permission and the user picks Downloads, Drive or any provider) and
 unit-tested without a device). The app version for the manifest is the
 constant `appVersion` (`lib/shared/constants/app_version.dart`), kept equal
 to `pubspec.yaml` by a test, rather than another plugin.
+
+Added in step 8 for attachments: `image_picker` (camera and gallery photos,
+resized on the phone to at most 2000 × 2000 px at JPEG quality 85; Android
+13+ photo picker, so no storage permission; `CAMERA` is declared in the
+manifest and requested by the plugin) and `open_filex` (opens a PDF or other
+attachment with the phone's app through its own `FileProvider`; pinned to
+`4.7.0`, 5.0.0 being under two weeks old). The manifest removes, with
+`tools:node="remove"`, the `READ_EXTERNAL_STORAGE` / `READ_MEDIA_*`
+permissions `open_filex` declares: the app only opens files in its own
+private directory. `file_picker` is still used for picking files and the
+package to import, but **no longer for saving**: saving goes through the
+native channel below. No image, thumbnail, share or permission library:
+thumbnails are `Image.file` with `cacheWidth`.
+
+**Native channel** (`MainActivity.kt`, Android only, wrapped by
+`NativeFiles` in `lib/data/platform/native_files.dart`, faked in tests):
+`vehicle_history/files` with `saveFile(sourcePath, suggestedName,
+mimeType)` — `ACTION_CREATE_DOCUMENT`, then a copy to the chosen `Uri`
+through `contentResolver.openOutputStream` in 64 KB chunks off the main
+thread, answering `saved` / `cancelled` / an error — and `freeBytes(path)`
+(`StatFs`). Used for the backup package and for "Save to…" of an attachment,
+which can be too large to pass through a channel as bytes. CI does not build
+Android: compile it with `fvm flutter build apk --debug` after touching it.
 
 Dependencies are added **one at a time, on explicit request**. Never add a
 package as a side effect of implementing a feature. Naming a package in this
@@ -74,11 +97,11 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v6: `owners`, `vehicles`, `audit_log`,
-`log_entries`, `mileage_readings`, `settings`; v2 added the vehicle kind,
-make / model, model year and version; v3 added `log_entries`; v4 added
-`mileage_readings` with one initial reading per vehicle; v5 added
-`deleted_at` for the Trash; v6 added `settings`):
+Settled for the database (schema v7: `owners`, `vehicles`, `audit_log`,
+`log_entries`, `mileage_readings`, `settings`, `attachments`; v2 added the
+vehicle kind, make / model, model year and version; v3 added `log_entries`;
+v4 added `mileage_readings` with one initial reading per vehicle; v5 added
+`deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -123,7 +146,8 @@ make / model, model year and version; v3 added `log_entries`; v4 added
   text with no CHECK, so a new code only needs its converter
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
   this way in v3, `mileageReading` in v4, operation `purge` in v5, operation
-  `import` with entity `database` in v6), not a schema change; an older build that meets an unknown code throws when
+  `import` with entity `database` in v6, entity `attachment` in v7), not a
+  schema change; an older build that meets an unknown code throws when
   reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
@@ -215,19 +239,35 @@ make / model, model year and version; v3 added `log_entries`; v4 added
   it back itself. The Backup page never shows an export that left no file.
 - **Backup package** (`lib/data/backup/`, `Docs/05_sync_and_storage.md`): a
   zip with `manifest.json`, `vehicle_history.sqlite` (a `VACUUM INTO` copy
-  through `BackupDao`) and an empty `attachments/`. `backup_package.dart` is
-  pure Dart (encode, decode, structural checks); `BackupService` does the
-  file work next to the database file, behind `BackupFiles` and
-  `DatabaseFileInspector` (which opens a foreign file with no migration). A
-  newer schema or format is rejected, an older one migrated by
-  `runSafeUpgrade`. Every rejection (`BackupRejectedException`) happens
-  before anything is touched.
-- **Import safety net:** `VACUUM INTO` → `vehicle_history.pre_import.sqlite`
-  (only the latest), close, replace the file (deleting the old `-wal` /
-  `-shm`), open a new connection (migration, startup cleanup, `import` audit
-  row). Any failure after the copy puts `pre_import` back and checks it opens
+  through `BackupDao`) and `attachments/` with the file of **every**
+  attachment row, live or deleted; `format_version` stays 1, the manifest
+  has `counts.attachments` and `attachments_bytes` (0 when missing, as in a
+  step-6 package). **Never in memory:** `writeBackupPackage` streams the
+  files into a temporary zip with `archive`'s `ZipFileEncoder`, the
+  controller saves it through `NativeFiles.saveFile` and then deletes it
+  (`deleteExport`); an import copies the picked file (streamed) next to the
+  database and `BackupPackageReader` reads the zip's index, inflating one
+  entry at a time to disk. Only `attachments/<plain name>` entries are
+  accepted (`isAttachmentEntryName`). `BackupService` does the file work
+  next to the database file, behind `BackupFiles` and
+  `DatabaseFileInspector` (which opens a foreign file with no migration and
+  lists its attachment paths). A newer schema or format, a damaged file or
+  too little free space (`freeBytes`) is rejected; an older schema is
+  migrated by `runSafeUpgrade`; files missing from the package are tolerated
+  and reported (`ImportPreview.missingFiles`). Every rejection
+  (`BackupRejectedException`) happens before anything is touched.
+- **Import safety net:** the referenced attachment files are unpacked to
+  `attachments.import.tmp/`; the previous import's `pre_import` material is
+  set aside (`*.pre_import.previous*`); `VACUUM INTO` →
+  `vehicle_history.pre_import.sqlite`, close, `attachments/` →
+  `attachments.pre_import/`, the unpacked directory → `attachments/`, the
+  database file replaced (deleting the old `-wal` / `-shm`), a new
+  connection opened (migration, startup cleanup, `import` audit row), and
+  only then the previous material deleted (only the latest is kept). Any
+  failure after the copy puts back **both** the database (from `pre_import`,
+  checked to open) and the attachments directory
   (`BackupImportFailedException`); if even that fails,
-  `BackupRestoreFailedException` and the copy stays. Temporary files
+  `BackupRestoreFailedException` and the material stays. Temporary files
   (`*.tmp`) never start with `vehicle_history.pre_v`, so the pre-upgrade
   rotation never touches them.
 - **Closing and reopening at runtime:** `AppDatabase.close` is idempotent
@@ -377,7 +417,9 @@ lib/
     db/                  # Drift database, tables, migrations
     models/              # domain models
     repositories/        # the only access path to persisted data
-    backup/              # Google Drive backup & restore
+    backup/              # backup package export / import (Drive: step 9)
+    attachments/         # attachment files, staging, pickers, file opener
+    platform/            # wrappers of the app's own native channels
   features/
     vehicles/            # pages/ widgets/ controllers/
     owners/              # pages/ widgets/ controllers/
@@ -389,6 +431,7 @@ lib/
     settings/            # pages/ widgets/ controllers/
     trash/               # pages/ widgets/ controllers/
     backup/              # pages/ widgets/ controllers/
+    attachments/         # shared attachment pieces: sheet, list, viewer
   l10n/                  # .arb files, gen_l10n output
   shared/
     widgets/             # widgets reused across features
@@ -471,10 +514,11 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
   both ids are in the path; an entry reached through another vehicle's path
   is not found. Odometer readings follow the same pattern
   (`/vehicles/:id/mileage/new`, `…/mileage/:readingId/edit`). The vehicle
-  page has three tabs (`VehicleTab`: history, mileage, details), opened
-  through the `tab` query parameter (`AppRoutes.vehicle(id, tab: …)`, e.g.
-  `?tab=mileage`), and owns its FAB: "Update km" on Mileage, "New entry"
-  otherwise. An action that outlives its page (the odometer offer) asks the
+  page has four tabs (`VehicleTab`: history, mileage, documents, details),
+  opened through the `tab` query parameter (`AppRoutes.vehicle(id, tab: …)`,
+  e.g. `?tab=mileage`), and owns its FAB: "Update km" on Mileage, "Add
+  document" on Documents, "New entry" otherwise. The image viewer is the
+  top-level route `/attachments/:attachmentId` (`AppRoutes.attachment`). An action that outlives its page (the odometer offer) asks the
   open vehicle page for a tab through `vehicleTabRequestProvider`.
 - Screens are opened with `context.push`, so Back returns to where the user
   was. A form pops with the saved id (`context.popOrGo`), which is how the

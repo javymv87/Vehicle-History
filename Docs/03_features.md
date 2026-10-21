@@ -198,7 +198,10 @@ Los vehículos borrados (paso 5b de la hoja de ruta). Reglas de datos en
   vehículo no tiene marca ni modelo) y el texto dice qué se va con él: "Se
   borrarán el vehículo, sus N entradas y sus M lecturas de km. Podrás
   recuperarlo desde la papelera durante 30 días." (cuenta las entradas y
-  lecturas **no borradas**, con singular y plural). Al confirmar, el toast
+  lecturas **no borradas**, con singular y plural). Desde el paso 8, si el
+  vehículo tiene adjuntos (los suyos más los de sus entradas no borradas),
+  dice "…, sus M lecturas de km y K adjuntos"; lo mismo la fila de la
+  papelera y la confirmación de eliminar definitivamente. Al confirmar, el toast
   con Deshacer de siempre.
 - **U17 — Pantalla Papelera** (ruta `/trash`), desde el menú de la lista de
   vehículos: "Papelera", con el número de vehículos cuando hay alguno
@@ -238,7 +241,9 @@ ruta). Formato del paquete, validación y red de seguridad en
   - Importar: el selector de archivos (zip); un archivo que no vale se
     rechaza con un mensaje claro y no cambia nada; si vale, diálogo de
     confirmación con lo que contiene ("Este archivo contiene 2 vehículos, 41
-    entradas y 7 lecturas; última modificación 18 oct 2026.") y, en negrita,
+    entradas y 7 lecturas; última modificación 18 oct 2026."), sus adjuntos
+    ("3 adjuntos (12 MB)."), los archivos que faltan si falta alguno y, en
+    negrita,
     "Importar sustituye todos los datos actuales.", con el botón en color de
     error. Al terminar, la app vuelve a la lista de vehículos con el toast
     "Copia importada"; si falla, "No se pudo importar; tus datos no han
@@ -355,12 +360,58 @@ Gradación que se debe respetar:
   mensaje **explícito y lo bastante persistente** para poder leerlo, no un
   destello.
 
-## Fotos
+## Adjuntos
 
-- Foto de perfil del vehículo (una).
-- Foto del propietario (una).
-- Fotos/escaneos de los documentos (vehículo y propietario).
-- Una o varias imágenes por cada entrada del historial.
+Fotos y documentos de las entradas, los vehículos y los propietarios (paso 8
+de la hoja de ruta). Datos, límites y borrado en `02_data_model.md`
+("Attachment").
 
-Las imágenes se obtienen de la cámara o de la galería y se guardan localmente;
-se incluyen en la copia de seguridad en la nube.
+- **Añadir:** siempre con una hoja inferior con **Cámara**, **Galería** y
+  **Archivo**. Cámara y galería con `image_picker` (en Android 13+ el
+  selector de fotos del sistema, sin permiso de almacenamiento; el permiso de
+  cámara lo pide el sistema la primera vez y, si se deniega, un mensaje
+  claro lo explica). Archivo con el selector de archivos del sistema. Más de
+  25 MB → mensaje y no se añade.
+- **Ver imágenes:** visor a pantalla completa con zoom con los dedos y
+  deslizamiento entre las imágenes de la misma entrada, vehículo o
+  propietario; "2 de 5" arriba; la descripción abajo (tocarla la edita, o
+  "Añadir una descripción"); acciones **Guardar en…** y **Eliminar** (con
+  Deshacer). Las miniaturas se dibujan con `Image.file` al tamaño en que se
+  ven (`cacheWidth`), sin archivos de miniatura.
+- **PDF y otros:** se abren con la app del teléfono (`open_filex`); si no hay
+  ninguna, un mensaje. Su fila tiene un menú con **Guardar en…**, **Editar
+  descripción** y **Eliminar**.
+- **Guardar en…:** el diálogo "guardar como" del sistema con el nombre
+  original del archivo; la copia es en streaming (ver `05_sync_and_storage.md`).
+- **Archivo no encontrado:** un adjunto cuya fila existe pero cuyo archivo
+  falta muestra ese texto en lugar de la miniatura o del tamaño.
+
+Pantallas:
+
+- **U22 — Formulario de la entrada** (crear y editar): sección "Adjuntos"
+  con las miniaturas, una casilla para añadir y un botón para quitar cada
+  uno. Al crear, lo elegido espera en el *staging* hasta guardar; al editar,
+  lo añadido también espera y lo quitado se borra (lógicamente) al guardar.
+  Cancelar descarta lo elegido. Mientras se copian los archivos se ve un
+  indicador de progreso y Guardar espera.
+- **U23 — Detalle de la entrada:** sección "Adjuntos" con un botón
+  "Añadir adjunto": miniaturas en cuadrícula para las imágenes y filas para
+  los PDF / otros (icono, nombre, tamaño y día). Tocar abre.
+- **U24 — Fila del historial:** un clip con el número de adjuntos cuando la
+  entrada tiene alguno.
+- **U25 — Página del vehículo:** pestaña nueva **Documentos** después de
+  Kilometraje (Historial, Kilometraje, Documentos, Ficha; `?tab=documents`).
+  En esa pestaña el botón flotante es "Añadir documento". Lista los adjuntos
+  del propio vehículo (permiso de circulación, póliza, inspección…), con las
+  mismas acciones. Las pestañas se desplazan si no caben (texto grande).
+- **U26 — Ficha del propietario:** sección "Documentos" con la misma lista
+  y el botón "Añadir documento".
+- **U27 — Copia de seguridad:** debajo de la fecha de la última exportación,
+  "N adjuntos, 123 MB" (todos los archivos que llevará el paquete, también
+  los de adjuntos borrados).
+- **U28 — Diseño:** Material 3, zonas táctiles de al menos 48 dp, modo
+  oscuro (el visor siempre sobre negro), texto grande y 360 dp de ancho;
+  indicadores de progreso al elegir, guardar y exportar.
+
+Pendiente: foto de perfil del vehículo y del propietario, y los datos propios
+de los documentos (tipo, número, vencimiento) para los recordatorios.

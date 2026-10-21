@@ -41,7 +41,10 @@ class FakeClock {
 /// in-memory one by default).
 AttachmentWriter attachmentWriterOf(AppDatabase db, [AttachmentStore? store]) =>
     AttachmentWriter(
-        db.attachmentsDao, db.auditLogDao, store ?? MemoryAttachmentStore());
+      db.attachmentsDao,
+      db.auditLogDao,
+      store ?? MemoryAttachmentStore(),
+    );
 
 /// Overrides that keep the app's files in memory: the support directory
 /// and the attachment store ([store], a new one by default), for tests that

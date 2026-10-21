@@ -945,7 +945,9 @@ class FakeAttachmentRepository implements AttachmentRepository {
       store.write(() {
         if (!_isLive(target)) {
           throw EntityNotFoundException(
-              AuditEntityType.vehicle, target.entityId);
+            AuditEntityType.vehicle,
+            target.entityId,
+          );
         }
         return store.addAttachment(target, file);
       });

@@ -56,7 +56,10 @@ void main() {
       clock: clock.call,
     );
     cleanup = TrashCleanupService(
-        db.trashDao, db.auditLogDao, MemoryAttachmentStore());
+      db.trashDao,
+      db.auditLogDao,
+      MemoryAttachmentStore(),
+    );
     ownerId = (await owners.create(firstName: 'Mario')).id;
   });
 

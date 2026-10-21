@@ -63,8 +63,14 @@ que se restaura si la importación falla), la tabla `settings` (esquema v6),
 la pantalla Copia de seguridad y una clave fija de firma para debug y
 release. El paso 7 añadió la pantalla Ajustes: idioma (Sistema, Italiano,
 Español, English) y tema (Sistema, Claro, Oscuro), que se aplican al
-momento y viajan dentro del paquete de copia. Lo siguiente es el paso 8
-(adjuntos).
+momento y viajan dentro del paquete de copia. El paso 8 añadió los
+adjuntos (esquema v7): fotos y documentos de las entradas, los vehículos
+(pestaña Documentos) y los propietarios, desde la cámara, la galería o un
+archivo, con visor, "Guardar en…" y su borrado físico con la papelera; el
+paquete de copia lleva ahora todos los archivos, se exporta en streaming
+con un "guardar como" nativo y la importación restaura también la carpeta
+de adjuntos si algo falla. Lo siguiente es el paso 9 (copia de seguridad en
+Google Drive).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -77,7 +83,7 @@ Hoja de ruta hasta la primera versión usable:
 | 5b | ~~Papelera: vehículos borrados, restaurar, borrado definitivo, limpieza a los 30 días (esquema v5)~~ — hecho |
 | 6 | ~~Exportar / importar como paquete, tabla `settings` (esquema v6), clave fija de firma para debug y release~~ — hecho |
 | 7 | ~~Pantalla de ajustes: idioma y tema dentro de la app~~ — hecho |
-| 8 | Adjuntos (entradas, vehículos, propietarios) |
+| 8 | ~~Adjuntos (entradas, vehículos, propietarios), paquete de copia con los archivos (esquema v7)~~ — hecho |
 | 9 | Copia de seguridad en Google Drive |
 
 Después, en el orden que se decida usando la app: mantenimiento, repostajes,

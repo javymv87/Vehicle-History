@@ -68,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   /// The file lives in the application support directory, not in the
   /// documents directory: on iOS the latter is visible to the user in the
   /// Files app and backed up to iCloud, and the only backup of this data is
-  /// the app's own (see `Docs/05_sync_and_storage.md`). Future photo paths are
+  /// the app's own (see `Docs/05_sync_and_storage.md`). Attachment paths are
   /// relative to the same directory.
   AppDatabase()
       : _upgradeSteps = _schemaSteps,

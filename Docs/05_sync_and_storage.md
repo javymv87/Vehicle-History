@@ -12,7 +12,8 @@
    en la carpeta de documentos: en iOS esta última es visible para el usuario
    en la app Archivos y se copia en iCloud, y la única copia de seguridad de
    estos datos debe ser la de la propia app. Las rutas de las fotos se guardan
-   relativas a esa carpeta.
+   relativas a esa carpeta. Desde el paso 8 los adjuntos viven en su
+   subcarpeta `attachments/` (ver `02_data_model.md`, "Attachment").
 2. **Copia de seguridad en la nube** — una copia de toda la base de datos + las
    imágenes, empaquetada y subida a Google Drive, para poder recuperarlo todo en
    otro teléfono. NO es una sincronización continua: es una copia de seguridad
@@ -143,25 +144,46 @@ copia en Google Drive y seguirá sirviendo después, como copia manual.
 - Un `.zip` llamado `vehicle-history-AAAAMMDD-HHmm.zip` (hora local del
   teléfono).
 - Dentro: `manifest.json`, `vehicle_history.sqlite` y la carpeta
-  `attachments/`, vacía por ahora; los adjuntos la llenarán sin cambiar el
-  formato.
+  `attachments/`, con el archivo de **cada** fila de adjuntos, viva o
+  borrada (la papelera viaja con el paquete), con el mismo nombre que su
+  `relative_path` (`attachments/<id>.<ext>`). El formato sigue siendo el 1:
+  un paquete del paso 6 (con `attachments/` vacía) se sigue importando.
 - `manifest.json` lleva `format_version` (1), `schema_version` (versión del
   esquema de la base de datos del paquete), `app_version` (versión de la app
   que lo exportó, como en `pubspec.yaml`), `exported_at` (instante UTC,
   ISO-8601), `counts` (propietarios, vehículos, entradas y lecturas **vivos**:
-  no borrados, y las entradas y lecturas además de un vehículo no borrado) y
-  `last_modified_at` (el `updated_at` más reciente de esas cuatro tablas,
-  borrados incluidos, o `null` si están vacías).
+  no borrados, y las entradas y lecturas además de un vehículo no borrado;
+  más `attachments`, el número de **archivos** de `attachments/`, borrados
+  incluidos), `attachments_bytes` (lo que ocupan) y `last_modified_at` (el
+  `updated_at` más reciente de propietarios, vehículos, entradas y lecturas,
+  borrados incluidos, o `null` si están vacías). En un paquete anterior al
+  paso 8 faltan `counts.attachments` y `attachments_bytes`: se leen como 0.
 - La base de datos es una copia **entera y coherente**, hecha con
   `VACUUM INTO` en un archivo temporal junto a la base de datos (sea cual sea
-  el estado del WAL), con la papelera y el historial de operaciones dentro. El
-  temporal se borra al terminar, también si algo falla.
+  el estado del WAL), con la papelera y el historial de operaciones dentro.
 
-**Exportar:** se construye el paquete y el diálogo del sistema pregunta dónde
-guardarlo (Descargas, Drive, cualquier proveedor del selector de Android); la
-app no necesita permisos de almacenamiento. Cancelar el diálogo no es un
-error. Al guardarse: toast "Copia exportada" y la fecha queda anotada
+**Exportar, en streaming.** El paquete nunca está entero en memoria: el zip
+se escribe en un **archivo temporal** junto a la base de datos con el
+codificador de archivos de `archive`, que añade la copia de la base de datos
+y los adjuntos uno a uno, leyéndolos del disco (los adjuntos sin
+comprimir: fotos y PDF ya lo están). Un adjunto cuyo archivo falta en el
+teléfono no entra en el zip (su fila sí, y la importación lo cuenta como
+archivo que falta). Después el diálogo del sistema pregunta dónde guardarlo
+(Descargas, Drive, cualquier proveedor del selector de Android) y el
+archivo se copia allí. La copia de la base de datos y el zip temporal se
+borran al terminar, también si algo falla o se cancela. La app no necesita
+permisos de almacenamiento. Cancelar el diálogo no es un error. Al
+guardarse: toast "Copia exportada" y la fecha queda anotada
 (`last_export_at`, tabla `settings`, ver `06_settings_and_i18n.md`).
+
+**"Guardar como" nativo.** Un pequeño canal de Android (Kotlin,
+`vehicle_history/files`) con `saveFile(origen, nombre propuesto, tipo
+MIME)`: abre `ACTION_CREATE_DOCUMENT` y, cuando el usuario elige el sitio,
+copia el archivo al documento elegido a trozos de 64 KB, fuera del hilo
+principal, y responde guardado / cancelado / error. Se usa para el paquete
+y para "Guardar en…" de un adjunto (con su nombre original). Tiene también
+`freeBytes`, el espacio libre del volumen, para la comprobación de la
+importación. Solo Android; en iOS no existe todavía.
 
 La fecha se escribe **antes** de la copia `VACUUM INTO`, así que el paquete
 lleva dentro su propia fecha de exportación: tras importarlo, Copia de
@@ -169,7 +191,8 @@ seguridad muestra esa fecha y no "nunca". Si el usuario cancela el diálogo
 de guardar o la exportación falla, se vuelve a poner el valor anterior: la
 pantalla nunca muestra una exportación que no dejó ningún archivo.
 
-**Importar** — antes de tocar nada se comprueba el archivo:
+**Importar** — el archivo elegido se copia (en streaming) junto a la base de
+datos y, antes de tocar nada, se comprueba:
 
 - que sea un zip válido;
 - que `manifest.json` exista y tenga `format_version` 1 (uno mayor viene de
@@ -177,10 +200,20 @@ pantalla nunca muestra una exportación que no dejó ningún archivo.
 - que `vehicle_history.sqlite` exista, sea un archivo SQLite y tenga la
   versión de esquema que dice el manifiesto;
 - `PRAGMA integrity_check` = `ok` sobre una copia temporal;
-- que estén las tablas que corresponden a esa versión del esquema.
+- que estén las tablas que corresponden a esa versión del esquema;
+- qué archivos de adjuntos nombran las filas del paquete y cuáles están en
+  `attachments/`: los que faltan **se toleran** (las filas se importan y
+  muestran "Archivo no encontrado") y el diálogo lo dice ("Faltan K
+  archivos…"). Solo se aceptan entradas `attachments/<nombre>` sencillas: una
+  entrada con subcarpetas o `..` se ignora;
+- que haya **espacio libre** para los adjuntos del paquete y la copia
+  `pre_import` de la base de datos actual (más un margen de 20 MB).
+
+La comprobación lee solo el índice del zip y la base de datos: los adjuntos
+se descomprimen una sola vez, al confirmar.
 
 Cualquier fallo → mensaje claro ("no es una copia de Vehicle History", "está
-dañado", …) y **nada cambia**.
+dañado", "no hay espacio suficiente", …) y **nada cambia**.
 
 **Regla de versión: un esquema más reciente se rechaza, uno anterior se
 migra.** Un archivo de una versión del esquema **más reciente** que la de la
@@ -190,25 +223,32 @@ siempre (incluida su copia `pre_v<n>`).
 
 Si el archivo es válido, un diálogo con estilo destructivo muestra lo que
 contiene: "Este archivo contiene 2 vehículos, 41 entradas y 7 lecturas;
-última modificación 18 oct 2026. **Importar sustituye todos los datos
-actuales.**"
+última modificación 18 oct 2026." "3 adjuntos (12 MB)." y, en negrita,
+"**Importar sustituye todos los datos actuales.**"
 
 **Red de seguridad** al confirmar:
 
-1. Los datos actuales se copian (con `VACUUM INTO`) a
-   `vehicle_history.pre_import.sqlite`, que sustituye a la de una importación
-   anterior; después se cierra la base de datos.
-2. El archivo importado ocupa el lugar de la base de datos; los `-wal` /
-   `-shm` del archivo anterior se borran.
-3. Se reabre como en cualquier arranque: si el esquema es anterior se migra,
+1. Los adjuntos del paquete se descomprimen en una carpeta temporal junto a
+   `attachments/`; si falla, no ha cambiado nada.
+2. El material `pre_import` de la importación anterior se aparta (no se
+   borra todavía). Los datos actuales se copian (con `VACUUM INTO`) a
+   `vehicle_history.pre_import.sqlite`; después se cierra la base de datos.
+3. La carpeta `attachments/` actual pasa a llamarse
+   `attachments.pre_import/` y la descomprimida ocupa su lugar; el archivo
+   importado ocupa el lugar de la base de datos (los `-wal` / `-shm` del
+   archivo anterior se borran).
+4. Se reabre como en cualquier arranque: si el esquema es anterior se migra,
    y se ejecuta la limpieza de la papelera (30 días). Se añade una fila
    `import` (entidad `database`) al historial de operaciones de la base de
    datos importada.
-4. Si algo falla al reabrir o al migrar, la copia `pre_import` vuelve a su
-   sitio y se reabre: "No se pudo importar; tus datos no han cambiado". La
-   copia `pre_import` no se borra nunca automáticamente.
-5. Si todo va bien, la app vuelve a la lista de vehículos con el toast "Copia
-   importada".
+5. Si todo va bien, se borra el material `pre_import` de la importación
+   anterior (solo se guarda el último) y la app vuelve a la lista de
+   vehículos con el toast "Copia importada".
+6. Si algo falla después del punto 2, vuelven a su sitio **las dos cosas**:
+   la base de datos (desde `pre_import`) y la carpeta `attachments/`; se
+   reabre: "No se pudo importar; tus datos no han cambiado". La copia
+   `pre_import` de la base de datos se conserva. Si ni siquiera eso funciona,
+   el mensaje lo dice y el material `pre_import` se queda.
 
 ## Preparación para el futuro (sin implementarla ahora)
 
@@ -242,6 +282,12 @@ Desde el esquema v5 (paso 5b).
   arranca igual.
 - El historial de operaciones conserva sus filas y añade una `purge` por
   cada vehículo y propietario borrados físicamente.
+- **Adjuntos:** se van con el vehículo, la entrada o el propietario que se
+  borra físicamente, con sus archivos; la limpieza borra también los
+  adjuntos borrados hace 30 días o más (salvo los que viajan con un vehículo
+  de la papelera). Después de la limpieza, el arranque vacía
+  `attachments_tmp/` y borra los archivos de `attachments/` sin fila
+  (huérfanos). Ver `02_data_model.md`, "Attachment".
 - **La copia lleva la papelera dentro:** el archivo que se exporte o se suba
   a Drive es la base de datos entera, papelera incluida. Restaurar una copia
   devuelve también los vehículos que estaban en la papelera en ese momento,

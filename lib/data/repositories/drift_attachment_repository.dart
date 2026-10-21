@@ -46,7 +46,7 @@ class DriftAttachmentRepository implements AttachmentRepository {
   Stream<AttachmentTotals> watchTotals() => _attachments.watchTotals();
 
   @override
-  Future<Attachment> create(AttachmentTarget target, StagedFile file) {
+  Future<Attachment> create(AttachmentTarget target, StagedFile file) async {
     final now = utcNow(_clock);
     AttachmentWriter.checkSize(file);
     return _writer.runWithMovedFiles(
@@ -76,8 +76,10 @@ class DriftAttachmentRepository implements AttachmentRepository {
     return _attachments.transaction(() async {
       final current = await _attachments.getLiveOf(target);
       final currentIds = {for (final a in current) a.id};
+      final ordered = orderedIds.toSet();
       if (orderedIds.length != currentIds.length ||
-          !currentIds.containsAll(orderedIds)) {
+          ordered.length != orderedIds.length ||
+          !currentIds.containsAll(ordered)) {
         throw const InvalidFieldException(
           'order',
           'must name every attachment exactly once',

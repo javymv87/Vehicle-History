@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,7 +70,10 @@ void main() {
       DriftAttachmentRepository(
         database.attachmentsDao,
         AttachmentWriter(
-            database.attachmentsDao, database.auditLogDao, storeOf()),
+          database.attachmentsDao,
+          database.auditLogDao,
+          storeOf(),
+        ),
         clock: clock.call,
       );
 
@@ -742,6 +745,285 @@ void main() {
       );
     });
   });
+
+  group('attachments', () {
+    late String ownerId;
+
+    setUp(() async {
+      await seed(db);
+      ownerId = (await db.ownersDao.getLive()).single.id;
+    });
+
+    /// The files under `attachments/` (or [subdir]) with their bytes.
+    Map<String, List<int>> filesIn([String subdir = 'attachments']) {
+      final folder = Directory(pathOf(subdir));
+      if (!folder.existsSync()) return {};
+      return {
+        for (final f in folder.listSync().whereType<File>())
+          f.uri.pathSegments.last: f.readAsBytesSync(),
+      };
+    }
+
+    test(
+        'the package carries every attachment file, deleted ones included, '
+        'with their count and size in the manifest', () async {
+      final repository = attachmentsOf(db);
+      final kept = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Patente.jpg',
+        [1, 2, 3],
+      );
+      final deleted = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Vecchio.pdf',
+        [4, 5],
+      );
+      await repository.delete(deleted.id);
+
+      final exported = await serviceOf().exportPackage();
+      final archive = zipAt(exported.path);
+
+      expect(
+        {
+          for (final f in archive)
+            if (isAttachmentEntryName(f.name)) f.name,
+        },
+        {kept.relativePath, deleted.relativePath},
+      );
+      expect(archive.find(kept.relativePath)!.content, [1, 2, 3]);
+      expect(exported.manifest.counts.attachments, 2);
+      expect(exported.manifest.attachmentsBytes, 5);
+      final written = BackupManifest.fromJson(
+        jsonDecode(utf8.decode(archive.find(manifestEntryName)!.content)),
+      );
+      expect(written, exported.manifest);
+    });
+
+    test(
+        'a package of several megabytes is written to a file on disk, '
+        'never returned as bytes', () async {
+      const megabyte = 1024 * 1024;
+      for (var i = 0; i < 3; i++) {
+        await attach(
+          db,
+          AttachmentTarget.owner(ownerId),
+          'Foto$i.jpg',
+          List.filled(2 * megabyte, i),
+        );
+      }
+
+      final exported = await serviceOf().exportPackage();
+
+      // The service hands over a path: the zip is streamed file to file by
+      // archive's file encoder; ExportedPackage has no bytes to hold.
+      final file = File(exported.path);
+      expect(file.existsSync(), isTrue);
+      expect(file.lengthSync(), greaterThan(6 * megabyte));
+      expect(exported.manifest.attachmentsBytes, 6 * megabyte);
+      await serviceOf().deleteExport(exported);
+      expect(file.existsSync(), isFalse);
+    });
+
+    test(
+        'an import puts the package files in place, keeps the old ones in '
+        'attachments.pre_import and brings back the old captions', () async {
+      final photo = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Patente.jpg',
+        [1, 2, 3],
+      );
+      await attachmentsOf(db).updateCaption(photo.id, 'Fronte');
+      final package = await exportToFile();
+
+      // After the export: a new caption and a new file.
+      await attachmentsOf(db).updateCaption(photo.id, 'Retro');
+      final later = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Nuovo.pdf',
+        [9],
+      );
+
+      final preview = await serviceOf().inspectPackage(package);
+      expect((preview.attachmentCount, preview.attachmentBytes), (1, 3));
+      expect(preview.missingFiles, 0);
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      final rows = await imported.attachmentsDao
+          .getLiveOf(AttachmentTarget.owner(ownerId));
+      expect([
+        for (final r in rows) (r.id, r.caption),
+      ], [
+        (photo.id, 'Fronte'),
+      ]);
+      expect(filesIn(), {
+        photo.relativePath.split('/').last: [1, 2, 3],
+      });
+      expect(
+        filesIn('attachments.pre_import').keys,
+        unorderedEquals([
+          photo.relativePath.split('/').last,
+          later.relativePath.split('/').last,
+        ]),
+      );
+      expect(
+        dir.listSync().where((f) => f.path.endsWith('.tmp')),
+        isEmpty,
+      );
+    });
+
+    test(
+        'a step-6 package, without attachments, still imports: no rows, an '
+        'empty attachments directory', () async {
+      await attach(db, AttachmentTarget.owner(ownerId), 'Patente.jpg', [1]);
+      final package = await _v6Package(pathOf('v6.sqlite'));
+
+      final preview = await serviceOf().inspectPackage(package);
+      expect(preview.manifest.schemaVersion, 6);
+      expect(preview.attachmentCount, 0);
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      expect((await imported.ownersDao.getLive()).single.firstName, 'Ana');
+      expect(
+        (await imported.customSelect('SELECT id FROM attachments').get()),
+        isEmpty,
+      );
+      expect(filesIn(), isEmpty);
+      expect(Directory(pathOf('attachments')).existsSync(), isTrue);
+      expect(filesIn('attachments.pre_import'), hasLength(1));
+    });
+
+    test(
+        'a file missing from the package is tolerated and reported; its row '
+        'is imported', () async {
+      final kept = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Patente.jpg',
+        [1],
+      );
+      final lost = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Perso.jpg',
+        [2],
+      );
+      File(storeOf().absolutePath(lost.relativePath)).deleteSync();
+      final package = await exportToFile();
+
+      final preview = await serviceOf().inspectPackage(package);
+      expect(preview.missingFiles, 1);
+      expect(preview.attachmentCount, 1);
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      final rows = await imported.attachmentsDao
+          .getLiveOf(AttachmentTarget.owner(ownerId));
+      expect({for (final r in rows) r.id}, {kept.id, lost.id});
+      expect(filesIn().keys, [kept.relativePath.split('/').last]);
+    });
+
+    test(
+        'a failed import puts back both the database and the attachments '
+        'directory', () async {
+      final before = await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Patente.jpg',
+        [1],
+      );
+      final package = await _v6Package(pathOf('v6.sqlite'));
+      final filesBefore = filesIn();
+      var opened = 0;
+
+      await expectLater(
+        serviceOf(
+          open: () {
+            if (++opened == 1) throw StateError('cannot open');
+            return openFile();
+          },
+        ).importPackage(package),
+        throwsA(isA<BackupImportFailedException>()),
+      );
+
+      expect(filesIn(), filesBefore);
+      final restored = openFile();
+      addTearDown(restored.close);
+      expect(
+        [
+          for (final r in await restored.attachmentsDao
+              .getLiveOf(AttachmentTarget.owner(ownerId)))
+            r.id,
+        ],
+        [before.id],
+      );
+      expect(Directory(pathOf('attachments.pre_import')).existsSync(), isFalse);
+      expect(
+        Directory(pathOf('attachments.import.tmp')).existsSync(),
+        isFalse,
+      );
+    });
+
+    test(
+        'after a successful import the material of the import before is '
+        'deleted', () async {
+      await attach(db, AttachmentTarget.owner(ownerId), 'Patente.jpg', [1]);
+      final package = await exportToFile();
+      await serviceOf().importPackage(package);
+      db = openFile();
+      await attach(db, AttachmentTarget.owner(ownerId), 'Secondo.jpg', [2]);
+
+      await serviceOf().importPackage(package);
+
+      expect(
+        File(pathOf('vehicle_history.pre_import.previous.sqlite')).existsSync(),
+        isFalse,
+      );
+      expect(
+        Directory(pathOf('attachments.pre_import.previous')).existsSync(),
+        isFalse,
+      );
+      // The latest pre_import holds the data from just before this import.
+      expect(filesIn('attachments.pre_import'), hasLength(2));
+    });
+
+    test('a phone without room for the package refuses it, touching nothing',
+        () async {
+      await attach(
+        db,
+        AttachmentTarget.owner(ownerId),
+        'Patente.jpg',
+        List.filled(1000, 1),
+      );
+      final package = await exportToFile();
+      freeBytes = 1000;
+
+      await expectLater(
+        serviceOf().inspectPackage(package),
+        throwsA(
+          isA<BackupRejectedException>().having(
+            (e) => e.reason,
+            'reason',
+            BackupRejection.notEnoughSpace,
+          ),
+        ),
+      );
+      await expectLater(
+        serviceOf().importPackage(package),
+        throwsA(isA<BackupRejectedException>()),
+      );
+      expect(await vehiclesOn(db), ['AB123CD:false', 'OLD1:true']);
+      expect(filesIn(), hasLength(1));
+    });
+  });
 }
 
 /// Opens a raw file as it is, with no migration, to build foreign files.
@@ -814,4 +1096,48 @@ class _UnreadableFiles extends IoBackupFiles {
   Future<int> sizeOf(String path) async => path.contains('attachments')
       ? throw FileSystemException('unreadable', path)
       : super.sizeOf(path);
+}
+
+/// Writes a v6 database (step 6 / 7 app) with one owner and its settings to
+/// [path] and returns the path of a package holding it, with an empty
+/// `attachments/` and a manifest without the attachment keys.
+Future<String> _v6Package(String path) async {
+  const ts = '2026-10-20T16:30:00.000Z';
+  final old =
+      GeneratedHelper().databaseForVersion(NativeDatabase(File(path)), 6);
+  await old.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, first_name) '
+    "VALUES ('o1', '$ts', '$ts', 0, 'Ana')",
+  );
+  await old.customStatement(
+    'INSERT INTO settings (key, value, updated_at) VALUES '
+    "('language', 'es', '$ts')",
+  );
+  await old.close();
+  final manifestJson = {
+    'format_version': 1,
+    'schema_version': 6,
+    'app_version': '0.7.0+7',
+    'exported_at': ts,
+    'counts': {
+      'owners': 1,
+      'vehicles': 0,
+      'log_entries': 0,
+      'mileage_readings': 0,
+    },
+    'last_modified_at': ts,
+  };
+  final zip = '$path.zip';
+  final encoder = ZipFileEncoder()..create(zip);
+  encoder
+    ..addArchiveFile(
+      ArchiveFile.bytes(
+        manifestEntryName,
+        utf8.encode(jsonEncode(manifestJson)),
+      ),
+    )
+    ..addArchiveFile(ArchiveFile.directory(attachmentsEntryName));
+  await encoder.addFile(File(path), databaseEntryName);
+  await encoder.close();
+  return zip;
 }
