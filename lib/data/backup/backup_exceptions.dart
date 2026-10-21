@@ -28,6 +28,9 @@ enum BackupRejection {
 
   /// A table this schema version must have is missing.
   missingTables,
+
+  /// The phone has not enough free space to unpack and swap in the package.
+  notEnoughSpace,
 }
 
 /// The file chosen for an import is not a package this app can import.

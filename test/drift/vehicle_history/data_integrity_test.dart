@@ -31,7 +31,7 @@ import 'generated/schema.dart';
 /// 4. extend the existing expectations with any new column's default.
 ///
 /// The tests must never be weakened to make an upgrade pass.
-const int latestVersion = 6;
+const int latestVersion = 7;
 
 /// Timestamp written into every old row.
 const String _ts = '2024-03-04T10:30:00.000Z';
@@ -928,6 +928,87 @@ Future<void> _expectV6SettingsUsable(AppDatabase db) async {
   expect(await db.settingsDao.readValue(SettingKey.lastExportAt), _ts4);
 }
 
+// ---------------------------------------------------------------------------
+// Rows written at v6.
+// ---------------------------------------------------------------------------
+
+/// Writes the v5 rows (the v6 schema has the same tables plus `settings`)
+/// and a row for every setting key, as the step-6 and step-7 apps write
+/// them, using plain SQL against the v6 schema.
+Future<void> _insertV6Rows(GeneratedDatabase oldDb) async {
+  await _insertV5Rows(oldDb);
+  await oldDb.customStatement(
+    'INSERT INTO settings (key, value, updated_at) VALUES '
+    "('last_export_at', '$_ts4', '$_ts4'), "
+    "('language', 'es', '$_ts3'), "
+    "('theme', 'dark', '$_ts2'), "
+    // A cleared value is a NULL, not a missing row.
+    "('future_key', NULL, '$_ts')",
+  );
+}
+
+/// Checks every row written by [_insertV6Rows] after an upgrade to v7 or
+/// later: the v5 rows and the settings, row for row.
+Future<void> _expectV6RowsIntact(AppDatabase db) async {
+  await _expectV5RowsIntact(db);
+  final settings = await db
+      .customSelect('SELECT key, value, updated_at FROM settings ORDER BY key')
+      .get();
+  expect(
+    [
+      for (final r in settings)
+        '${r.read<String>('key')}=${r.read<String?>('value')}'
+            '@${r.read<String>('updated_at')}',
+    ],
+    [
+      'future_key=null@$_ts',
+      'language=es@$_ts3',
+      'last_export_at=$_ts4@$_ts4',
+      'theme=dark@$_ts2',
+    ],
+  );
+  expect(await db.settingsDao.readValue(SettingKey.language), 'es');
+  expect(await db.settingsDao.readValue(SettingKey.theme), 'dark');
+}
+
+/// Checks that the v7 `attachments` table exists, starts empty, keeps its
+/// CHECK and works on an upgraded database.
+Future<void> _expectV7AttachmentsUsable(AppDatabase db) async {
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM attachments'), 0);
+  const columns = 'id, created_at, updated_at, deleted, entity_type, '
+      'entity_id, kind, file_name, mime_type, relative_path, size_bytes, '
+      'caption, sort_order';
+  await db.customStatement(
+    'INSERT INTO attachments ($columns) VALUES '
+    "('t1', '$_ts4', '$_ts4', 0, 'vehicle', 'v1', 'pdf', 'Libretto.pdf', "
+    "'application/pdf', 'attachments/t1.pdf', 1234, 'Libretto', 0)",
+  );
+  final rows = await db
+      .customSelect(
+        'SELECT file_name, size_bytes FROM attachments '
+        "WHERE entity_type = 'vehicle' AND entity_id = 'v1'",
+      )
+      .get();
+  expect(rows.single.read<String>('file_name'), 'Libretto.pdf');
+  // A negative size is refused by the CHECK of the new table.
+  await expectLater(
+    db.customStatement(
+      'INSERT INTO attachments ($columns) VALUES '
+      "('t2', '$_ts4', '$_ts4', 0, 'vehicle', 'v1', 'pdf', 'x.pdf', "
+      "'application/pdf', 'attachments/t2.pdf', -1, NULL, 1)",
+    ),
+    throwsA(anything),
+  );
+  // The index exists, so the per-entity reads use it.
+  final index = await db
+      .customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'index' "
+        "AND name = 'attachments_entity'",
+      )
+      .get();
+  expect(index, hasLength(1));
+}
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late SchemaVerifier verifier;
@@ -982,6 +1063,7 @@ void main() {
     await _expectV3HistoryUsable(db, 'v1');
     await _expectV4ReadingsUsable(db, 'v1');
     await _expectV6SettingsUsable(db);
+    await _expectV7AttachmentsUsable(db);
   });
 
   test('rows written at v2 are intact at v3', () async {
@@ -999,6 +1081,7 @@ void main() {
     expect(await _countDeletedAt(db, 'vehicles'), 1);
     await _expectV4ReadingsUsable(db, 'v1');
     await _expectV6SettingsUsable(db);
+    await _expectV7AttachmentsUsable(db);
   });
 
   test('rows written at v3 are intact at v4, each vehicle with one reading',
@@ -1029,6 +1112,7 @@ void main() {
     expect(await _countDeletedAt(db, 'log_entries'), 1);
     expect(await _countDeletedAt(db, 'mileage_readings'), 0);
     await _expectV6SettingsUsable(db);
+    await _expectV7AttachmentsUsable(db);
   });
 
   test('rows written at v4 are intact at v5, with deleted_at backfilled',
@@ -1043,6 +1127,7 @@ void main() {
     await _expectV4RowsIntact(db);
     await _expectDeletedAtBackfilled(db);
     await _expectV6SettingsUsable(db);
+    await _expectV7AttachmentsUsable(db);
   });
 
   test('rows written at v5 are intact at v6, with an empty settings table',
@@ -1050,6 +1135,20 @@ void main() {
     final db = await upgrade(5, 6, _insertV5Rows);
     await _expectV5RowsIntact(db);
     await _expectV6SettingsUsable(db);
+  });
+
+  test('rows written at v5 are intact at v$latestVersion (chain)', () async {
+    final db = await upgrade(5, latestVersion, _insertV5Rows);
+    await _expectV5RowsIntact(db);
+    await _expectV6SettingsUsable(db);
+    await _expectV7AttachmentsUsable(db);
+  });
+
+  test('rows written at v6 are intact at v7, with an empty attachments table',
+      () async {
+    final db = await upgrade(6, 7, _insertV6Rows);
+    await _expectV6RowsIntact(db);
+    await _expectV7AttachmentsUsable(db);
   });
 
   /// Writes [insert]'s rows into a real file at [fromVersion], opens it with
@@ -1099,7 +1198,7 @@ void main() {
     final tables = await copy
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
-          "AND name = 'settings'",
+          "AND name = 'attachments'",
         )
         .get();
     expect(tables, isEmpty);
@@ -1148,6 +1247,19 @@ void main() {
       (db) async {
         await _expectV5RowsIntact(db);
         await _expectV6SettingsUsable(db);
+        await _expectV7AttachmentsUsable(db);
+      },
+      vehicleRows: 2,
+    );
+  });
+
+  test('a real upgrade of a v6 file first copies it', () async {
+    await realUpgrade(
+      6,
+      _insertV6Rows,
+      (db) async {
+        await _expectV6RowsIntact(db);
+        await _expectV7AttachmentsUsable(db);
       },
       vehicleRows: 2,
     );

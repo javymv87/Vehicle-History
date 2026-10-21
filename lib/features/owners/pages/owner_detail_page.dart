@@ -5,15 +5,19 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
 import '../../../data/data_providers.dart';
+import '../../../data/models/attachment.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
+import '../../attachments/widgets/attachment_actions.dart';
+import '../../attachments/widgets/attachments_section.dart';
 import '../controllers/owner_deletion_controller.dart';
 import '../controllers/owner_detail_controller.dart';
 
@@ -180,6 +184,18 @@ class _OwnerDetailView extends ConsumerWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(AppRoutes.vehicle(vehicle.id)),
               ),
+          const Divider(height: 32),
+          // U26: the owner's documents (driving licence, ID card, ...).
+          SectionHeader(
+            title: l10n.documentsTitle,
+            actionLabel: l10n.addDocument,
+            onAction: () =>
+                addAttachments(context, ref, AttachmentTarget.owner(owner.id)),
+          ),
+          AttachmentsSection(
+            target: AttachmentTarget.owner(owner.id),
+            emptyText: l10n.noDocuments,
+          ),
         ],
       ),
     );

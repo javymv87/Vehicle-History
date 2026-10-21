@@ -1,3 +1,4 @@
+import '../attachments/attachment_store.dart';
 import '../db/daos/audit_log_dao.dart';
 import '../db/daos/mileage_readings_dao.dart';
 import '../db/daos/trash_dao.dart';
@@ -16,7 +17,8 @@ import 'vehicle_repository.dart';
 class DriftVehicleRepository implements VehicleRepository {
   /// Creates the repository on [_vehicles], writing the initial odometer
   /// reading through [_readings], reading and emptying the Trash through
-  /// [_trash] and auditing through [_audit].
+  /// [_trash] and auditing through [_audit]. A purge deletes the files of
+  /// the vehicle's attachments from [attachmentFiles] once committed.
   ///
   /// [clock] must return UTC; it defaults to the system clock.
   DriftVehicleRepository(
@@ -24,8 +26,10 @@ class DriftVehicleRepository implements VehicleRepository {
     this._readings,
     this._trash,
     this._audit, {
+    required AttachmentStore attachmentFiles,
     UtcClock clock = systemUtcClock,
-  }) : _clock = clock;
+  })  : _files = attachmentFiles,
+        _clock = clock;
 
   /// Vehicle queries.
   final VehiclesDao _vehicles;
@@ -38,6 +42,9 @@ class DriftVehicleRepository implements VehicleRepository {
 
   /// Audit log writes, joined to the same transaction as each change.
   final AuditLogDao _audit;
+
+  /// The attachment files, deleted after a purge.
+  final AttachmentStore _files;
 
   /// Source of `created_at`, `updated_at` and audit timestamps.
   final UtcClock _clock;
@@ -232,26 +239,33 @@ class DriftVehicleRepository implements VehicleRepository {
   @override
   Future<void> purge(String id) async {
     final now = utcNow(_clock);
-    return _vehicles.transaction(() async {
-      final removed = await _trash.purgeVehicle(id);
-      if (removed == 0) {
+    final files = await _vehicles.transaction(() async {
+      final files = await _trash.purgeVehicle(id);
+      if (files == null) {
         throw EntityNotFoundException(AuditEntityType.vehicle, id);
       }
       await _record(id, AuditOperation.purge, now);
+      return files;
     });
+    // Only once the rows are gone for good: a rolled-back purge keeps them.
+    await deleteFilesQuietly(_files, files);
   }
 
   @override
   Future<int> purgeAllTrashed() async {
     final now = utcNow(_clock);
-    return _vehicles.transaction(() async {
+    final files = <String>[];
+    final count = await _vehicles.transaction(() async {
+      files.clear();
       final ids = await _trash.getTrashedVehicleIds();
       for (final id in ids) {
-        await _trash.purgeVehicle(id);
+        files.addAll(await _trash.purgeVehicle(id) ?? const []);
         await _record(id, AuditOperation.purge, now);
       }
       return ids.length;
     });
+    await deleteFilesQuietly(_files, files);
+    return count;
   }
 
   /// Trims [plate] and upper-cases it, refusing a blank one.

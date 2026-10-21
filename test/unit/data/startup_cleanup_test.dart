@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/data_providers.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
+import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/data/repositories/drift_attachment_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
 
@@ -14,9 +18,11 @@ void main() {
   late AppDatabase db;
   late String oldVehicle;
   late String recentVehicle;
+  late MemoryAttachmentStore store;
 
   setUp(() async {
     db = openTestDatabase();
+    store = MemoryAttachmentStore();
     final longAgo = FakeClock(DateTime.utc(2020, 1, 1, 12));
     final owners =
         DriftOwnerRepository(db.ownersDao, db.auditLogDao, clock: longAgo.call);
@@ -25,6 +31,7 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
       clock: longAgo.call,
     );
     final ownerId = (await owners.create(firstName: 'Mario')).id;
@@ -45,6 +52,7 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
     ).delete(recentVehicle);
   });
 
@@ -61,7 +69,10 @@ void main() {
   /// the container: the test owns it).
   Future<void> startApp() async {
     final container = ProviderContainer(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        ...memoryFileOverrides(store),
+      ],
     );
     addTearDown(container.dispose);
     await container.read(databaseReadyProvider.future);
@@ -80,5 +91,39 @@ void main() {
 
     await startApp();
     expect(await vehicleIds(), unorderedEquals([oldVehicle, recentVehicle]));
+  });
+
+  test(
+      'the app start wipes the staging directory and deletes orphan files, '
+      'keeping rows whose file is missing', () async {
+    final attachments = DriftAttachmentRepository(
+      db.attachmentsDao,
+      attachmentWriterOf(db, store),
+    );
+    final owner =
+        AttachmentTarget.owner((await db.ownersDao.getLive()).single.id);
+    final kept = await attachments.create(
+      owner,
+      await store.stageBytes([1, 2, 3]),
+    );
+    final missing = await attachments.create(
+      owner,
+      await store.stageBytes([4]),
+    );
+    await store.delete(missing.relativePath);
+    store.stored['attachments/orphan.jpg'] = Uint8List(4);
+    await store.stageBytes([5], sessionId: 'left-over-form');
+
+    await startApp();
+
+    expect(store.stored.keys, [kept.relativePath]);
+    expect(store.staged, isEmpty);
+    // The row of the missing file is kept: the UI shows "File not found".
+    expect(
+      [
+        for (final a in await attachments.getByTarget(owner)) a.id,
+      ],
+      [kept.id, missing.id],
+    );
   });
 }

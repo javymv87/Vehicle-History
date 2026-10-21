@@ -52,9 +52,42 @@ void main() {
         'vehicles': 2,
         'log_entries': 41,
         'mileage_readings': 7,
+        'attachments': 0,
       },
       'last_modified_at': '2026-10-18T09:00:00.000Z',
+      'attachments_bytes': 0,
     });
+  });
+
+  test(
+      'a step-6 manifest, without the attachment keys, reads as zero '
+      'attachments', () {
+    final json = manifest.toJson()
+      ..remove('attachments_bytes')
+      ..['counts'] = {
+        'owners': 1,
+        'vehicles': 2,
+        'log_entries': 41,
+        'mileage_readings': 7,
+      };
+    final read = BackupManifest.fromJson(json);
+    expect(read.counts.attachments, 0);
+    expect(read.attachmentsBytes, 0);
+    expect(read, manifest);
+  });
+
+  test('only plain files under attachments/ are attachment entries', () {
+    expect(isAttachmentEntryName('attachments/0b1c.jpg'), isTrue);
+    for (final name in [
+      'attachments/',
+      'attachments/../vehicle_history.sqlite',
+      'attachments/sub/x.jpg',
+      '/attachments/x.jpg',
+      'attachments/.hidden',
+      'other/x.jpg',
+    ]) {
+      expect(isAttachmentEntryName(name), isFalse, reason: name);
+    }
   });
 
   test('a manifest with a missing or mistyped key is refused', () {
@@ -65,6 +98,7 @@ void main() {
       'exported_at': 'yesterday',
       'counts': {'owners': 1},
       'last_modified_at': 12,
+      'attachments_bytes': -1,
     }.entries) {
       expect(
         () => BackupManifest.fromJson({

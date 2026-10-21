@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/models/attachment.dart';
 import '../../../data/models/trashed_vehicle.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
@@ -14,6 +15,8 @@ import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
+import '../../attachments/widgets/attachment_actions.dart';
+import '../../attachments/widgets/attachments_section.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
@@ -22,8 +25,8 @@ import '../controllers/vehicle_detail_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 import '../controllers/vehicle_tab_controller.dart';
 
-/// The page of one vehicle: its history first, then its odometer readings
-/// and its details. The vehicle id comes from the path; an unknown or
+/// The page of one vehicle: its history first, then its odometer readings,
+/// its documents and its details. The vehicle id comes from the path; an unknown or
 /// deleted id shows a not-found page.
 class VehicleDetailPage extends ConsumerWidget {
   /// Creates the page for the vehicle with [vehicleId], opened on
@@ -61,9 +64,9 @@ class VehicleDetailPage extends ConsumerWidget {
   }
 }
 
-/// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15): a
-/// compact header, then three tabs, History (the default), Mileage and
-/// Details, and a button that adds what the tab shows.
+/// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15, U25): a
+/// compact header, then four tabs, History (the default), Mileage,
+/// Documents and Details, and a button that adds what the tab shows.
 class _VehicleDetailView extends ConsumerStatefulWidget {
   const _VehicleDetailView({required this.item, required this.initialTab});
 
@@ -117,10 +120,16 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     final confirmed = await confirmDelete(
       context,
       title: l10n.deleteVehicleTitle(vehicle.displayNameWithPlate(l10n)),
-      message: l10n.deleteVehicleMessage(
-        contents.entryCount,
-        contents.readingCount,
-      ),
+      message: contents.attachmentCount == 0
+          ? l10n.deleteVehicleMessage(
+              contents.entryCount,
+              contents.readingCount,
+            )
+          : l10n.deleteVehicleMessageWithAttachments(
+              contents.entryCount,
+              contents.readingCount,
+              contents.attachmentCount,
+            ),
     );
     if (!confirmed || !mounted) return;
 
@@ -198,6 +207,16 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
             icon: const Icon(Icons.speed),
             label: Text(l10n.addMileageReading),
           ),
+        VehicleTab.documents => FloatingActionButton.extended(
+            heroTag: 'documents-${vehicle.id}',
+            onPressed: () => addAttachments(
+              context,
+              ref,
+              AttachmentTarget.vehicle(vehicle.id),
+            ),
+            icon: const Icon(Icons.note_add_outlined),
+            label: Text(l10n.addDocument),
+          ),
       },
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -205,9 +224,13 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
           _VehicleHeader(vehicle: vehicle),
           TabBar(
             controller: _tabs,
+            // Four tabs with large text do not fit at 360 dp: they scroll.
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: l10n.tabHistory),
               Tab(text: l10n.tabMileage),
+              Tab(text: l10n.tabDocuments),
               Tab(text: l10n.tabDetails),
             ],
           ),
@@ -217,6 +240,16 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
               children: [
                 LogEntryHistoryView(vehicleId: vehicle.id),
                 MileageHistoryView(vehicleId: vehicle.id),
+                ListView(
+                  // Room at the bottom so the FAB never covers the last row.
+                  padding: const EdgeInsets.only(top: 8, bottom: 88),
+                  children: [
+                    AttachmentsSection(
+                      target: AttachmentTarget.vehicle(vehicle.id),
+                      emptyText: l10n.noDocuments,
+                    ),
+                  ],
+                ),
                 _VehicleInfo(item: widget.item),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/log_entry.dart';
 import '../models/mileage_reading.dart';
@@ -236,5 +237,42 @@ extension AuditEntryCompanionMapping on AuditEntry {
         entityId: entityId,
         operation: operation,
         at: at,
+      );
+}
+
+/// Maps an `attachments` row to the domain model.
+extension AttachmentRowMapping on AttachmentRow {
+  /// Converts this row into an [Attachment]. Timestamps are forced to UTC.
+  Attachment toModel() => Attachment(
+        id: id,
+        target: AttachmentTarget(entityType, entityId),
+        kind: kind,
+        fileName: fileName,
+        mimeType: mimeType,
+        relativePath: relativePath,
+        sizeBytes: sizeBytes,
+        caption: caption,
+        sortOrder: sortOrder,
+        createdAt: createdAt.toUtc(),
+        updatedAt: updatedAt.toUtc(),
+      );
+}
+
+/// Maps the domain model to an `attachments` companion.
+extension AttachmentCompanionMapping on Attachment {
+  /// Full row for an insert. The row starts live (`deleted = 0`).
+  AttachmentsCompanion toInsertCompanion() => AttachmentsCompanion.insert(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        entityType: target.entityType,
+        entityId: target.entityId,
+        kind: kind,
+        fileName: fileName,
+        mimeType: mimeType,
+        relativePath: relativePath,
+        sizeBytes: sizeBytes,
+        caption: Value(caption),
+        sortOrder: sortOrder,
       );
 }

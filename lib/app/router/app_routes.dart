@@ -57,6 +57,11 @@ abstract final class AppRoutes {
   static String editMileageReading(String vehicleId, String readingId) =>
       '${vehicle(vehicleId)}/mileage/${Uri.encodeComponent(readingId)}/edit';
 
+  /// Full-screen viewer of the image attachment [id], with the other images
+  /// of the same entry, vehicle or owner a swipe away.
+  static String attachment(String id) =>
+      '/attachments/${Uri.encodeComponent(id)}';
+
   /// The Trash: the deleted vehicles, restorable for 30 days.
   static const String trash = '/trash';
 

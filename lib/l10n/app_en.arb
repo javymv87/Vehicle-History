@@ -1039,7 +1039,7 @@
   "@backupNeverExported": {
     "description": "Backup page: shown until the first successful export."
   },
-  "backupExplanation": "The backup is a single .zip file with all your data: owners, vehicles, history, odometer readings, the Trash and the change log. Keep it somewhere safe, such as Google Drive or your computer.",
+  "backupExplanation": "The backup is a single .zip file with all your data: owners, vehicles, history, odometer readings, attachments, the Trash and the change log. Keep it somewhere safe, such as Google Drive or your computer.",
   "@backupExplanation": {
     "description": "Backup page: what the exported package contains and where to keep it."
   },
@@ -1165,5 +1165,299 @@
   "themeDark": "Dark",
   "@themeDark": {
     "description": "Settings value: always the dark theme."
+  },
+  "tabDocuments": "Documents",
+  "@tabDocuments": {
+    "description": "Vehicle page tab with the vehicle's own attachments (U25)."
+  },
+  "attachmentsTitle": "Attachments",
+  "@attachmentsTitle": {
+    "description": "Heading of the attachments section of the entry form and detail (U22, U23)."
+  },
+  "documentsTitle": "Documents",
+  "@documentsTitle": {
+    "description": "Heading of the documents section of the owner detail (U26)."
+  },
+  "addAttachment": "Add attachment",
+  "@addAttachment": {
+    "description": "Button or tile that adds an attachment to an entry."
+  },
+  "addDocument": "Add document",
+  "@addDocument": {
+    "description": "Floating button of the Documents tab and button of the owner documents: adds an attachment."
+  },
+  "attachmentSourceTitle": "Add from",
+  "@attachmentSourceTitle": {
+    "description": "Title of the bottom sheet that chooses where a new attachment comes from."
+  },
+  "attachmentSourceCamera": "Camera",
+  "@attachmentSourceCamera": {
+    "description": "Bottom sheet option: take a photo with the camera."
+  },
+  "attachmentSourceGallery": "Gallery",
+  "@attachmentSourceGallery": {
+    "description": "Bottom sheet option: pick photos from the gallery."
+  },
+  "attachmentSourceFile": "File",
+  "@attachmentSourceFile": {
+    "description": "Bottom sheet option: pick any file (PDF, ...)."
+  },
+  "noAttachments": "No attachments yet.",
+  "@noAttachments": {
+    "description": "Empty attachments section of an entry."
+  },
+  "noDocuments": "No documents yet.",
+  "@noDocuments": {
+    "description": "Empty Documents tab of a vehicle, or empty documents section of an owner."
+  },
+  "attachmentFileMissing": "File not found",
+  "@attachmentFileMissing": {
+    "description": "Placeholder shown instead of an attachment whose file is missing on the phone."
+  },
+  "attachmentRemove": "Remove attachment",
+  "@attachmentRemove": {
+    "description": "Tooltip of the button that removes an attachment from the entry form."
+  },
+  "actionSaveTo": "Save to…",
+  "@actionSaveTo": {
+    "description": "Action that copies an attachment to a place the user chooses (Downloads, Drive, ...)."
+  },
+  "actionOpen": "Open",
+  "@actionOpen": {
+    "description": "Action that opens a PDF or other attachment with the phone app."
+  },
+  "actionEditCaption": "Edit caption",
+  "@actionEditCaption": {
+    "description": "Action that edits the caption of an attachment."
+  },
+  "fieldCaption": "Caption",
+  "@fieldCaption": {
+    "description": "Label of the caption field of an attachment."
+  },
+  "addCaption": "Add a caption",
+  "@addCaption": {
+    "description": "Shown in the viewer when the image has no caption; tapping it edits the caption."
+  },
+  "attachmentAdded": "{count, plural, =1{Attachment added} other{{count} attachments added}}",
+  "@attachmentAdded": {
+    "description": "Brief confirmation after attachments were added.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attachmentDeleted": "Attachment deleted",
+  "@attachmentDeleted": {
+    "description": "Snackbar with Undo after an attachment was deleted."
+  },
+  "attachmentSaved": "File saved",
+  "@attachmentSaved": {
+    "description": "Brief confirmation after \"Save to…\"."
+  },
+  "captionSaved": "Caption saved",
+  "@captionSaved": {
+    "description": "Brief confirmation after a caption was changed."
+  },
+  "deleteAttachmentTitle": "Delete this attachment?",
+  "@deleteAttachmentTitle": {
+    "description": "Title of the dialog that confirms deleting an attachment."
+  },
+  "deleteAttachmentMessage": "{name} will be deleted.",
+  "@deleteAttachmentMessage": {
+    "description": "Body of the dialog that confirms deleting an attachment, with its file name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentViewerPosition": "{index} of {count}",
+  "@attachmentViewerPosition": {
+    "description": "Viewer title: position of the image among those of the same entry, vehicle or owner.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attachmentCount": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@attachmentCount": {
+    "description": "Accessible description of the paperclip count on a history row (U24).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attachmentsWorking": "Working on the files…",
+  "@attachmentsWorking": {
+    "description": "Shown while attachments are being picked, copied or saved."
+  },
+  "attachmentSizeAndDate": "{size} · {date}",
+  "@attachmentSizeAndDate": {
+    "description": "Second line of a document row: file size and day it was added.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "sizeBytes": "{size} B",
+  "@sizeBytes": {
+    "description": "File size in bytes; size is already formatted for the locale.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeKilobytes": "{size} KB",
+  "@sizeKilobytes": {
+    "description": "File size in kilobytes; size is already formatted for the locale.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeMegabytes": "{size} MB",
+  "@sizeMegabytes": {
+    "description": "File size in megabytes; size is already formatted for the locale.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeGigabytes": "{size} GB",
+  "@sizeGigabytes": {
+    "description": "File size in gigabytes; size is already formatted for the locale.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "backupAttachments": "{count, plural, =0{No attachments} =1{1 attachment, {size}} other{{count} attachments, {size}}}",
+  "@backupAttachments": {
+    "description": "Backup page (U27): how many attachment files the package will carry and their total size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "importConfirmAttachments": "{count, plural, =0{No attachments.} =1{1 attachment ({size}).} other{{count} attachments ({size}).}}",
+  "@importConfirmAttachments": {
+    "description": "Import dialog: attachment files in the package and their total size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "importConfirmMissingFiles": "{count, plural, =1{1 file is missing} other{{count} files are missing}} from the package: those attachments will show \"File not found\".",
+  "@importConfirmMissingFiles": {
+    "description": "Import dialog: attachment rows of the package whose file is not in it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteVehicleMessageWithAttachments": "The vehicle, {entries, plural, =1{its entry} other{its {entries} entries}}, {readings, plural, =1{its odometer reading} other{its {readings} odometer readings}} and {attachments, plural, =1{1 attachment} other{{attachments} attachments}} will be deleted. You can recover it from the Trash for 30 days.",
+  "@deleteVehicleMessageWithAttachments": {
+    "description": "Body of the dialog that confirms deleting a vehicle with attachments (U16): its live entries, readings and attachments (its own and its entries').",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "attachments": {
+        "type": "int"
+      }
+    }
+  },
+  "purgeVehicleMessageWithAttachments": "The vehicle, {entries, plural, =1{its entry} other{its {entries} entries}}, {readings, plural, =1{its odometer reading} other{its {readings} odometer readings}} and {attachments, plural, =1{1 attachment} other{{attachments} attachments}} will be deleted forever. This cannot be undone.",
+  "@purgeVehicleMessageWithAttachments": {
+    "description": "Body of the dialog that confirms removing a vehicle with attachments from the Trash for good.",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "attachments": {
+        "type": "int"
+      }
+    }
+  },
+  "trashContentsWithAttachments": "{entries, plural, =1{1 entry} other{{entries} entries}} · {readings, plural, =1{1 odometer reading} other{{readings} odometer readings}} · {attachments, plural, =1{1 attachment} other{{attachments} attachments}}",
+  "@trashContentsWithAttachments": {
+    "description": "Trash row of a vehicle with attachments: its history entries, odometer readings and attachments.",
+    "placeholders": {
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "attachments": {
+        "type": "int"
+      }
+    }
+  },
+  "errorAttachmentNotFound": "The attachment no longer exists.",
+  "@errorAttachmentNotFound": {
+    "description": "Error when the attachment involved is missing or deleted."
+  },
+  "errorAttachmentTooLarge": "The file is larger than 25 MB and was not added.",
+  "@errorAttachmentTooLarge": {
+    "description": "Error when a picked file is above the 25 MB limit."
+  },
+  "errorCameraDenied": "Camera access was denied. Allow it in the phone settings to take photos.",
+  "@errorCameraDenied": {
+    "description": "Error when the user refused the camera permission."
+  },
+  "errorPhotosDenied": "Access to the photos was denied. Allow it in the phone settings to pick photos.",
+  "@errorPhotosDenied": {
+    "description": "Error when the user refused access to the photos."
+  },
+  "errorPickFailed": "The file could not be picked.",
+  "@errorPickFailed": {
+    "description": "Error when the camera, gallery or file picker failed."
+  },
+  "errorSaveFailed": "The file could not be saved.",
+  "@errorSaveFailed": {
+    "description": "Error when \"Save to…\" failed."
+  },
+  "errorOpenNoApp": "No app on this phone can open this file.",
+  "@errorOpenNoApp": {
+    "description": "Error when no installed app opens a PDF or other attachment."
+  },
+  "errorFileMissing": "The file of this attachment was not found on the phone.",
+  "@errorFileMissing": {
+    "description": "Error when the file of an attachment is missing."
+  },
+  "errorBackupNoSpace": "There is not enough free space on the phone to import this backup. Nothing was changed.",
+  "@errorBackupNoSpace": {
+    "description": "Error when the phone has not enough free space for an import."
   }
 }

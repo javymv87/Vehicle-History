@@ -41,11 +41,13 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );
     entries = DriftLogEntryRepository(
       db.logEntriesDao,
       db.auditLogDao,
+      attachments: attachmentWriterOf(db),
       clock: clock.call,
     );
     readings = DriftMileageReadingRepository(
@@ -53,7 +55,8 @@ void main() {
       db.auditLogDao,
       clock: clock.call,
     );
-    cleanup = TrashCleanupService(db.trashDao, db.auditLogDao);
+    cleanup = TrashCleanupService(
+        db.trashDao, db.auditLogDao, MemoryAttachmentStore());
     ownerId = (await owners.create(firstName: 'Mario')).id;
   });
 

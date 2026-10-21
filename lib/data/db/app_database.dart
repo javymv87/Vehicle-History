@@ -6,14 +6,17 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/log_entry_type.dart';
 import '../models/vehicle_kind.dart';
 import 'app_database.steps.dart';
+import 'attachments_table.dart';
 import 'audit_log_table.dart';
 import 'converters.dart';
+import 'daos/attachments_dao.dart';
 import 'daos/audit_log_dao.dart';
 import 'daos/backup_dao.dart';
 import 'daos/log_entries_dao.dart';
@@ -44,6 +47,7 @@ part 'app_database.g.dart';
     LogEntries,
     MileageReadings,
     Settings,
+    Attachments,
   ],
   daos: [
     OwnersDao,
@@ -54,6 +58,7 @@ part 'app_database.g.dart';
     TrashDao,
     SettingsDao,
     BackupDao,
+    AttachmentsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -148,6 +153,14 @@ class AppDatabase extends _$AppDatabase {
     from5To6: (m, schema) async {
       await m.createTable(schema.settings);
     },
+    // v7: the `attachments` table and its index, created empty. Only new
+    // objects: no existing table or row is touched. `audit_log` needs no
+    // change, since `entity_type` has no CHECK and accepts the new
+    // `attachment` code as it is.
+    from6To7: (m, schema) async {
+      await m.createTable(schema.attachments);
+      await m.createIndex(schema.attachmentsEntity);
+    },
   );
 
   /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
@@ -221,7 +234,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// Opens the connection now, running any pending migration.
   ///

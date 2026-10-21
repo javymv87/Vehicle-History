@@ -98,6 +98,19 @@ class OwnerHasTrashedVehiclesException extends RepositoryException {
       '$vehicleCount)';
 }
 
+/// A file is larger than an attachment may be (`maxAttachmentBytes`,
+/// 25 MB). Nothing was stored.
+class AttachmentTooLargeException extends RepositoryException {
+  /// Creates the exception for a file of at least [sizeBytes] bytes.
+  const AttachmentTooLargeException(this.sizeBytes);
+
+  /// Size of the file, or how much of it was read before giving up.
+  final int sizeBytes;
+
+  @override
+  String toString() => 'AttachmentTooLargeException($sizeBytes bytes)';
+}
+
 /// Why a mileage reading cannot be deleted, edited or restored.
 enum MileageReadingRule {
   /// Only the last reading of a vehicle can be deleted.

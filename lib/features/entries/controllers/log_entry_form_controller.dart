@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/data_providers.dart';
+import '../../../data/models/attachment.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../data/models/log_entry_type.dart';
@@ -51,6 +52,8 @@ class LogEntryDraft {
     this.km,
     this.description,
     this.costCents,
+    this.addedAttachments = const [],
+    this.removedAttachmentIds = const {},
   });
 
   /// Day of the event.
@@ -67,6 +70,12 @@ class LogEntryDraft {
 
   /// Cost in euro cents, if typed.
   final int? costCents;
+
+  /// Files staged by the form, to become the entry's attachments.
+  final List<StagedFile> addedAttachments;
+
+  /// Saved attachments removed in the form, soft-deleted on save.
+  final Set<String> removedAttachmentIds;
 }
 
 /// State of the entry form, loaded once when the form opens so the fields
@@ -105,7 +114,8 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
     );
   }
 
-  /// Creates or updates the entry from [draft].
+  /// Creates or updates the entry from [draft], with its attachment
+  /// changes, in one transaction.
   ///
   /// Returns the saved entry, or the reason it was not saved (for example
   /// [ActionError.vehicleNotFound]).
@@ -121,6 +131,8 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
           type: draft.type,
           description: draft.description,
           costCents: draft.costCents,
+          addedAttachments: draft.addedAttachments,
+          removedAttachmentIds: draft.removedAttachmentIds,
         );
       }
       return repository.create(
@@ -130,6 +142,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
         type: draft.type,
         description: draft.description,
         costCents: draft.costCents,
+        attachments: draft.addedAttachments,
       );
     });
   }

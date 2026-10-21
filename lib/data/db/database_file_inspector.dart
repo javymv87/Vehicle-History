@@ -9,6 +9,7 @@ class DatabaseFileReport {
   const DatabaseFileReport({
     required this.intact,
     required this.tableNames,
+    this.attachmentPaths = const {},
   });
 
   /// Whether the file opened and `PRAGMA integrity_check` returned `ok`.
@@ -16,6 +17,10 @@ class DatabaseFileReport {
 
   /// Names of the tables in the file; empty when it is not [intact].
   final Set<String> tableNames;
+
+  /// `relative_path` of every attachment row, live or deleted; empty when
+  /// the file has no `attachments` table (schema before v7).
+  final Set<String> attachmentPaths;
 }
 
 /// Checks a database file that is **not** the app's database, such as the
@@ -52,9 +57,19 @@ class SqliteDatabaseFileInspector implements DatabaseFileInspector {
         "SELECT name FROM sqlite_master WHERE type = 'table'",
         [],
       );
+      final tableNames = {for (final row in tables) row['name']! as String};
+      final attachments = tableNames.contains('attachments')
+          ? await executor.runSelect(
+              'SELECT relative_path FROM attachments',
+              [],
+            )
+          : const <Map<String, Object?>>[];
       return DatabaseFileReport(
         intact: true,
-        tableNames: {for (final row in tables) row['name']! as String},
+        tableNames: tableNames,
+        attachmentPaths: {
+          for (final row in attachments) row['relative_path']! as String,
+        },
       );
     } on SqliteException {
       // "file is not a database", "database disk image is malformed", ...

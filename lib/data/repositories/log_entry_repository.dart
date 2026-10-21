@@ -1,3 +1,4 @@
+import '../models/attachment.dart';
 import '../models/calendar_date.dart';
 import '../models/log_entry.dart';
 import '../models/log_entry_filter.dart';
@@ -40,6 +41,11 @@ abstract interface class LogEntryRepository {
   /// whose [LogEntryType.allowsFutureDate] is false, and
   /// `EntityNotFoundException`
   /// when the vehicle is missing or deleted.
+  ///
+  /// [attachments] are the files staged by the entry form: they become the
+  /// entry's attachments in the same transaction, their files moved out of
+  /// the staging directory (and removed again if the transaction fails).
+  /// Throws `AttachmentTooLargeException` for a file above 25 MB.
   Future<LogEntry> create({
     required String vehicleId,
     required CalendarDate date,
@@ -47,6 +53,7 @@ abstract interface class LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> attachments = const [],
   });
 
   /// Replaces every user-editable field of the entry with [id] and returns
@@ -56,6 +63,11 @@ abstract interface class LogEntryRepository {
   /// Throws the same `InvalidFieldException`s as [create], and
   /// `EntityNotFoundException` when the entry is missing, deleted or belongs
   /// to a deleted vehicle.
+  ///
+  /// In the same transaction, [addedAttachments] (staged by the form)
+  /// become new attachments of the entry, and the live attachments of the
+  /// entry with [removedAttachmentIds] are soft-deleted, like a delete from
+  /// the detail page.
   Future<LogEntry> update(
     String id, {
     required CalendarDate date,
@@ -63,6 +75,8 @@ abstract interface class LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> addedAttachments = const [],
+    Set<String> removedAttachmentIds = const {},
   });
 
   /// Soft-deletes the entry with [id].

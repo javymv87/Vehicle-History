@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/models/attachment.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -12,8 +13,11 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../attachments/widgets/attachment_actions.dart';
+import '../../attachments/widgets/attachments_section.dart';
 import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
@@ -145,6 +149,20 @@ class _LogEntryDetailView extends ConsumerWidget {
             ),
           if (entry.description case final description?)
             DetailField(label: l10n.fieldEntryDescription, value: description),
+          const Divider(height: 32),
+          SectionHeader(
+            title: l10n.attachmentsTitle,
+            actionLabel: l10n.addAttachment,
+            onAction: () => addAttachments(
+              context,
+              ref,
+              AttachmentTarget.logEntry(entry.id),
+            ),
+          ),
+          AttachmentsSection(
+            target: AttachmentTarget.logEntry(entry.id),
+            emptyText: l10n.noAttachments,
+          ),
         ],
       ),
     );

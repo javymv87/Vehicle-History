@@ -37,11 +37,13 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );
     entries = DriftLogEntryRepository(
       db.logEntriesDao,
       db.auditLogDao,
+      attachments: attachmentWriterOf(db),
       clock: clock.call,
     );
     audit = DriftAuditLogRepository(db.auditLogDao);

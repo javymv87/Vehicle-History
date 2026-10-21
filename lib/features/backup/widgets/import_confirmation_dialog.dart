@@ -1,39 +1,41 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/backup_manifest.dart';
+import '../../../data/backup/backup_service.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/file_size.dart';
 
-/// Asks the user to confirm importing the package described by [manifest]:
-/// what it contains, when it was last changed, and, in bold, that the import
-/// replaces all the current data (U20).
+/// Asks the user to confirm importing the package described by [preview]:
+/// what it contains, its attachment files and their size, how many files
+/// are missing from it, when it was last changed, and, in bold, that the
+/// import replaces all the current data (U20).
 ///
 /// Resolves to `true` only when the user taps "Import", which is drawn in
 /// the error colour like every destructive action; cancel is the default.
 Future<bool> confirmImport(
   BuildContext context,
-  BackupManifest manifest,
+  ImportPreview preview,
 ) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (context) => ImportConfirmationDialog(manifest: manifest),
+    builder: (context) => ImportConfirmationDialog(preview: preview),
   );
   return confirmed ?? false;
 }
 
 /// The dialog shown by [confirmImport].
 class ImportConfirmationDialog extends StatelessWidget {
-  /// Creates the dialog for the package described by [manifest].
-  const ImportConfirmationDialog({super.key, required this.manifest});
+  /// Creates the dialog for the package described by [preview].
+  const ImportConfirmationDialog({super.key, required this.preview});
 
   /// What the package holds.
-  final BackupManifest manifest;
+  final ImportPreview preview;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final counts = manifest.counts;
-    final lastModified = manifest.lastModifiedAt;
+    final counts = preview.manifest.counts;
+    final lastModified = preview.manifest.lastModifiedAt;
     return AlertDialog(
       // Long messages with very large text scroll instead of overflowing.
       scrollable: true,
@@ -52,6 +54,20 @@ class ImportConfirmationDialog extends StatelessWidget {
                     lastModified.toLocal(),
                   ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.importConfirmAttachments(
+              preview.attachmentCount,
+              formatFileSize(preview.attachmentBytes, l10n),
+            ),
+          ),
+          if (preview.missingFiles > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.importConfirmMissingFiles(preview.missingFiles),
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ],
           const SizedBox(height: 12),
           Text(
             l10n.importConfirmWarning,

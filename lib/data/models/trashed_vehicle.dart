@@ -7,11 +7,16 @@ import 'vehicle.dart';
 /// The same period applies to deleted entries, readings and owners.
 const Duration trashRetention = Duration(days: 30);
 
-/// What a vehicle carries with it: its live history entries and odometer
-/// readings, the rows a delete hides and a restore brings back.
+/// What a vehicle carries with it: its live history entries, odometer
+/// readings and attachments, the rows a delete hides and a restore brings
+/// back.
 class VehicleContents {
   /// Creates the counts.
-  const VehicleContents({required this.entryCount, required this.readingCount});
+  const VehicleContents({
+    required this.entryCount,
+    required this.readingCount,
+    this.attachmentCount = 0,
+  });
 
   /// Number of live history entries of the vehicle.
   final int entryCount;
@@ -20,18 +25,23 @@ class VehicleContents {
   /// initial reading).
   final int readingCount;
 
+  /// Number of live attachments of the vehicle: its own documents plus the
+  /// files of its live entries.
+  final int attachmentCount;
+
   @override
   bool operator ==(Object other) =>
       other is VehicleContents &&
       other.entryCount == entryCount &&
-      other.readingCount == readingCount;
+      other.readingCount == readingCount &&
+      other.attachmentCount == attachmentCount;
 
   @override
-  int get hashCode => Object.hash(entryCount, readingCount);
+  int get hashCode => Object.hash(entryCount, readingCount, attachmentCount);
 
   @override
-  String toString() =>
-      'VehicleContents(entries: $entryCount, readings: $readingCount)';
+  String toString() => 'VehicleContents(entries: $entryCount, '
+      'readings: $readingCount, attachments: $attachmentCount)';
 }
 
 /// A soft-deleted vehicle as shown in the Trash: the vehicle, its owner,
@@ -55,7 +65,7 @@ class TrashedVehicle {
   /// When the vehicle was deleted, in UTC.
   final DateTime deletedAt;
 
-  /// Live entries and readings that come back with a restore.
+  /// Live entries, readings and attachments that come back with a restore.
   final VehicleContents contents;
 
   /// When the startup cleanup may remove the vehicle for good.

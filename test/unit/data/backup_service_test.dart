@@ -6,11 +6,13 @@ import 'package:archive/archive.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vehicle_history/data/attachments/attachment_store.dart';
 import 'package:vehicle_history/data/backup/backup_exceptions.dart';
 import 'package:vehicle_history/data/backup/backup_files.dart';
 import 'package:vehicle_history/data/backup/backup_package.dart';
 import 'package:vehicle_history/data/backup/backup_service.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
+import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/backup_manifest.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
@@ -18,6 +20,8 @@ import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/data/repositories/attachment_writer.dart';
+import 'package:vehicle_history/data/repositories/drift_attachment_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_log_entry_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
@@ -43,16 +47,71 @@ void main() {
     );
   }
 
+  /// Path of [name] next to the database file.
+  String pathOf(String name) => '${dir.path}${Platform.pathSeparator}$name';
+
+  /// Free space the service is told about; `null` = unknown.
+  int? freeBytes;
+
   /// The service on the live [db], opening new connections with [open].
   BackupService serviceOf({AppDatabase Function()? open}) => BackupService(
         database: db,
         openDatabase: open ?? openFile,
         appVersion: '9.9.9+99',
+        freeBytes: (_) async => freeBytes,
         clock: clock.call,
       );
 
-  /// Path of [name] next to the database file.
-  String pathOf(String name) => '${dir.path}${Platform.pathSeparator}$name';
+  /// The attachment files next to the database, as the app keeps them.
+  AttachmentStore storeOf() => IoAttachmentStore(dir.path);
+
+  /// The attachment repository on [database] and the real files.
+  DriftAttachmentRepository attachmentsOf(AppDatabase database) =>
+      DriftAttachmentRepository(
+        database.attachmentsDao,
+        AttachmentWriter(
+            database.attachmentsDao, database.auditLogDao, storeOf()),
+        clock: clock.call,
+      );
+
+  /// Adds a file named [name] with [bytes] to [target] on [database],
+  /// through the staging directory as the app does.
+  Future<Attachment> attach(
+    AppDatabase database,
+    AttachmentTarget target,
+    String name,
+    List<int> bytes,
+  ) async {
+    final staged = await storeOf().stage(
+      'test',
+      content: Stream.value(bytes),
+      fileName: name,
+      mimeType: mimeTypeForFileName(name),
+    );
+    return attachmentsOf(database).create(target, staged);
+  }
+
+  /// Exports a package, copies it to `package.zip` next to the database
+  /// (as if saved and picked again), deletes the temporary one and returns
+  /// the copy's path.
+  Future<String> exportToFile() async {
+    final exported = await serviceOf().exportPackage();
+    final path = pathOf('package.zip');
+    File(exported.path).copySync(path);
+    await serviceOf().deleteExport(exported);
+    return path;
+  }
+
+  /// Writes [bytes] to `candidate.zip` and returns its path.
+  String fileOf(List<int> bytes) {
+    final path = pathOf('candidate.zip');
+    File(path).writeAsBytesSync(bytes);
+    return path;
+  }
+
+  /// The entries of the zip at [path], read whole (fine for test sizes).
+  Archive zipAt(String path) =>
+      ZipDecoder().decodeBytes(File(path).readAsBytesSync());
 
   /// The vehicle ids on disk with their `deleted` flag, sorted by plate.
   Future<List<String>> vehiclesOn(AppDatabase database) async => [
@@ -76,11 +135,13 @@ void main() {
       database.mileageReadingsDao,
       database.trashDao,
       database.auditLogDao,
+      attachmentFiles: storeOf(),
       clock: clock.call,
     );
     final entries = DriftLogEntryRepository(
       database.logEntriesDao,
       database.auditLogDao,
+      attachments: attachmentWriterOf(database, storeOf()),
       clock: clock.call,
     );
     final readings = DriftMileageReadingRepository(
@@ -137,7 +198,7 @@ void main() {
 
       final exported = await serviceOf().exportPackage();
 
-      final archive = ZipDecoder().decodeBytes(exported.bytes);
+      final archive = zipAt(exported.path);
       expect(
         [for (final f in archive) f.name],
         unorderedEquals([
@@ -166,6 +227,7 @@ void main() {
           mileageReadings: 2,
         ),
       );
+      expect(manifest.attachmentsBytes, 0);
       expect(manifest.lastModifiedAt, DateTime.utc(2026, 10, 1, 12));
       expect(
         exported.fileName,
@@ -181,10 +243,7 @@ void main() {
 
       final copyPath = pathOf('copy.sqlite');
       File(copyPath).writeAsBytesSync(
-        ZipDecoder()
-            .decodeBytes(exported.bytes)
-            .find(databaseEntryName)!
-            .content,
+        zipAt(exported.path).find(databaseEntryName)!.content,
       );
       final copy = AppDatabase.forExecutor(NativeDatabase(File(copyPath)));
       addTearDown(copy.close);
@@ -205,14 +264,23 @@ void main() {
       }
     });
 
-    test('leaves no temporary file behind', () async {
+    test(
+        'leaves only the package on disk, as a file, until it is deleted '
+        'after the save', () async {
       await seed(db);
-      await serviceOf().exportPackage();
-      final names = [
-        for (final f in dir.listSync()) f.uri.pathSegments.last,
-      ];
-      expect(names.where((n) => n.contains('.tmp')), isEmpty);
-      expect(names.where((n) => n.contains('export')), isEmpty);
+      final exported = await serviceOf().exportPackage();
+      List<String> names() => [
+            for (final f in dir.listSync()) f.uri.pathSegments.last,
+          ];
+      // The database copy is gone; the zip is a file, not bytes in memory.
+      expect(names().where((n) => n.contains('export')), isEmpty);
+      expect(names().where((n) => n.endsWith('.tmp')), [
+        'vehicle_history.package.zip.tmp',
+      ]);
+      expect(File(exported.path).existsSync(), isTrue);
+
+      await serviceOf().deleteExport(exported);
+      expect(names().where((n) => n.endsWith('.tmp')), isEmpty);
     });
 
     test(
@@ -231,10 +299,7 @@ void main() {
       );
       final copyPath = pathOf('copy.sqlite');
       File(copyPath).writeAsBytesSync(
-        ZipDecoder()
-            .decodeBytes(exported.bytes)
-            .find(databaseEntryName)!
-            .content,
+        zipAt(exported.path).find(databaseEntryName)!.content,
       );
       final copy = AppDatabase.forExecutor(NativeDatabase(File(copyPath)));
       addTearDown(copy.close);
@@ -262,7 +327,11 @@ void main() {
       expect(await db.settingsDao.readValue(SettingKey.lastExportAt), isNull);
     });
 
-    test('a failed export puts the previous date back', () async {
+    test('a failed export puts the previous date back and leaves no package',
+        () async {
+      await seed(db);
+      final owner = (await db.ownersDao.getLive()).single;
+      await attach(db, AttachmentTarget.owner(owner.id), 'id.jpg', [1, 2, 3]);
       final service = BackupService(
         database: db,
         openDatabase: openFile,
@@ -276,6 +345,10 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
       expect(await db.settingsDao.readValue(SettingKey.lastExportAt), isNull);
+      expect(
+        dir.listSync().where((f) => f.path.endsWith('.tmp')),
+        isEmpty,
+      );
     });
 
     test('an empty database has no last modification', () async {
@@ -301,7 +374,8 @@ void main() {
     setUp(() async {
       await seed(db);
       final exported = await serviceOf().exportPackage();
-      validPackage = exported.bytes;
+      validPackage = File(exported.path).readAsBytesSync();
+      await serviceOf().deleteExport(exported);
       validManifest = exported.manifest;
       validDatabase = ZipDecoder()
           .decodeBytes(validPackage)
@@ -332,14 +406,14 @@ void main() {
     /// Expects [bytes] to be rejected for [reason], with the data untouched.
     Future<void> expectRejected(Uint8List bytes, BackupRejection reason) async {
       await expectLater(
-        serviceOf().inspectPackage(bytes),
+        serviceOf().inspectPackage(fileOf(bytes)),
         throwsA(
           isA<BackupRejectedException>()
               .having((e) => e.reason, 'reason', reason),
         ),
       );
       await expectLater(
-        serviceOf().importPackage(bytes),
+        serviceOf().importPackage(fileOf(bytes)),
         throwsA(isA<BackupRejectedException>()),
       );
       // Still open, still the same data, no file left behind.
@@ -355,7 +429,10 @@ void main() {
     }
 
     test('accepts its own package and returns the manifest', () async {
-      expect(await serviceOf().inspectPackage(validPackage), validManifest);
+      final preview = await serviceOf().inspectPackage(fileOf(validPackage));
+      expect(preview.manifest, validManifest);
+      expect(preview.attachmentCount, 0);
+      expect(preview.missingFiles, 0);
     });
 
     test('rejects a file that is not a zip', () async {
@@ -480,7 +557,7 @@ void main() {
       final old = await seed(db);
       // The package is taken while OLD1 has been in the Trash for a day.
       clock.advance(const Duration(days: 1));
-      final package = (await serviceOf().exportPackage()).bytes;
+      final package = await exportToFile();
 
       // Then the data changes: a new owner and vehicle.
       final owners =
@@ -526,7 +603,7 @@ void main() {
 
     test('a second import replaces the older pre_import copy', () async {
       await seed(db);
-      final package = (await serviceOf().exportPackage()).bytes;
+      final package = await exportToFile();
       await serviceOf().importPackage(package);
 
       db = openFile();
@@ -552,7 +629,10 @@ void main() {
       await seed(db);
       final package = await _v4Package(pathOf('v4.sqlite'));
 
-      expect((await serviceOf().inspectPackage(package)).schemaVersion, 4);
+      expect(
+        (await serviceOf().inspectPackage(package)).manifest.schemaVersion,
+        4,
+      );
       await serviceOf().importPackage(package);
 
       final imported = openFile();
@@ -619,7 +699,7 @@ void main() {
         'a failure while opening the imported file puts the previous data '
         'back', () async {
       await seed(db);
-      final package = (await serviceOf().exportPackage()).bytes;
+      final package = await exportToFile();
       await DriftOwnerRepository(
         db.ownersDao,
         db.auditLogDao,
@@ -648,7 +728,7 @@ void main() {
     test('if putting the data back fails too, the pre_import copy is kept',
         () async {
       await seed(db);
-      final package = (await serviceOf().exportPackage()).bytes;
+      final package = await exportToFile();
 
       await expectLater(
         serviceOf(open: () => throw StateError('disk gone')).importPackage(
@@ -680,8 +760,9 @@ class _PlainUser implements QueryExecutorUser {
 }
 
 /// Writes a v4 database with one owner, one vehicle and its initial reading
-/// to [path], as the step-5 app left it, and returns it as a package.
-Future<Uint8List> _v4Package(String path) async {
+/// to [path], as the step-5 app left it, and returns the path of a package
+/// holding it.
+Future<String> _v4Package(String path) async {
   const ts = '2025-06-15T12:00:00.000Z';
   final file = File(path);
   final helper = GeneratedHelper();
@@ -715,13 +796,22 @@ Future<Uint8List> _v4Package(String path) async {
     ),
     lastModifiedAt: DateTime.parse(ts),
   );
-  return encodeBackupPackage(manifest, file.readAsBytesSync());
+  final zip = '$path.zip';
+  await writeBackupPackage(
+    zip,
+    manifest: manifest,
+    databasePath: path,
+    attachments: const {},
+  );
+  return zip;
 }
 
 /// File operations that fail to read, to make an export fail after the
 /// database copy.
+/// [BackupFiles] that cannot tell the size of an attachment file.
 class _UnreadableFiles extends IoBackupFiles {
   @override
-  Future<Uint8List> readBytes(String path) async =>
-      throw FileSystemException('unreadable', path);
+  Future<int> sizeOf(String path) async => path.contains('attachments')
+      ? throw FileSystemException('unreadable', path)
+      : super.sizeOf(path);
 }

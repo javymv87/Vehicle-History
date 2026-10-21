@@ -16,6 +16,9 @@ enum AuditEntityType {
   /// importing a backup package. Its entity id is
   /// [AuditEntry.databaseEntityId].
   database,
+
+  /// An `Attachment`: a file of an entry, a vehicle or an owner (v7).
+  attachment,
 }
 
 /// Kind of write an [AuditEntry] records.

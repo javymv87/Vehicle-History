@@ -1,12 +1,21 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../shared/constants/app_version.dart';
+import 'attachments/attachment_picker.dart';
+import 'attachments/attachment_staging.dart';
+import 'attachments/attachment_store.dart';
+import 'attachments/file_opener.dart';
 import 'backup/backup_file_picker.dart';
 import 'backup/backup_service.dart';
 import 'catalog/country_names.dart';
 import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
+import 'platform/native_files.dart';
+import 'repositories/attachment_repository.dart';
+import 'repositories/attachment_writer.dart';
+import 'repositories/drift_attachment_repository.dart';
 import 'repositories/drift_log_entry_repository.dart';
 import 'repositories/drift_mileage_reading_repository.dart';
 import 'repositories/drift_owner_repository.dart';
@@ -36,8 +45,24 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
+/// The application support directory, where the database file and the
+/// attachment files live. Resolved once, before the database opens.
+final appSupportDirectoryProvider = FutureProvider<String>(
+  (ref) async => (await getApplicationSupportDirectory()).path,
+);
+
+/// The attachment files under the application support directory.
+///
+/// Read only once [databaseReadyProvider] has completed, which waits for
+/// the directory; tests override it with an in-memory store.
+final attachmentStoreProvider = Provider<AttachmentStore>(
+  (ref) => IoAttachmentStore(
+    ref.watch(appSupportDirectoryProvider).requireValue,
+  ),
+);
+
 /// Completes once the database is open, any pending migration has run, and
-/// the 30-day Trash cleanup has had its turn.
+/// the 30-day Trash cleanup and the attachment sweep have had their turn.
 ///
 /// Fails with the error that stopped the opening, such as
 /// `DatabaseNewerThanAppException`; the app then shows the startup error
@@ -46,13 +71,21 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 ///
 /// The cleanup runs here, once per app start (this provider is created once
 /// and never retried), and only after a successful opening. Its failure is
-/// logged and never stops the start (`runStartupCleanupSafely`).
+/// logged and never stops the start (`runStartupCleanupSafely`). Then the
+/// staging directory is wiped and the orphan files deleted
+/// (`runAttachmentSweepSafely`), which never stops the start either.
 final databaseReadyProvider = FutureProvider<void>(
   (ref) async {
-    await ref.watch(appDatabaseProvider).open();
+    await ref.watch(appSupportDirectoryProvider.future);
+    final db = ref.watch(appDatabaseProvider);
+    await db.open();
     await runStartupCleanupSafely(
       ref.read(trashCleanupServiceProvider),
       systemUtcClock(),
+    );
+    await runAttachmentSweepSafely(
+      ref.read(attachmentStoreProvider),
+      db.attachmentsDao.allRelativePaths,
     );
   },
   retry: (retryCount, error) => null,
@@ -61,8 +94,52 @@ final databaseReadyProvider = FutureProvider<void>(
 /// The [TrashCleanupService] on the app database.
 final trashCleanupServiceProvider = Provider<TrashCleanupService>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return TrashCleanupService(db.trashDao, db.auditLogDao);
+  return TrashCleanupService(
+    db.trashDao,
+    db.auditLogDao,
+    ref.watch(attachmentStoreProvider),
+  );
 });
+
+/// The [AttachmentWriter] on the app database, shared by the attachment and
+/// history entry repositories.
+final attachmentWriterProvider = Provider<AttachmentWriter>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return AttachmentWriter(
+    db.attachmentsDao,
+    db.auditLogDao,
+    ref.watch(attachmentStoreProvider),
+  );
+});
+
+/// The [AttachmentRepository] on the app database.
+final attachmentRepositoryProvider = Provider<AttachmentRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftAttachmentRepository(
+    db.attachmentsDao,
+    ref.watch(attachmentWriterProvider),
+  );
+});
+
+/// Copies picked files into a form session's staging directory.
+final attachmentStagingProvider = Provider<AttachmentStaging>(
+  (ref) => AttachmentStaging(ref.watch(attachmentStoreProvider)),
+);
+
+/// The camera, gallery and file pickers for attachments.
+final attachmentPickerProvider = Provider<AttachmentPicker>(
+  (ref) => const PlatformAttachmentPicker(),
+);
+
+/// Opens PDF and other attachments with the phone's own app.
+final fileOpenerProvider = Provider<FileOpener>(
+  (ref) => const PlatformFileOpener(),
+);
+
+/// The native "save as" and free-space channel of `MainActivity.kt`.
+final nativeFilesProvider = Provider<NativeFiles>(
+  (ref) => const MethodChannelNativeFiles(),
+);
 
 /// The [OwnerRepository] on the app database.
 final ownerRepositoryProvider = Provider<OwnerRepository>((ref) {
@@ -78,13 +155,18 @@ final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
     db.mileageReadingsDao,
     db.trashDao,
     db.auditLogDao,
+    attachmentFiles: ref.watch(attachmentStoreProvider),
   );
 });
 
 /// The [LogEntryRepository] on the app database.
 final logEntryRepositoryProvider = Provider<LogEntryRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return DriftLogEntryRepository(db.logEntriesDao, db.auditLogDao);
+  return DriftLogEntryRepository(
+    db.logEntriesDao,
+    db.auditLogDao,
+    attachments: ref.watch(attachmentWriterProvider),
+  );
 });
 
 /// The [MileageReadingRepository] on the app database.
@@ -103,14 +185,16 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
 /// The [BackupService] on the app database. The import opens new
 /// connections on the same file with [AppDatabase.new].
 final backupServiceProvider = Provider<BackupService>((ref) {
+  final nativeFiles = ref.watch(nativeFilesProvider);
   return BackupService(
     database: ref.watch(appDatabaseProvider),
     openDatabase: AppDatabase.new,
     appVersion: appVersion,
+    freeBytes: nativeFiles.freeBytes,
   );
 });
 
-/// The system dialogs that save and open backup packages.
+/// The system dialog that opens backup packages.
 final backupFilePickerProvider = Provider<BackupFilePicker>(
   (ref) => const PlatformBackupFilePicker(),
 );
