@@ -1222,10 +1222,6 @@
   "@actionSaveTo": {
     "description": "Action that copies an attachment to a place the user chooses (Downloads, Drive, ...)."
   },
-  "actionOpen": "Open",
-  "@actionOpen": {
-    "description": "Action that opens a PDF or other attachment with the phone app."
-  },
   "actionEditCaption": "Edit caption",
   "@actionEditCaption": {
     "description": "Action that edits the caption of an attachment."
