@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
+import '../../../shared/utils/file_size.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../controllers/backup_controller.dart';
 import '../widgets/import_confirmation_dialog.dart';
 
-/// The Backup page (U20): when the last export happened, what the package
+/// The Backup page (U20, U27): when the last export happened, how many
+/// attachment files the package will carry and their size, what the package
 /// contains, and the Export and Import buttons, with a progress indicator
 /// while one of them works. Opened from the overflow menu of the home lists.
 class BackupPage extends ConsumerWidget {
@@ -23,6 +25,7 @@ class BackupPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final task = ref.watch(backupControllerProvider);
     final lastExportAt = ref.watch(lastExportAtProvider).value;
+    final totals = ref.watch(attachmentTotalsProvider).value;
     final busy = task != null;
     // Full-width buttons, at least 48 dp tall (U20).
     const buttonSize = Size.fromHeight(48);
@@ -40,6 +43,18 @@ class BackupPage extends ConsumerWidget {
                   ),
             style: theme.textTheme.titleMedium,
           ),
+          if (totals != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.backupAttachments(
+                totals.count,
+                formatFileSize(totals.bytes, l10n),
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(l10n.backupExplanation),
           const SizedBox(height: 8),
@@ -112,10 +127,16 @@ class BackupPage extends ConsumerWidget {
         showErrorSnackBar(messenger, error.message(l10n));
         return;
     }
-    if (!context.mounted) return;
-    if (!await confirmImport(context, package.manifest)) return;
+    if (!context.mounted) {
+      await controller.cancelImport(package);
+      return;
+    }
+    if (!await confirmImport(context, package.preview)) {
+      await controller.cancelImport(package);
+      return;
+    }
 
-    switch (await controller.importPackage(package.bytes)) {
+    switch (await controller.importPackage(package)) {
       case ActionSuccess():
         router.go(AppRoutes.vehicles);
         showSavedSnackBar(messenger, l10n.backupImported);

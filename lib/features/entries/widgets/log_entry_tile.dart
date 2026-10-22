@@ -7,18 +7,28 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
 import 'log_entry_type_icon.dart';
 
-/// One row of a vehicle's history (`Docs/03_features.md`, U6): type icon and
-/// label, date, km (if any), the first line of the description, and the
-/// cost (if any) aligned to the right of the type.
+/// One row of a vehicle's history (`Docs/03_features.md`, U6, U24): type
+/// icon and label, date, km (if any), a paperclip with the number of
+/// attachments (if any), the first line of the description, and the cost
+/// (if any) aligned to the right of the type.
 ///
 /// Built as a plain row rather than a `ListTile` so that, with very large
 /// text, the cost wraps under the type instead of squeezing it.
 class LogEntryTile extends StatelessWidget {
   /// Creates the row for [entry], calling [onTap] when tapped.
-  const LogEntryTile({super.key, required this.entry, required this.onTap});
+  const LogEntryTile({
+    super.key,
+    required this.entry,
+    required this.onTap,
+    this.attachmentCount = 0,
+  });
 
   /// The entry shown.
   final LogEntry entry;
+
+  /// Number of live attachments of the entry; the paperclip shows when it
+  /// is above 0.
+  final int attachmentCount;
 
   /// Opens the entry detail.
   final VoidCallback onTap;
@@ -78,11 +88,34 @@ class LogEntryTile extends StatelessWidget {
                           ),
                       ],
                     ),
-                    Text(
-                      km == null
-                          ? l10n.dateValue(date)
-                          : l10n.entryDateAndKm(date, km),
-                      style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                    Wrap(
+                      spacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          km == null
+                              ? l10n.dateValue(date)
+                              : l10n.entryDateAndKm(date, km),
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: muted),
+                        ),
+                        if (attachmentCount > 0)
+                          Semantics(
+                            label: l10n.attachmentCount(attachmentCount),
+                            excludeSemantics: true,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.attach_file, size: 16, color: muted),
+                                Text(
+                                  '$attachmentCount',
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(color: muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     if (summary != null)
                       Text(

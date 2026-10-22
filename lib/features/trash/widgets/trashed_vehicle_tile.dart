@@ -62,10 +62,16 @@ class TrashedVehicleTile extends StatelessWidget {
               Text(l10n.trashDeletedOn(item.deletedAt.toLocal())),
               Text(l10n.trashPurgeIn(item.daysUntilPurge(now))),
               Text(
-                l10n.trashContents(
-                  item.contents.entryCount,
-                  item.contents.readingCount,
-                ),
+                item.contents.attachmentCount == 0
+                    ? l10n.trashContents(
+                        item.contents.entryCount,
+                        item.contents.readingCount,
+                      )
+                    : l10n.trashContentsWithAttachments(
+                        item.contents.entryCount,
+                        item.contents.readingCount,
+                        item.contents.attachmentCount,
+                      ),
               ),
             ],
           ),

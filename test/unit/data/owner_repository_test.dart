@@ -27,6 +27,7 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );
   });

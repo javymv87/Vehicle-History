@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
@@ -11,6 +12,7 @@ import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/trashed_vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/data/repositories/attachment_repository.dart';
 import 'package:vehicle_history/data/repositories/log_entry_repository.dart';
 import 'package:vehicle_history/data/repositories/mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/owner_repository.dart';
@@ -51,6 +53,12 @@ class FakeStore {
 
   /// Ids of soft-deleted readings.
   final Set<String> deletedReadings = {};
+
+  /// Live and deleted attachments, by id.
+  final Map<String, Attachment> attachments = {};
+
+  /// Ids of soft-deleted attachments.
+  final Set<String> deletedAttachments = {};
 
   /// When set, every write throws it instead of writing.
   Exception? failWritesWith;
@@ -103,7 +111,43 @@ class FakeStore {
                   r.vehicleId == vehicleId && !deletedReadings.contains(r.id),
             )
             .length,
+        attachmentCount: liveAttachments
+            .where(
+              (a) =>
+                  a.target == AttachmentTarget.vehicle(vehicleId) ||
+                  (a.target.entityType == AttachmentEntityType.logEntry &&
+                      entries[a.target.entityId]?.vehicleId == vehicleId &&
+                      !deletedEntries.contains(a.target.entityId)),
+            )
+            .length,
       );
+
+  /// Live attachments, in display order.
+  List<Attachment> get liveAttachments => [
+        for (final a in attachments.values)
+          if (!deletedAttachments.contains(a.id)) a,
+      ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+  /// Adds a live attachment of [target] for the staged [file], last in
+  /// its order, without checks or notification.
+  Attachment addAttachment(AttachmentTarget target, StagedFile file) {
+    final id = newId('attachment');
+    final order = attachments.values.where((a) => a.target == target).length;
+    final attachment = Attachment(
+      id: id,
+      target: target,
+      kind: file.kind,
+      fileName: file.fileName,
+      mimeType: file.mimeType,
+      relativePath: attachmentRelativePath(id, file.fileName),
+      sizeBytes: file.sizeBytes,
+      sortOrder: order,
+      createdAt: now,
+      updatedAt: now,
+    );
+    attachments[id] = attachment;
+    return attachment;
+  }
 
   /// Vehicles in the Trash, most recently deleted first, like the real DAO.
   List<TrashedVehicle> get trashedVehicles => [
@@ -603,6 +647,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> attachments = const [],
   }) =>
       store.write(() {
         _check(type, km, date);
@@ -622,6 +667,9 @@ class FakeLogEntryRepository implements LogEntryRepository {
           updatedAt: created,
         );
         store.entries[entry.id] = entry;
+        for (final file in attachments) {
+          store.addAttachment(AttachmentTarget.logEntry(entry.id), file);
+        }
         return entry;
       });
 
@@ -633,6 +681,8 @@ class FakeLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> addedAttachments = const [],
+    Set<String> removedAttachmentIds = const {},
   }) =>
       store.write(() {
         _check(type, km, date);
@@ -648,6 +698,10 @@ class FakeLogEntryRepository implements LogEntryRepository {
           costCents: costCents,
         );
         store.entries[id] = updated;
+        store.deletedAttachments.addAll(removedAttachmentIds);
+        for (final file in addedAttachments) {
+          store.addAttachment(AttachmentTarget.logEntry(id), file);
+        }
         return updated;
       });
 
@@ -818,4 +872,148 @@ CalendarDate _today() => CalendarDate.localDayOf(DateTime.now());
 String? _clean(String? value) {
   final trimmed = value?.trim();
   return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+}
+
+/// [AttachmentRepository] on a [FakeStore]. File paths are fake: images
+/// show the "File not found" placeholder in widget tests.
+class FakeAttachmentRepository implements AttachmentRepository {
+  /// Creates the repository on [store].
+  FakeAttachmentRepository(this.store);
+
+  /// The shared in-memory data.
+  final FakeStore store;
+
+  /// Whether the target is live in the store.
+  bool _isLive(AttachmentTarget target) => switch (target.entityType) {
+        AttachmentEntityType.owner =>
+          store.liveOwners.any((o) => o.id == target.entityId),
+        AttachmentEntityType.vehicle =>
+          store.liveVehicles.any((v) => v.id == target.entityId),
+        AttachmentEntityType.logEntry =>
+          store.entries.containsKey(target.entityId) &&
+              !store.deletedEntries.contains(target.entityId),
+      };
+
+  /// The live attachment [id], or `null`.
+  Attachment? _live(String id) =>
+      store.deletedAttachments.contains(id) ? null : store.attachments[id];
+
+  @override
+  Stream<List<Attachment>> watchByTarget(AttachmentTarget target) =>
+      store.watch(
+        () => [
+          for (final a in store.liveAttachments)
+            if (a.target == target) a,
+        ],
+      );
+
+  @override
+  Future<List<Attachment>> getByTarget(AttachmentTarget target) async => [
+        for (final a in store.liveAttachments)
+          if (a.target == target) a,
+      ];
+
+  @override
+  Stream<Attachment?> watchById(String id) => store.watch(() => _live(id));
+
+  @override
+  Stream<Map<String, int>> watchEntryCounts(String vehicleId) =>
+      store.watch(() {
+        final counts = <String, int>{};
+        for (final a in store.liveAttachments) {
+          final entry = store.entries[a.target.entityId];
+          if (a.target.entityType == AttachmentEntityType.logEntry &&
+              entry?.vehicleId == vehicleId &&
+              !store.deletedEntries.contains(entry!.id)) {
+            counts[entry.id] = (counts[entry.id] ?? 0) + 1;
+          }
+        }
+        return counts;
+      });
+
+  @override
+  Stream<AttachmentTotals> watchTotals() => store.watch(
+        () => AttachmentTotals(
+          count: store.attachments.length,
+          bytes:
+              store.attachments.values.fold(0, (sum, a) => sum + a.sizeBytes),
+        ),
+      );
+
+  @override
+  Future<Attachment> create(AttachmentTarget target, StagedFile file) =>
+      store.write(() {
+        if (!_isLive(target)) {
+          throw EntityNotFoundException(
+            AuditEntityType.vehicle,
+            target.entityId,
+          );
+        }
+        return store.addAttachment(target, file);
+      });
+
+  @override
+  Future<Attachment> updateCaption(String id, String? caption) =>
+      store.write(() {
+        final current = _live(id);
+        if (current == null) {
+          throw EntityNotFoundException(AuditEntityType.attachment, id);
+        }
+        final trimmed = caption?.trim();
+        final updated = current.copyWith(
+          caption: trimmed == null || trimmed.isEmpty ? null : trimmed,
+        );
+        store.attachments[id] = updated;
+        return updated;
+      });
+
+  @override
+  Future<void> reorder(AttachmentTarget target, List<String> orderedIds) =>
+      store.write(() {
+        for (final (index, id) in orderedIds.indexed) {
+          store.attachments[id] =
+              store.attachments[id]!.copyWith(sortOrder: index);
+        }
+      });
+
+  @override
+  Future<void> delete(String id) => store.write(() {
+        if (_live(id) == null) {
+          throw EntityNotFoundException(AuditEntityType.attachment, id);
+        }
+        store.deletedAttachments.add(id);
+      });
+
+  @override
+  Future<Attachment> restore(String id) => store.write(() {
+        if (!store.deletedAttachments.contains(id)) {
+          throw EntityNotFoundException(AuditEntityType.attachment, id);
+        }
+        store.deletedAttachments.remove(id);
+        return store.attachments[id]!;
+      });
+
+  @override
+  Future<void> deleteMany(List<String> ids) => store.write(() {
+        if (ids.any((id) => _live(id) == null)) {
+          throw EntityNotFoundException(AuditEntityType.attachment, ids.first);
+        }
+        store.deletedAttachments.addAll(ids);
+      });
+
+  @override
+  Future<List<Attachment>> restoreMany(List<String> ids) => store.write(() {
+        if (!ids.every(store.deletedAttachments.contains)) {
+          throw EntityNotFoundException(AuditEntityType.attachment, ids.first);
+        }
+        store.deletedAttachments.removeAll(ids);
+        return [for (final id in ids) store.attachments[id]!];
+      });
+
+  @override
+  String filePathOf(Attachment attachment) =>
+      '/fake/${attachment.relativePath}';
+
+  @override
+  Future<bool> fileExists(Attachment attachment) async => true;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/attachments/pages/attachment_viewer_page.dart';
 import '../../features/backup/pages/backup_page.dart';
 import '../../features/entries/pages/log_entry_detail_page.dart';
 import '../../features/entries/pages/log_entry_form_page.dart';
@@ -117,6 +118,12 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/attachments/:attachmentId',
+        builder: (context, state) => AttachmentViewerPage(
+          attachmentId: state.pathParameters['attachmentId']!,
+        ),
       ),
       GoRoute(
         path: AppRoutes.trash,

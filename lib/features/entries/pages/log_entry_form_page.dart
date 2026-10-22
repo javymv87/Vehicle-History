@@ -22,11 +22,13 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
+import '../controllers/log_entry_attachments_controller.dart';
 import '../controllers/log_entry_form_controller.dart';
+import '../widgets/log_entry_attachments_field.dart';
 import '../widgets/log_entry_type_icon.dart';
 
 /// Form that creates a history entry for a vehicle (no [entryId]) or edits
-/// one (`Docs/03_features.md`, U3–U5, U10 and E1–E3).
+/// one (`Docs/03_features.md`, U3–U5, U10, U22 and E1–E3).
 ///
 /// Built for few taps: type, date (today by default), km with a one-tap
 /// "use current km" chip, cost and description, with Save always in the app
@@ -244,6 +246,8 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     // Captured now: the offer's "Update" runs after this form is gone.
     final router = GoRouter.of(context);
     final offer = ref.read(odometerUpdateOfferControllerProvider.notifier);
+    final attachments =
+        ref.read(logEntryAttachmentsControllerProvider(widget.formKey));
     setState(() => _saving = true);
     final result = await ref
         .read(logEntryFormControllerProvider(widget.formKey).notifier)
@@ -254,6 +258,8 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
             km: km,
             description: _description.text,
             costCents: costText.isEmpty ? null : tryParseEuroCents(costText),
+            addedAttachments: attachments.staged,
+            removedAttachmentIds: attachments.removedIds,
           ),
         );
     if (!mounted) return;
@@ -299,10 +305,25 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
         title: Text(widget.title),
         actions: [
           TextButton(
-            onPressed: _saving ? null : _save,
+            // Not while files are still being copied into the form.
+            onPressed: _saving ||
+                    ref
+                        .watch(
+                          logEntryAttachmentsControllerProvider(widget.formKey),
+                        )
+                        .busy
+                ? null
+                : _save,
             child: Text(l10n.actionSave),
           ),
         ],
+        // Saving moves the picked files into place, which can take a moment.
+        bottom: _saving
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(4),
+                child: LinearProgressIndicator(),
+              )
+            : null,
       ),
       body: Form(
         key: _formKey,
@@ -379,6 +400,8 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                 minLines: 3,
                 maxLines: 8,
               ),
+              gap,
+              LogEntryAttachmentsField(formKey: widget.formKey),
             ],
           ),
         ),

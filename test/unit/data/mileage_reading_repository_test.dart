@@ -39,6 +39,7 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );
     readings = DriftMileageReadingRepository(
@@ -356,6 +357,7 @@ void main() {
       final entries = DriftLogEntryRepository(
         db.logEntriesDao,
         db.auditLogDao,
+        attachments: attachmentWriterOf(db),
         clock: clock.call,
       );
       await entries.create(

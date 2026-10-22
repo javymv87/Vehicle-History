@@ -1,11 +1,13 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:vehicle_history/data/attachments/attachment_picker.dart';
+import 'package:vehicle_history/data/attachments/file_opener.dart';
 import 'package:vehicle_history/data/backup/backup_exceptions.dart';
 import 'package:vehicle_history/data/backup/backup_file_picker.dart';
 import 'package:vehicle_history/data/backup/backup_service.dart';
 import 'package:vehicle_history/data/models/backup_manifest.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
+import 'package:vehicle_history/data/platform/native_files.dart';
 import 'package:vehicle_history/data/repositories/settings_repository.dart';
 
 /// In-memory [SettingsRepository] for widget tests.
@@ -33,25 +35,118 @@ class FakeSettingsRepository implements SettingsRepository {
   }
 }
 
-/// [BackupFilePicker] whose dialogs answer with preset values.
+/// [BackupFilePicker] whose dialog answers with a preset value.
 class FakeBackupFilePicker implements BackupFilePicker {
-  /// Whether the save dialog saves (`true`) or is cancelled.
-  bool saveResult = true;
+  /// Whether the open dialog picks a file (`true`) or is cancelled.
+  bool pickResult = false;
 
-  /// What the open dialog returns; `null` means cancelled.
-  Uint8List? pickResult;
-
-  /// Names of the files the save dialog was asked to save.
-  final List<String> savedNames = [];
+  /// Where the picked files were copied to.
+  final List<String> copiedTo = [];
 
   @override
-  Future<bool> savePackage(String fileName, Uint8List bytes) async {
-    savedNames.add(fileName);
+  Future<bool> pickPackage(String copyTo) async {
+    if (pickResult) copiedTo.add(copyTo);
+    return pickResult;
+  }
+}
+
+/// [NativeFiles] whose "save as" answers with a preset value.
+class FakeNativeFiles implements NativeFiles {
+  /// What the save dialog answers.
+  SaveFileOutcome saveResult = SaveFileOutcome.saved;
+
+  /// When set, saving throws it.
+  Exception? saveFailure;
+
+  /// The saves asked for: source path and suggested name.
+  final List<({String sourcePath, String suggestedName})> saves = [];
+
+  /// What [freeBytes] answers.
+  int? free;
+
+  /// What the folder picker answers: `true` saves, `false` cancels.
+  bool folderChosen = true;
+
+  /// The files saved to a folder, one list per call.
+  final List<List<NativeFile>> folderSaves = [];
+
+  /// The files shared, one list per call.
+  final List<List<NativeFile>> shares = [];
+
+  @override
+  Future<int?> saveFilesToFolder(List<NativeFile> files) async {
+    if (!folderChosen) return null;
+    folderSaves.add(files);
+    return files.length;
+  }
+
+  @override
+  Future<void> shareFiles(List<NativeFile> files) async => shares.add(files);
+
+  @override
+  Future<SaveFileOutcome> saveFile({
+    required String sourcePath,
+    required String suggestedName,
+    required String mimeType,
+  }) async {
+    saves.add((sourcePath: sourcePath, suggestedName: suggestedName));
+    final failure = saveFailure;
+    if (failure != null) throw failure;
     return saveResult;
   }
 
   @override
-  Future<Uint8List?> pickPackage() async => pickResult;
+  Future<int?> freeBytes(String path) async => free;
+}
+
+/// [AttachmentPicker] that returns preset files.
+class FakeAttachmentPicker implements AttachmentPicker {
+  /// What the next pick returns, by source; empty means cancelled.
+  final Map<AttachmentSource, List<PickedFile>> files = {};
+
+  /// When set, picking throws it.
+  AttachmentPickException? failure;
+
+  /// The sources asked for.
+  final List<AttachmentSource> asked = [];
+
+  @override
+  Future<List<PickedFile>> pick(AttachmentSource source) async {
+    asked.add(source);
+    final error = failure;
+    if (error != null) throw error;
+    return files[source] ?? const [];
+  }
+}
+
+/// A picked file named [name] with [bytes] as content; [onDeleteSource]
+/// is told when the picker's own copy is deleted.
+PickedFile pickedFile(
+  String name,
+  List<int> bytes, {
+  String? mimeType,
+  void Function()? onDeleteSource,
+}) =>
+    PickedFile(
+      name: name,
+      mimeType: mimeType,
+      openRead: () => Stream.value(bytes),
+      deleteSource: () async => onDeleteSource?.call(),
+    );
+
+/// [FileOpener] that records what it was asked to open.
+class FakeFileOpener implements FileOpener {
+  /// What opening answers.
+  OpenFileOutcome outcome = OpenFileOutcome.opened;
+
+  /// The paths opened.
+  final List<String> opened = [];
+
+  @override
+  Future<OpenFileOutcome> open(String path, String mimeType) async {
+    opened.add(path);
+    return outcome;
+  }
 }
 
 /// A manifest for widget tests: 2 vehicles, 41 entries, 7 readings, last
@@ -68,6 +163,15 @@ final BackupManifest sampleManifest = BackupManifest(
     mileageReadings: 7,
   ),
   lastModifiedAt: DateTime.utc(2026, 10, 18, 12),
+);
+
+/// What [FakeBackupService] reports for a package: [sampleManifest], 3
+/// attachments of 3.5 MB, 1 file missing.
+final ImportPreview samplePreview = ImportPreview(
+  manifest: sampleManifest,
+  attachmentCount: 3,
+  attachmentBytes: 3670016,
+  missingFiles: 1,
 );
 
 /// [BackupService] that does no file work: it exports [sampleManifest] and
@@ -94,27 +198,47 @@ class FakeBackupService implements BackupService {
     // Like the real service: `last_export_at` is written before the copy.
     final previous = await settings.read(SettingKey.lastExportAt);
     await settings.writeLastExportAt(sampleManifest.exportedAt);
+    exports++;
     return ExportedPackage(
       fileName: 'vehicle-history-20261020-1830.zip',
-      bytes: Uint8List.fromList([1, 2, 3]),
+      path: '/fake/package.zip.tmp',
       manifest: sampleManifest,
       previousLastExportAt: previous,
     );
   }
+
+  /// How many packages were exported, and how many of their temporary
+  /// files deleted.
+  int exports = 0;
+
+  /// How many temporary packages were deleted.
+  int deletedExports = 0;
+
+  /// How many picked copies were deleted.
+  int deletedPicks = 0;
+
+  @override
+  Future<void> deleteExport(ExportedPackage package) async => deletedExports++;
+
+  @override
+  Future<String> pickedPackagePath() async => '/fake/picked.zip.tmp';
+
+  @override
+  Future<void> deletePickedPackage() async => deletedPicks++;
 
   @override
   Future<void> discardExport(ExportedPackage package) =>
       settings.write(SettingKey.lastExportAt, package.previousLastExportAt);
 
   @override
-  Future<BackupManifest> inspectPackage(Uint8List bytes) async {
+  Future<ImportPreview> inspectPackage(String packagePath) async {
     final rejection = rejectWith;
     if (rejection != null) throw rejection;
-    return sampleManifest;
+    return samplePreview;
   }
 
   @override
-  Future<BackupManifest> importPackage(Uint8List bytes) async {
+  Future<BackupManifest> importPackage(String packagePath) async {
     final rejection = rejectWith ?? importFailure;
     if (rejection != null) throw rejection;
     imports++;

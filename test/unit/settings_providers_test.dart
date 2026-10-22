@@ -33,6 +33,7 @@ void main() {
         // Each build is a new connection, as after an import; the test
         // owns and closes both databases.
         appDatabaseProvider.overrideWith((ref) => databases[opened++]),
+        ...memoryFileOverrides(),
       ],
     );
     container

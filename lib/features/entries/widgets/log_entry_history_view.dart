@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../attachments/controllers/attachment_list_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import 'log_entry_filter_sheet.dart';
 import 'log_entry_tile.dart';
@@ -163,7 +164,7 @@ final class _EntryItem extends _HistoryItem {
 
 /// The entries, already ordered newest first, with a header each time the
 /// month changes. Lazy, so long histories scroll smoothly.
-class _HistoryList extends StatelessWidget {
+class _HistoryList extends ConsumerWidget {
   const _HistoryList({required this.vehicleId, required this.entries});
 
   final String vehicleId;
@@ -185,8 +186,11 @@ class _HistoryList extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final items = _items(entries);
+    // The paperclip counts (U24); none while they load.
+    final counts =
+        ref.watch(entryAttachmentCountsProvider(vehicleId)).value ?? const {};
     return ListView.builder(
       // Room at the bottom so the FAB never covers the last entry.
       padding: const EdgeInsets.only(bottom: 88),
@@ -196,6 +200,7 @@ class _HistoryList extends StatelessWidget {
           _MonthHeaderTile(year: year, month: month),
         _EntryItem(:final entry) => LogEntryTile(
             entry: entry,
+            attachmentCount: counts[entry.id] ?? 0,
             onTap: () => context.push(AppRoutes.entry(vehicleId, entry.id)),
           ),
       },

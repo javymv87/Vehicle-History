@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 
+import '../../data/attachments/attachment_picker.dart';
 import '../../data/backup/backup_exceptions.dart';
 import '../../data/models/audit_entry.dart';
 import '../../data/repositories/repository_exceptions.dart';
@@ -31,6 +33,33 @@ enum ActionError {
   /// The odometer reading involved is missing or deleted.
   readingNotFound,
 
+  /// The attachment involved is missing or deleted.
+  attachmentNotFound,
+
+  /// The file is larger than an attachment may be (25 MB).
+  attachmentTooLarge,
+
+  /// The user refused the camera permission.
+  cameraDenied,
+
+  /// The user refused access to the photos.
+  photosDenied,
+
+  /// The camera, gallery or file picker failed.
+  pickFailed,
+
+  /// A file could not be saved where the user chose.
+  saveFailed,
+
+  /// No installed app can open the attachment.
+  openNoApp,
+
+  /// The attachments could not be shared with another app.
+  shareFailed,
+
+  /// The file of the attachment is missing on the phone.
+  attachmentFileMissing,
+
   /// The reading is not the last one, or is the initial one, and cannot be
   /// deleted.
   readingNotDeletable,
@@ -52,6 +81,9 @@ enum ActionError {
 
   /// The database inside the backup is damaged.
   backupCorrupt,
+
+  /// The phone has not enough free space for the import.
+  backupNoSpace,
 
   /// The backup could not be exported.
   exportFailed,
@@ -84,6 +116,15 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.entryNotFound,
     EntityNotFoundException(entityType: AuditEntityType.mileageReading) =>
       ActionError.readingNotFound,
+    EntityNotFoundException(entityType: AuditEntityType.attachment) =>
+      ActionError.attachmentNotFound,
+    AttachmentTooLargeException() => ActionError.attachmentTooLarge,
+    AttachmentPickException(failure: AttachmentPickFailure.cameraDenied) =>
+      ActionError.cameraDenied,
+    AttachmentPickException(failure: AttachmentPickFailure.photosDenied) =>
+      ActionError.photosDenied,
+    AttachmentPickException() => ActionError.pickFailed,
+    PlatformException() => ActionError.saveFailed,
     MileageReadingRuleException(
       rule: MileageReadingRule.notLast || MileageReadingRule.initial,
     ) =>
@@ -101,6 +142,8 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.backupFromNewerApp,
     BackupRejectedException(reason: BackupRejection.corruptDatabase) =>
       ActionError.backupCorrupt,
+    BackupRejectedException(reason: BackupRejection.notEnoughSpace) =>
+      ActionError.backupNoSpace,
     BackupRejectedException() => ActionError.backupNotAPackage,
     BackupImportFailedException() => ActionError.importFailed,
     BackupRestoreFailedException() => ActionError.importRestoreFailed,

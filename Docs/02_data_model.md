@@ -56,6 +56,11 @@ registro principal lleva consigo:
   cada propietario borrados físicamente; las entradas y lecturas que se van
   con ellos no tienen fila propia. Las filas anteriores del historial que
   apuntan a lo borrado se quedan (no hay clave externa).
+- **Adjuntos (desde el esquema v7):** se van con lo que borra el punto 1 (los
+  del vehículo y los de sus entradas, sea cual sea su indicador) y con los
+  propietarios y las entradas que borra la limpieza; además la limpieza borra
+  los adjuntos borrados hace 30 días o más que no viajan con un vehículo de
+  la papelera. Con la fila se borra su archivo (ver "Attachment").
 
 ## Moneda e importes
 
@@ -93,8 +98,8 @@ Teléfono y email se guardan tal como se
 escriben (sin espacios al principio ni al final), sin validar el formato.
 La foto es una ruta opcional **relativa** a la carpeta de soporte de la app
 (*application support*, la misma en la que vive la base de datos; ver
-`05_sync_and_storage.md`). Elegir, copiar y mostrar imágenes llegará más
-adelante.
+`05_sync_and_storage.md`). La foto de perfil todavía no se elige; los
+documentos del propietario ya se pueden adjuntar (ver "Attachment").
 
 Un Owner puede tener **varios vehículos**. Un vehículo tiene **un** Owner.
 
@@ -175,7 +180,7 @@ Reglas:
 
 La "entrada base", igual para todo tipo de evento. Cada fila del historial es
 una LogEntry. Los campos extra específicos de algunos tipos están en tablas
-vinculadas (EntryImage, Measurement) o en campos opcionales, para que esta
+vinculadas (Attachment, Measurement) o en campos opcionales, para que esta
 tabla se mantenga limpia.
 
 Campos siempre presentes:
@@ -243,15 +248,80 @@ vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
   borrado su vehículo, el deshacer se rechaza con un mensaje y no cambia
   nada.
 - Los campos extra del repostaje (litros, precio/litro), las partidas de
-  gasto, las imágenes y las mediciones llegarán en pasos posteriores.
+  gasto y las mediciones llegarán en pasos posteriores. Las fotos y los
+  documentos de una entrada son **adjuntos** (ver "Attachment").
 
-### EntryImage (imagen de una entrada)
+### Attachment (adjunto) — esquema v7
 
-Las fotos adjuntas a una LogEntry. Una entrada puede tener **varias** imágenes.
+Sustituye a la antigua `EntryImage`. Un archivo (foto, PDF u otro) adjunto a
+una **entrada** del historial, a un **vehículo** (sus documentos: permiso de
+circulación, póliza, inspección…) o a un **propietario** (permiso de
+conducir, documento de identidad…). Una entidad puede tener **varios**.
 
-- Referencia a la LogEntry
-- Archivo de imagen
-- Pie de foto opcional
+Tabla `attachments`: los campos técnicos comunes (`id`, `created_at`,
+`updated_at`, `deleted`, `deleted_at`) y:
+
+- `entity_type`: `logEntry`, `vehicle` u `owner` (los mismos códigos que el
+  historial de operaciones) y `entity_id`. **Sin clave externa** (la tabla es
+  polimórfica): el repositorio comprueba que la entidad existe y no está
+  borrada (una entrada, además, de un vehículo no borrado).
+- `kind`: `image`, `pdf` u `other`, según el tipo MIME o, si no lo hay, la
+  extensión.
+- `file_name`: el nombre original, el que ve el usuario y el que usan
+  "Guardar en…" y "Compartir". Las fotos de la cámara y de la galería no
+  tienen un nombre útil (el selector las llama `scaled_<uuid>….jpg`): se
+  guardan como `IMG_aaaammdd_hhmmss.jpg`, con la hora local del momento de
+  añadirlas, como la cámara de Android, y `_2`, `_3`… para las siguientes
+  fotos elegidas a la vez. Los archivos del selector de archivos conservan
+  su nombre.
+- `mime_type`, `relative_path` (`attachments/<id>.<ext>`), `size_bytes`
+  (`CHECK >= 0`).
+- `caption`: descripción opcional, editable desde el visor o la lista.
+- `sort_order`: orden entre los adjuntos de la misma entidad (los nuevos van
+  al final).
+- Índice `(entity_type, entity_id)`.
+
+La migración v6 → v7 solo crea la tabla y el índice: no toca nada más.
+
+**Archivos.** Cada fila tiene **un** archivo en
+`<carpeta de soporte de la app>/attachments/`, con el id del adjunto y la
+extensión del nombre original (en minúsculas; `bin` si es rara). Nunca en la
+galería ni en el almacenamiento público.
+
+- **Límite:** 25 MB por archivo; uno más grande se rechaza con un mensaje.
+  Las fotos de la cámara y de la galería se reducen en el teléfono a 2000 ×
+  2000 px como máximo y calidad JPEG 85 (`image_picker`); los archivos
+  elegidos con el selector de archivos se guardan tal cual.
+- **Borrar** un adjunto es lógico (con Deshacer): el archivo se queda.
+  Varios adjuntos seleccionados se borran juntos en una sola transacción
+  (una fila del historial de operaciones por adjunto) y un único Deshacer
+  los restaura todos; si uno no se puede, no se toca ninguno.
+- **Copias de los selectores:** la cámara, la galería y el selector de
+  archivos dejan su propia copia en la caché de la app. En cuanto la app
+  tiene la suya (o rechaza el archivo), esa copia se borra; al arrancar, antes
+  de abrir la base de datos, se vacía la caché entera (también las copias
+  hechas para "Compartir"), de modo que ninguna copia de una foto sobrevive
+  a la sesión que la eligió.
+- **Entidad borrada:** los adjuntos de un vehículo en la papelera (los suyos
+  y los de sus entradas), de una entrada borrada o de un propietario borrado
+  se quedan tal cual y se ocultan con ella.
+- **Borrado físico** (fila y archivo), solo en tres casos: la **limpieza a
+  los 30 días** (adjuntos borrados hace 30 días o más, y los de las entradas
+  y propietarios que borra), **eliminar definitivamente un vehículo / vaciar
+  la papelera** (todos los adjuntos del vehículo y de sus entradas, sea cual
+  sea su indicador) y el **barrido al arrancar**: los archivos de
+  `attachments/` que ninguna fila nombra se borran. Una fila cuyo archivo
+  falta **se conserva** y se muestra con "Archivo no encontrado". Los
+  archivos se borran después de confirmar la transacción; si uno no se puede
+  borrar, lo recoge el barrido del siguiente arranque.
+- **Staging:** el formulario de la entrada copia los archivos elegidos a
+  `attachments_tmp/<sesión del formulario>/`. Al guardar, los archivos se
+  mueven a `attachments/` y las filas se insertan junto con la entrada en una
+  sola transacción; si la transacción falla, los archivos ya movidos se
+  borran. Al cancelar el formulario se borra su carpeta, y al arrancar la app
+  se vacía `attachments_tmp/` entera.
+- **Historial de operaciones:** entidad `attachment`, con creación,
+  modificación (descripción, orden), borrado y restauración.
 
 ### Measurement (control con medición)
 
@@ -363,7 +433,8 @@ DELETE RESTRICT`), la **fecha** (`reading_date`, fecha de calendario, texto
 Registro ligero de todas las operaciones realizadas sobre las entradas,
 consultable y útil también en el futuro. Existe **desde la primera versión
 del esquema**: cada creación, modificación, borrado y restauración (deshacer
-un borrado) de un Owner, un Vehicle, una LogEntry o una MileageReading
+un borrado) de un Owner, un Vehicle, una LogEntry, una MileageReading o un
+Attachment (desde la v7)
 añade su fila en la misma transacción. El tipo de entidad es texto sin
 restricción CHECK, así que añadir las entradas del historial (`logEntry`, en
 la v3), las lecturas del cuentakilómetros (`mileageReading`, en la v4) y la
@@ -396,7 +467,9 @@ la tabla clave / valor `settings`, descrita en `06_settings_and_i18n.md`.
 - Vehicle 1 — N Document
 - Vehicle 1 — N MaintenanceRule
 - Vehicle 1 — N MileageReading
-- LogEntry 1 — N EntryImage
+- LogEntry 1 — N Attachment
+- Vehicle 1 — N Attachment
+- Owner 1 — N Attachment
 - LogEntry 1 — 1 Measurement (solo para el tipo "control con medición")
 - MaintenanceType 1 — N MaintenanceRule (el catálogo alimenta las reglas)
 - AuditLog y Settings son transversales / globales

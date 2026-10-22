@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
@@ -119,7 +120,8 @@ class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
 ///
 /// The column has no CHECK constraint, so a new entity type (such as
 /// `logEntry`, added with schema v3, `mileageReading`, added with v4, or
-/// `database`, added with v6) needs only a new code here.
+/// `database`, added with v6, or `attachment`, added with v7) needs only a
+/// new code here.
 class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditEntityTypeConverter();
@@ -131,6 +133,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         'logEntry' => AuditEntityType.logEntry,
         'mileageReading' => AuditEntityType.mileageReading,
         'database' => AuditEntityType.database,
+        'attachment' => AuditEntityType.attachment,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit entity type in database: $fromDb'),
       };
@@ -142,6 +145,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         AuditEntityType.logEntry => 'logEntry',
         AuditEntityType.mileageReading => 'mileageReading',
         AuditEntityType.database => 'database',
+        AuditEntityType.attachment => 'attachment',
       };
 }
 
@@ -174,5 +178,52 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         AuditOperation.restore => 'restore',
         AuditOperation.purge => 'purge',
         AuditOperation.import => 'import',
+      };
+}
+
+/// Stores an [AttachmentEntityType] with the same codes as the matching
+/// [AuditEntityType] values, so an attachment and the audit log name an
+/// entity alike.
+class AttachmentEntityTypeConverter
+    extends TypeConverter<AttachmentEntityType, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const AttachmentEntityTypeConverter();
+
+  @override
+  AttachmentEntityType fromSql(String fromDb) => switch (fromDb) {
+        'logEntry' => AttachmentEntityType.logEntry,
+        'vehicle' => AttachmentEntityType.vehicle,
+        'owner' => AttachmentEntityType.owner,
+        // Only reachable with a corrupted or foreign database file.
+        _ => throw StateError('Unknown attachment entity in database: $fromDb'),
+      };
+
+  @override
+  String toSql(AttachmentEntityType value) => switch (value) {
+        AttachmentEntityType.logEntry => 'logEntry',
+        AttachmentEntityType.vehicle => 'vehicle',
+        AttachmentEntityType.owner => 'owner',
+      };
+}
+
+/// Stores an [AttachmentKind] as a stable text code.
+class AttachmentKindConverter extends TypeConverter<AttachmentKind, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const AttachmentKindConverter();
+
+  @override
+  AttachmentKind fromSql(String fromDb) => switch (fromDb) {
+        'image' => AttachmentKind.image,
+        'pdf' => AttachmentKind.pdf,
+        'other' => AttachmentKind.other,
+        // Only reachable with a corrupted or foreign database file.
+        _ => throw StateError('Unknown attachment kind in database: $fromDb'),
+      };
+
+  @override
+  String toSql(AttachmentKind value) => switch (value) {
+        AttachmentKind.image => 'image',
+        AttachmentKind.pdf => 'pdf',
+        AttachmentKind.other => 'other',
       };
 }

@@ -1,30 +1,38 @@
 import '../db/daos/audit_log_dao.dart';
 import '../db/daos/log_entries_dao.dart';
+import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/log_entry.dart';
 import '../models/log_entry_filter.dart';
 import '../models/log_entry_type.dart';
+import 'attachment_writer.dart';
 import 'log_entry_repository.dart';
 import 'repository_exceptions.dart';
 import 'repository_support.dart';
 
 /// [LogEntryRepository] backed by the local Drift database.
 class DriftLogEntryRepository implements LogEntryRepository {
-  /// Creates the repository on [_entries], auditing through [_audit].
+  /// Creates the repository on [_entries], auditing through [_audit] and
+  /// saving the files picked in the entry form through [attachments].
   ///
   /// [clock] must return UTC; it defaults to the system clock.
   DriftLogEntryRepository(
     this._entries,
     this._audit, {
+    required AttachmentWriter attachments,
     UtcClock clock = systemUtcClock,
-  }) : _clock = clock;
+  })  : _attachments = attachments,
+        _clock = clock;
 
   /// Entry queries.
   final LogEntriesDao _entries;
 
   /// Audit log writes, joined to the same transaction as each change.
   final AuditLogDao _audit;
+
+  /// Attachment writes joined to the entry's transaction.
+  final AttachmentWriter _attachments;
 
   /// Source of `created_at`, `updated_at` and audit timestamps.
   final UtcClock _clock;
@@ -66,6 +74,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> attachments = const [],
   }) async {
     final now = utcNow(_clock);
     _checkValues(
@@ -75,6 +84,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
       km: km,
       costCents: costCents,
     );
+    attachments.forEach(AttachmentWriter.checkSize);
     final entry = LogEntry(
       id: newId(),
       vehicleId: vehicleId,
@@ -86,12 +96,20 @@ class DriftLogEntryRepository implements LogEntryRepository {
       createdAt: now,
       updatedAt: now,
     );
-    return _entries.transaction(() async {
-      await _requireLiveVehicle(vehicleId);
-      await _entries.insertEntry(entry);
-      await _record(entry.id, AuditOperation.create, now);
-      return entry;
-    });
+    return _attachments.runWithMovedFiles(
+      (moved) => _entries.transaction(() async {
+        await _requireLiveVehicle(vehicleId);
+        await _entries.insertEntry(entry);
+        await _record(entry.id, AuditOperation.create, now);
+        await _attachments.addStaged(
+          AttachmentTarget.logEntry(entry.id),
+          attachments,
+          now,
+          moved,
+        );
+        return entry;
+      }),
+    );
   }
 
   @override
@@ -102,6 +120,8 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    List<StagedFile> addedAttachments = const [],
+    Set<String> removedAttachmentIds = const {},
   }) async {
     final now = utcNow(_clock);
     _checkValues(
@@ -111,20 +131,28 @@ class DriftLogEntryRepository implements LogEntryRepository {
       km: km,
       costCents: costCents,
     );
-    return _entries.transaction(() async {
-      final current = await _requireLive(id);
-      final updated = current.copyWith(
-        date: date,
-        km: km,
-        type: type,
-        description: trimToNull(description),
-        costCents: costCents,
-        updatedAt: now,
-      );
-      await _entries.updateLive(updated);
-      await _record(id, AuditOperation.update, now);
-      return updated;
-    });
+    addedAttachments.forEach(AttachmentWriter.checkSize);
+    final target = AttachmentTarget.logEntry(id);
+    return _attachments.runWithMovedFiles(
+      (moved) => _entries.transaction(() async {
+        final current = await _requireLive(id);
+        final updated = current.copyWith(
+          date: date,
+          km: km,
+          type: type,
+          description: trimToNull(description),
+          costCents: costCents,
+          updatedAt: now,
+        );
+        await _entries.updateLive(updated);
+        await _record(id, AuditOperation.update, now);
+        for (final attachmentId in removedAttachmentIds) {
+          await _attachments.softDelete(target, attachmentId, now);
+        }
+        await _attachments.addStaged(target, addedAttachments, now, moved);
+        return updated;
+      }),
+    );
   }
 
   @override

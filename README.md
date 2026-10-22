@@ -90,8 +90,13 @@ migration of older ones and a safety copy that is restored if the import
 fails), the `settings` table (schema v6), the Backup screen and a fixed
 signing key for debug and release builds. Step 7 added the Settings screen:
 in-app language (System, Italiano, Español, English) and theme (System,
-Light, Dark), applied at once and carried inside the backup package. Next is
-step 8 (attachments).
+Light, Dark), applied at once and carried inside the backup package. Step 8
+added attachments (schema v7): photos and documents on entries, vehicles (a
+Documents tab) and owners, from the camera, the gallery or a file, with a
+viewer, "Save to…" and physical delete with the Trash; the backup package
+now carries every file, is exported streamed through a native "save as",
+and an import restores the attachments folder too if it fails. Next is
+step 9 (Google Drive backup).
 
 Roadmap to the first usable version:
 
@@ -104,7 +109,7 @@ Roadmap to the first usable version:
 | 5b | ~~Trash: deleted vehicles, restore, permanent delete, 30-day cleanup (schema v5)~~ — done |
 | 6 | ~~Export / import as a package, `settings` table (schema v6), fixed signing key for debug and release~~ — done |
 | 7 | ~~Settings screen: in-app language and theme~~ — done |
-| 8 | Attachments (entries, vehicles, owners) |
+| 8 | ~~Attachments (entries, vehicles, owners), backup package with the files (schema v7)~~ — done |
 | 9 | Google Drive backup |
 
 Then, in an order decided while using the app: maintenance, refuelling,

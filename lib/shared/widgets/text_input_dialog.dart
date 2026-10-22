@@ -6,12 +6,15 @@ import '../../l10n/app_localizations.dart';
 /// catalogue.
 ///
 /// Resolves to the trimmed text when the user confirms a non-blank value,
-/// or `null` when they cancel.
+/// or `null` when they cancel. With [allowEmpty] (an optional value, such
+/// as a caption) a blank value can be confirmed too, as `''`.
 Future<String?> showTextInputDialog(
   BuildContext context, {
   required String title,
   String initialText = '',
   TextCapitalization textCapitalization = TextCapitalization.words,
+  bool allowEmpty = false,
+  String? label,
 }) {
   return showDialog<String>(
     context: context,
@@ -19,6 +22,8 @@ Future<String?> showTextInputDialog(
       title: title,
       initialText: initialText,
       textCapitalization: textCapitalization,
+      allowEmpty: allowEmpty,
+      label: label,
     ),
   );
 }
@@ -29,11 +34,15 @@ class _TextInputDialog extends StatefulWidget {
     required this.title,
     required this.initialText,
     required this.textCapitalization,
+    required this.allowEmpty,
+    required this.label,
   });
 
   final String title;
   final String initialText;
   final TextCapitalization textCapitalization;
+  final bool allowEmpty;
+  final String? label;
 
   @override
   State<_TextInputDialog> createState() => _TextInputDialogState();
@@ -48,10 +57,11 @@ class _TextInputDialogState extends State<_TextInputDialog> {
     super.dispose();
   }
 
-  /// Closes with the trimmed text, unless it is blank.
+  /// Closes with the trimmed text, unless it is blank and blank is not
+  /// allowed.
   void _confirm() {
     final text = _text.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && !widget.allowEmpty) return;
     Navigator.of(context).pop(text);
   }
 
@@ -65,7 +75,10 @@ class _TextInputDialogState extends State<_TextInputDialog> {
         autofocus: true,
         textCapitalization: widget.textCapitalization,
         textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(border: OutlineInputBorder()),
+        decoration: InputDecoration(
+          labelText: widget.label,
+          border: const OutlineInputBorder(),
+        ),
         onSubmitted: (_) => _confirm(),
       ),
       actions: [
@@ -76,7 +89,9 @@ class _TextInputDialogState extends State<_TextInputDialog> {
         ListenableBuilder(
           listenable: _text,
           builder: (context, _) => TextButton(
-            onPressed: _text.text.trim().isEmpty ? null : _confirm,
+            onPressed: _text.text.trim().isEmpty && !widget.allowEmpty
+                ? null
+                : _confirm,
             child: Text(l10n.actionOk),
           ),
         ),

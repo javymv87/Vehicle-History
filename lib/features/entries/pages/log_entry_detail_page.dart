@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
+import '../../../data/models/attachment.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -12,8 +13,12 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../attachments/widgets/attachment_actions.dart';
+import '../../attachments/widgets/attachments_section.dart';
+import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
@@ -103,22 +108,27 @@ class _LogEntryDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final km = entry.km;
     final cost = entry.costCents;
+    final target = AttachmentTarget.logEntry(entry.id);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(entry.type.label(l10n)),
-        actions: [
-          IconButton(
-            tooltip: l10n.actionEdit,
-            icon: const Icon(Icons.edit),
-            onPressed: () =>
-                context.push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
-          ),
-          IconButton(
-            tooltip: l10n.actionDelete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _delete(context, ref),
-          ),
-        ],
+      // U29: the contextual bar while attachments are selected.
+      appBar: AttachmentSelectionAppBar(
+        target: target,
+        appBar: AppBar(
+          title: Text(entry.type.label(l10n)),
+          actions: [
+            IconButton(
+              tooltip: l10n.actionEdit,
+              icon: const Icon(Icons.edit),
+              onPressed: () =>
+                  context.push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
+            ),
+            IconButton(
+              tooltip: l10n.actionDelete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _delete(context, ref),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -145,6 +155,16 @@ class _LogEntryDetailView extends ConsumerWidget {
             ),
           if (entry.description case final description?)
             DetailField(label: l10n.fieldEntryDescription, value: description),
+          const Divider(height: 32),
+          SectionHeader(
+            title: l10n.attachmentsTitle,
+            actionLabel: l10n.addAttachment,
+            onAction: () => addAttachments(context, ref, target),
+          ),
+          AttachmentsSection(
+            target: target,
+            emptyText: l10n.noAttachments,
+          ),
         ],
       ),
     );
