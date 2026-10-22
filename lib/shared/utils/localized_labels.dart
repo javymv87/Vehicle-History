@@ -100,6 +100,7 @@ extension ActionErrorMessage on ActionError {
         ActionError.pickFailed => l10n.errorPickFailed,
         ActionError.saveFailed => l10n.errorSaveFailed,
         ActionError.openNoApp => l10n.errorOpenNoApp,
+        ActionError.shareFailed => l10n.errorShareFailed,
         ActionError.attachmentFileMissing => l10n.errorFileMissing,
         ActionError.readingNotDeletable => l10n.errorReadingNotDeletable,
         ActionError.readingNotEditable => l10n.errorReadingNotEditable,

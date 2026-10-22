@@ -64,10 +64,20 @@ thumbnails are `Image.file` with `cacheWidth`.
 `vehicle_history/files` with `saveFile(sourcePath, suggestedName,
 mimeType)` — `ACTION_CREATE_DOCUMENT`, then a copy to the chosen `Uri`
 through `contentResolver.openOutputStream` in 64 KB chunks off the main
-thread, answering `saved` / `cancelled` / an error — and `freeBytes(path)`
-(`StatFs`). Used for the backup package and for "Save to…" of an attachment,
-which can be too large to pass through a channel as bytes. CI does not build
-Android: compile it with `fvm flutter build apk --debug` after touching it.
+thread, answering `saved` / `cancelled` / an error —,
+`saveFilesToFolder(files)` — `ACTION_OPEN_DOCUMENT_TREE`, then each file
+copied the same way into a new document of the folder
+(`DocumentsContract.createDocument`, which renames rather than overwrites),
+answering the number saved or `null` when cancelled —,
+`shareFiles(files)` — copies under their names to `cache/share/<n>/`,
+then `ACTION_SEND` / `ACTION_SEND_MULTIPLE` through `ShareFileProvider`, a
+`FileProvider` subclass (so it never merges with the one `open_filex`
+declares) whose `res/xml/share_paths.xml` exposes `cache/share/` only — and
+`freeBytes(path)` (`StatFs`). A `files` argument is a list of
+`{path, name, mimeType}` (`NativeFile`). Used for the backup package and
+for "Save to…" / "Share" of attachments, which can be too large to pass
+through a channel as bytes. CI does not build Android: compile it with
+`fvm flutter build apk --debug` after touching it.
 
 Dependencies are added **one at a time, on explicit request**. Never add a
 package as a side effect of implementing a feature. Naming a package in this
@@ -154,10 +164,28 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   as `DriftNativeOptions.databaseDirectory`), never in the documents
   directory, which iOS shows in the Files app and backs up to iCloud. Photo
   paths (future) are stored **relative to the same directory**.
-- **Startup.** `databaseReadyProvider` opens the database (running any
-  migration), then runs the 30-day Trash cleanup, before the router is
-  shown; an opening failure, such as `DatabaseNewerThanAppException`, shows
+- **Startup.** `databaseReadyProvider` empties the app's cache
+  (`wipeTemporaryDirectorySafely`, before the database opens: picker copies
+  and share copies only), opens the database (running any migration), then
+  runs the 30-day Trash cleanup and the attachment sweep, before the router
+  is shown; an opening failure, such as `DatabaseNewerThanAppException`, shows
   the localised full-screen `StartupErrorPage` and nothing reads data.
+- **Attachments (v7)** (`Docs/02_data_model.md`, "Attachment"): one row
+  ↔ one file `attachments/<id>.<ext>` under the application support
+  directory, never in public storage. Picked files are staged by
+  `AttachmentStaging` in `attachments_tmp/<session>/` (wiped on cancel and at
+  every start) and moved in with the row in one transaction
+  (`AttachmentWriter.runWithMovedFiles`). Files are physically deleted only
+  by the 30-day cleanup, the vehicle purge and the orphan sweep at start; a
+  row whose file is missing is kept. `pickAndStage` calls
+  `PickedFile.deleteSource` once a file is staged or refused, so the
+  plugin's own cache copy goes at once; whatever is left goes with the cache
+  at the next start. Photos are named `IMG_yyyyMMdd_HHmmss[_n].<ext>`
+  (`photoFileName`, local time). Selection mode (U29) is the auto-disposed
+  `attachmentSelectionProvider` family keyed by `AttachmentTarget`, shown by
+  `AttachmentSelectionAppBar` on the three pages that list attachments;
+  several are deleted with `AttachmentRepository.deleteMany` and brought
+  back by one `restoreMany`, each all-or-nothing in one transaction.
 - **No SQLCipher.** The database lives in the app sandbox, protected by
   Android file-based encryption. Owner data leaves the device only through
   the Drive backup, so encrypting the **backup file** is evaluated in the

@@ -16,8 +16,8 @@ import '../widgets/attachment_thumbnail.dart';
 
 /// The full-screen image viewer (U22–U26): the image [attachmentId] with
 /// pinch zoom, the other images of the same entry, vehicle or owner a swipe
-/// away, the caption (tap to edit) and the actions "Save to…" and
-/// "Delete". The id comes from the path; an unknown or deleted id shows a
+/// away, the caption (tap to edit) and the actions "Share", "Save to…"
+/// and "Delete". The id comes from the path; an unknown or deleted id shows a
 /// not-found page.
 class AttachmentViewerPage extends ConsumerStatefulWidget {
   /// Creates the viewer opened on the image [attachmentId].
@@ -139,6 +139,12 @@ class _ViewerState extends ConsumerState<_Viewer> {
             l10n.attachmentViewerPosition(_index + 1, images.length),
           ),
           actions: [
+            IconButton(
+              tooltip: l10n.actionShare,
+              icon: const Icon(Icons.share),
+              onPressed:
+                  busy ? null : () => shareAttachments(context, ref, [current]),
+            ),
             IconButton(
               tooltip: l10n.actionSaveTo,
               icon: const Icon(Icons.save_alt),

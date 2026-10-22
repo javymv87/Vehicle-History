@@ -142,3 +142,89 @@ Future<bool> deleteAttachment(
       return false;
   }
 }
+
+/// "Share": offers the files of [attachments] (one, or a selection) to
+/// another app through the system share sheet. Calls [onDone] once the
+/// sheet is shown, for instance to end the selection mode.
+Future<void> shareAttachments(
+  BuildContext context,
+  WidgetRef ref,
+  List<Attachment> attachments, {
+  VoidCallback? onDone,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final controller = ref.read(attachmentActionsControllerProvider.notifier);
+  switch (await controller.share(attachments)) {
+    case ActionSuccess():
+      onDone?.call();
+    case ActionFailure(:final error):
+      showErrorSnackBar(messenger, error.message(l10n));
+  }
+}
+
+/// "Save to…" of a selection: the "save as" dialog for one attachment, a
+/// folder for several, then "N files saved". Calls [onDone] once something
+/// was saved, for instance to end the selection mode.
+Future<void> saveAttachmentsTo(
+  BuildContext context,
+  WidgetRef ref,
+  List<Attachment> attachments, {
+  VoidCallback? onDone,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final controller = ref.read(attachmentActionsControllerProvider.notifier);
+  switch (await controller.saveManyTo(attachments)) {
+    case ActionSuccess(value: 0):
+      break;
+    case ActionSuccess(:final value):
+      showSavedSnackBar(messenger, l10n.attachmentsSavedCount(value));
+      onDone?.call();
+    case ActionFailure(:final error):
+      showErrorSnackBar(messenger, error.message(l10n));
+  }
+}
+
+/// Deletes the selected [attachments] together after one confirmation,
+/// then offers one "Undo" that brings them all back. Calls [onDeleted]
+/// once they are deleted, for instance to end the selection mode.
+Future<void> deleteAttachments(
+  BuildContext context,
+  WidgetRef ref,
+  List<Attachment> attachments, {
+  VoidCallback? onDeleted,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  // Read now: the controller outlives the page, the page's `ref` may not.
+  final controller = ref.read(attachmentActionsControllerProvider.notifier);
+  final count = attachments.length;
+  final confirmed = await confirmDelete(
+    context,
+    title: l10n.deleteAttachmentsTitle(count),
+    // One attachment is named, as when deleting it from its own menu.
+    message: count == 1
+        ? l10n.deleteAttachmentMessage(attachments.single.fileName)
+        : l10n.deleteAttachmentsMessage(count),
+  );
+  if (!confirmed) return;
+  final ids = [for (final attachment in attachments) attachment.id];
+  switch (await controller.deleteMany(ids)) {
+    case ActionSuccess():
+      onDeleted?.call();
+      showUndoSnackBar(
+        messenger,
+        l10n,
+        l10n.attachmentsDeletedCount(count),
+        onUndo: () async {
+          final undone = await controller.undoMany(ids);
+          if (undone case ActionFailure(:final error)) {
+            showErrorSnackBar(messenger, error.message(l10n));
+          }
+        },
+      );
+    case ActionFailure(:final error):
+      showErrorSnackBar(messenger, error.message(l10n));
+  }
+}

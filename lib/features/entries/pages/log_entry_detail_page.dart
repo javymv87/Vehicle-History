@@ -18,6 +18,7 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../attachments/widgets/attachment_actions.dart';
 import '../../attachments/widgets/attachments_section.dart';
+import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
@@ -107,22 +108,27 @@ class _LogEntryDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final km = entry.km;
     final cost = entry.costCents;
+    final target = AttachmentTarget.logEntry(entry.id);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(entry.type.label(l10n)),
-        actions: [
-          IconButton(
-            tooltip: l10n.actionEdit,
-            icon: const Icon(Icons.edit),
-            onPressed: () =>
-                context.push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
-          ),
-          IconButton(
-            tooltip: l10n.actionDelete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _delete(context, ref),
-          ),
-        ],
+      // U29: the contextual bar while attachments are selected.
+      appBar: AttachmentSelectionAppBar(
+        target: target,
+        appBar: AppBar(
+          title: Text(entry.type.label(l10n)),
+          actions: [
+            IconButton(
+              tooltip: l10n.actionEdit,
+              icon: const Icon(Icons.edit),
+              onPressed: () =>
+                  context.push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
+            ),
+            IconButton(
+              tooltip: l10n.actionDelete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _delete(context, ref),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -153,14 +159,10 @@ class _LogEntryDetailView extends ConsumerWidget {
           SectionHeader(
             title: l10n.attachmentsTitle,
             actionLabel: l10n.addAttachment,
-            onAction: () => addAttachments(
-              context,
-              ref,
-              AttachmentTarget.logEntry(entry.id),
-            ),
+            onAction: () => addAttachments(context, ref, target),
           ),
           AttachmentsSection(
-            target: AttachmentTarget.logEntry(entry.id),
+            target: target,
             emptyText: l10n.noAttachments,
           ),
         ],

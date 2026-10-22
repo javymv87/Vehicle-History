@@ -267,8 +267,13 @@ Tabla `attachments`: los campos técnicos comunes (`id`, `created_at`,
   borrada (una entrada, además, de un vehículo no borrado).
 - `kind`: `image`, `pdf` u `other`, según el tipo MIME o, si no lo hay, la
   extensión.
-- `file_name`: el nombre original, el que ve el usuario y el que propone
-  "Guardar en…".
+- `file_name`: el nombre original, el que ve el usuario y el que usan
+  "Guardar en…" y "Compartir". Las fotos de la cámara y de la galería no
+  tienen un nombre útil (el selector las llama `scaled_<uuid>….jpg`): se
+  guardan como `IMG_aaaammdd_hhmmss.jpg`, con la hora local del momento de
+  añadirlas, como la cámara de Android, y `_2`, `_3`… para las siguientes
+  fotos elegidas a la vez. Los archivos del selector de archivos conservan
+  su nombre.
 - `mime_type`, `relative_path` (`attachments/<id>.<ext>`), `size_bytes`
   (`CHECK >= 0`).
 - `caption`: descripción opcional, editable desde el visor o la lista.
@@ -288,6 +293,15 @@ galería ni en el almacenamiento público.
   2000 px como máximo y calidad JPEG 85 (`image_picker`); los archivos
   elegidos con el selector de archivos se guardan tal cual.
 - **Borrar** un adjunto es lógico (con Deshacer): el archivo se queda.
+  Varios adjuntos seleccionados se borran juntos en una sola transacción
+  (una fila del historial de operaciones por adjunto) y un único Deshacer
+  los restaura todos; si uno no se puede, no se toca ninguno.
+- **Copias de los selectores:** la cámara, la galería y el selector de
+  archivos dejan su propia copia en la caché de la app. En cuanto la app
+  tiene la suya (o rechaza el archivo), esa copia se borra; al arrancar, antes
+  de abrir la base de datos, se vacía la caché entera (también las copias
+  hechas para "Compartir"), de modo que ninguna copia de una foto sobrevive
+  a la sesión que la eligió.
 - **Entidad borrada:** los adjuntos de un vehículo en la papelera (los suyos
   y los de sus entradas), de una entrada borrada o de un propietario borrado
   se quedan tal cual y se ocultan con ella.

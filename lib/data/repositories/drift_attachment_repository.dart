@@ -95,28 +95,41 @@ class DriftAttachmentRepository implements AttachmentRepository {
   }
 
   @override
-  Future<void> delete(String id) {
+  Future<void> delete(String id) => deleteMany([id]);
+
+  @override
+  Future<Attachment> restore(String id) async =>
+      (await restoreMany([id])).single;
+
+  @override
+  Future<void> deleteMany(List<String> ids) {
     final now = utcNow(_clock);
     return _attachments.transaction(() async {
-      final current = await _requireLive(id);
-      await _writer.softDelete(current.target, id, now);
+      for (final id in ids.toSet()) {
+        final current = await _requireLive(id);
+        await _writer.softDelete(current.target, id, now);
+      }
     });
   }
 
   @override
-  Future<Attachment> restore(String id) {
+  Future<List<Attachment>> restoreMany(List<String> ids) {
     final now = utcNow(_clock);
     return _attachments.transaction(() async {
-      final deleted = await _attachments.getDeletedById(id);
-      if (deleted == null) {
-        throw EntityNotFoundException(AuditEntityType.attachment, id);
+      final restored = <Attachment>[];
+      for (final id in ids.toSet()) {
+        final deleted = await _attachments.getDeletedById(id);
+        if (deleted == null) {
+          throw EntityNotFoundException(AuditEntityType.attachment, id);
+        }
+        // What it belongs to may have been deleted since: the attachment
+        // would come back invisible, so the undo is refused instead.
+        await _requireLiveTarget(deleted.target);
+        await _attachments.restoreDeleted(id, now);
+        await _writer.record(id, AuditOperation.restore, now);
+        restored.add(deleted.copyWith(updatedAt: now));
       }
-      // What it belongs to may have been deleted since: the attachment
-      // would come back invisible, so the undo is refused instead.
-      await _requireLiveTarget(deleted.target);
-      await _attachments.restoreDeleted(id, now);
-      await _writer.record(id, AuditOperation.restore, now);
-      return deleted.copyWith(updatedAt: now);
+      return restored;
     });
   }
 

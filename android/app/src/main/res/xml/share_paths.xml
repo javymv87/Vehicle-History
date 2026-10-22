@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What ShareFileProvider may serve: only the copies made for sharing,
+     never the attachments themselves or the database. -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

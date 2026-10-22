@@ -9,6 +9,30 @@ enum SaveFileOutcome {
   cancelled,
 }
 
+/// A file handed to the native side: where it is, the name the user sees
+/// and its MIME type.
+class NativeFile {
+  /// Describes the file at [path], shown as [name].
+  const NativeFile({
+    required this.path,
+    required this.name,
+    required this.mimeType,
+  });
+
+  /// Absolute path of the file.
+  final String path;
+
+  /// Name given to the copy (the attachment's original name).
+  final String name;
+
+  /// MIME type of the file.
+  final String mimeType;
+
+  /// The map the channel expects.
+  Map<String, String> toMap() =>
+      {'path': path, 'name': name, 'mimeType': mimeType};
+}
+
 /// The native file operations of `MainActivity.kt` (channel
 /// `vehicle_history/files`), Android only.
 ///
@@ -24,6 +48,22 @@ abstract interface class NativeFiles {
     required String suggestedName,
     required String mimeType,
   });
+
+  /// Asks the user for a folder (Android `ACTION_OPEN_DOCUMENT_TREE`) and
+  /// copies each of [files] into it under its name, in 64 KB chunks; the
+  /// provider adds " (1)" to a name already there instead of overwriting.
+  ///
+  /// Resolves to the number of files saved, or `null` when the user
+  /// cancelled. Throws [PlatformException] when a copy fails (its `details`
+  /// is the number saved before the failure).
+  Future<int?> saveFilesToFolder(List<NativeFile> files);
+
+  /// Offers [files] to other apps through the system share sheet, under
+  /// their names. Resolves once the sheet is shown.
+  ///
+  /// Throws [PlatformException] when the copies cannot be made or no app
+  /// can receive them.
+  Future<void> shareFiles(List<NativeFile> files);
 
   /// The bytes free for the app on the volume holding [path], or `null`
   /// when the platform cannot tell.
@@ -53,6 +93,18 @@ class MethodChannelNativeFiles implements NativeFiles {
         ? SaveFileOutcome.saved
         : SaveFileOutcome.cancelled;
   }
+
+  @override
+  Future<int?> saveFilesToFolder(List<NativeFile> files) =>
+      _channel.invokeMethod<int>('saveFilesToFolder', {
+        'files': [for (final file in files) file.toMap()],
+      });
+
+  @override
+  Future<void> shareFiles(List<NativeFile> files) =>
+      _channel.invokeMethod<void>('shareFiles', {
+        'files': [for (final file in files) file.toMap()],
+      });
 
   @override
   Future<int?> freeBytes(String path) async {

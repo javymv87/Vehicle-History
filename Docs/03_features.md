@@ -375,14 +375,21 @@ de la hoja de ruta). Datos, límites y borrado en `02_data_model.md`
 - **Ver imágenes:** visor a pantalla completa con zoom con los dedos y
   deslizamiento entre las imágenes de la misma entrada, vehículo o
   propietario; "2 de 5" arriba; la descripción abajo (tocarla la edita, o
-  "Añadir una descripción"); acciones **Guardar en…** y **Eliminar** (con
-  Deshacer). Las miniaturas se dibujan con `Image.file` al tamaño en que se
+  "Añadir una descripción"); acciones **Compartir**, **Guardar en…** y
+  **Eliminar** (con Deshacer). Las miniaturas se dibujan con `Image.file` al tamaño en que se
   ven (`cacheWidth`), sin archivos de miniatura.
 - **PDF y otros:** se abren con la app del teléfono (`open_filex`); si no hay
-  ninguna, un mensaje. Su fila tiene un menú con **Guardar en…**, **Editar
-  descripción** y **Eliminar**.
+  ninguna, un mensaje. Su fila tiene un menú con **Compartir**, **Guardar
+  en…**, **Editar descripción** y **Eliminar**.
 - **Guardar en…:** el diálogo "guardar como" del sistema con el nombre
   original del archivo; la copia es en streaming (ver `05_sync_and_storage.md`).
+  Con varios adjuntos seleccionados, el usuario elige una **carpeta** (del
+  teléfono o de un proveedor como Drive, si lo permite) y cada archivo se
+  copia en ella con su nombre; si ya existe uno igual, Android añade " (1)"
+  en lugar de sobrescribirlo. Después, "N archivos guardados".
+- **Compartir:** la hoja de compartir del sistema (WhatsApp, correo…) con
+  uno o varios adjuntos, con su nombre original. La app solo da acceso de
+  lectura a una copia de esos archivos, nunca a la carpeta de adjuntos.
 - **Archivo no encontrado:** un adjunto cuya fila existe pero cuyo archivo
   falta muestra ese texto en lugar de la miniatura o del tamaño.
 
@@ -412,6 +419,22 @@ Pantallas:
 - **U28 — Diseño:** Material 3, zonas táctiles de al menos 48 dp, modo
   oscuro (el visor siempre sobre negro), texto grande y 360 dp de ancho;
   indicadores de progreso al elegir, guardar y exportar.
+- **U29 — Selección múltiple**, igual en el detalle de la entrada, la
+  pestaña Documentos del vehículo y los documentos del propietario (no en el
+  formulario de la entrada, que tiene su propio botón para quitar):
+  - Una **pulsación larga** sobre una miniatura o una fila activa la
+    selección con ese adjunto marcado. Después, cada toque marca o desmarca
+    (no abre); al desmarcar el último se sale. Las miniaturas marcadas se
+    encogen un poco y llevan una marca; las filas muestran una casilla en
+    lugar del menú.
+  - La barra superior se convierte en barra contextual: **✕** (salir),
+    "N seleccionados", **Seleccionar todo**, **Compartir**, **Guardar en…**
+    y **Eliminar**. Atrás sale de la selección, no de la página. En la
+    pestaña Documentos se oculta el botón flotante, y cambiar de pestaña
+    sale de la selección.
+  - **Eliminar** pide una sola confirmación ("¿Eliminar N adjuntos?"; con
+    uno solo, con su nombre) y ofrece un único Deshacer. Compartir, guardar
+    (si se guardó algo) y eliminar terminan la selección.
 
 Pendiente: foto de perfil del vehículo y del propietario, y los datos propios
 de los documentos (tipo, número, vencimiento) para los recordatorios.

@@ -17,6 +17,8 @@ import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../attachments/widgets/attachment_actions.dart';
 import '../../attachments/widgets/attachments_section.dart';
+import '../../attachments/widgets/attachment_selection_app_bar.dart';
+import '../../attachments/controllers/attachment_selection_controller.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
@@ -86,8 +88,17 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
   )
     // The filter button and the FAB depend on the tab.
     ..addListener(() {
-      if (!_tabs.indexIsChanging) setState(() {});
+      if (_tabs.indexIsChanging) return;
+      // The selection of documents ends when their tab is left.
+      if (_tab != VehicleTab.documents) {
+        ref.read(attachmentSelectionProvider(_documents).notifier).clear();
+      }
+      setState(() {});
     });
+
+  /// The vehicle's own attachments, listed on the Documents tab.
+  AttachmentTarget get _documents =>
+      AttachmentTarget.vehicle(widget.item.vehicle.id);
 
   /// The tab currently shown.
   VehicleTab get _tab => VehicleTab.values[_tabs.index];
@@ -165,30 +176,36 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
         _tabs.animateTo(request.tab.index);
       }
     });
+    final selectingDocuments =
+        ref.watch(attachmentSelectionProvider(_documents)).isNotEmpty;
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          if (_tab == VehicleTab.history)
-            IconButton(
-              tooltip: l10n.filterAction,
-              // A dot on the icon tells that filters are active.
-              icon: Badge(
-                isLabelVisible: !filter.isEmpty,
-                child: const Icon(Icons.filter_list),
+      // U29: the contextual bar while documents are selected.
+      appBar: AttachmentSelectionAppBar(
+        target: _documents,
+        appBar: AppBar(
+          actions: [
+            if (_tab == VehicleTab.history)
+              IconButton(
+                tooltip: l10n.filterAction,
+                // A dot on the icon tells that filters are active.
+                icon: Badge(
+                  isLabelVisible: !filter.isEmpty,
+                  child: const Icon(Icons.filter_list),
+                ),
+                onPressed: () => openLogEntryFilters(context, ref, vehicle.id),
               ),
-              onPressed: () => openLogEntryFilters(context, ref, vehicle.id),
+            IconButton(
+              tooltip: l10n.actionEdit,
+              icon: const Icon(Icons.edit),
+              onPressed: () => context.push(AppRoutes.editVehicle(vehicle.id)),
             ),
-          IconButton(
-            tooltip: l10n.actionEdit,
-            icon: const Icon(Icons.edit),
-            onPressed: () => context.push(AppRoutes.editVehicle(vehicle.id)),
-          ),
-          IconButton(
-            tooltip: l10n.actionDelete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _delete,
-          ),
-        ],
+            IconButton(
+              tooltip: l10n.actionDelete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _delete,
+            ),
+          ],
+        ),
       ),
       floatingActionButton: switch (_tab) {
         // On Details the button keeps adding entries, as before step 5.
@@ -207,13 +224,11 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
             icon: const Icon(Icons.speed),
             label: Text(l10n.addMileageReading),
           ),
+        // Hidden in the selection mode, as the page's own actions are.
+        VehicleTab.documents when selectingDocuments => null,
         VehicleTab.documents => FloatingActionButton.extended(
             heroTag: 'documents-${vehicle.id}',
-            onPressed: () => addAttachments(
-              context,
-              ref,
-              AttachmentTarget.vehicle(vehicle.id),
-            ),
+            onPressed: () => addAttachments(context, ref, _documents),
             icon: const Icon(Icons.note_add_outlined),
             label: Text(l10n.addDocument),
           ),
@@ -245,7 +260,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
                   padding: const EdgeInsets.only(top: 8, bottom: 88),
                   children: [
                     AttachmentsSection(
-                      target: AttachmentTarget.vehicle(vehicle.id),
+                      target: _documents,
                       emptyText: l10n.noDocuments,
                     ),
                   ],

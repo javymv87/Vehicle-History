@@ -280,5 +280,14 @@
   "errorSaveFailed": "Impossibile salvare il file.",
   "errorOpenNoApp": "Nessuna app del telefono può aprire questo file.",
   "errorFileMissing": "Il file di questo allegato non è stato trovato sul telefono.",
-  "errorBackupNoSpace": "Non c'è abbastanza spazio libero sul telefono per importare questo backup. Non è cambiato nulla."
+  "errorBackupNoSpace": "Non c'è abbastanza spazio libero sul telefono per importare questo backup. Non è cambiato nulla.",
+  "attachmentsSelected": "{count, plural, =1{1 selezionato} other{{count} selezionati}}",
+  "actionCancelSelection": "Annulla selezione",
+  "actionSelectAll": "Seleziona tutto",
+  "actionShare": "Condividi",
+  "attachmentsSavedCount": "{count, plural, =1{File salvato} other{{count} file salvati}}",
+  "attachmentsDeletedCount": "{count, plural, =1{Allegato eliminato} other{{count} allegati eliminati}}",
+  "deleteAttachmentsTitle": "{count, plural, =1{Eliminare questo allegato?} other{Eliminare {count} allegati?}}",
+  "deleteAttachmentsMessage": "{count, plural, =1{L'allegato selezionato verrà eliminato.} other{I {count} allegati selezionati verranno eliminati.}}",
+  "errorShareFailed": "Impossibile condividere i file."
 }

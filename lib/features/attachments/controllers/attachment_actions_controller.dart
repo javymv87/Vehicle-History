@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/attachments/attachment_picker.dart';
@@ -11,8 +12,9 @@ import '../../../shared/utils/action_result.dart';
 /// Stages the files picked from [source] into a new session of the staging
 /// directory and returns them; files above 25 MB are left out and counted.
 ///
-/// Shared by the attachment actions and the entry form. Throws what the
-/// picker throws ([AttachmentPickException]).
+/// Shared by the attachment actions and the entry form. Deletes the copy
+/// each picker leaves in the cache ([PickedFile.deleteSource]). Throws what
+/// the picker throws ([AttachmentPickException]).
 Future<({List<StagedFile> staged, int tooLarge})> pickAndStage(
   Ref ref,
   AttachmentSource source,
@@ -27,6 +29,10 @@ Future<({List<StagedFile> staged, int tooLarge})> pickAndStage(
       staged.add(await staging.stage(sessionId, file));
     } on AttachmentTooLargeException {
       tooLarge++;
+    } finally {
+      // The staged copy is ours; the picker's own copy in the cache is
+      // not needed any more, staged or refused.
+      await file.deleteSource?.call();
     }
   }
   return (staged: staged, tooLarge: tooLarge);
@@ -118,6 +124,77 @@ class AttachmentActionsController extends Notifier<bool> {
     }
   }
 
+  /// Copies the files of [attachments] (a selection) where the user
+  /// chooses, under their original names: the "save as" dialog for one, a
+  /// folder for several.
+  ///
+  /// Succeeds with the number of files saved, 0 when the user cancelled.
+  /// Fails with [ActionError.attachmentFileMissing], saving nothing, when a
+  /// file is missing on the phone.
+  Future<ActionResult<int>> saveManyTo(List<Attachment> attachments) async {
+    if (attachments.length == 1) {
+      return switch (await saveTo(attachments.single)) {
+        ActionSuccess(:final value) => ActionSuccess(value ? 1 : 0),
+        ActionFailure(:final error) => ActionFailure(error),
+      };
+    }
+    final files = await _nativeFilesOf(attachments);
+    if (files == null) {
+      return const ActionFailure(ActionError.attachmentFileMissing);
+    }
+    state = true;
+    try {
+      return await runAction(
+        () async =>
+            await ref.read(nativeFilesProvider).saveFilesToFolder(files) ?? 0,
+      );
+    } finally {
+      state = false;
+    }
+  }
+
+  /// Offers the files of [attachments] (one or a selection) to another app
+  /// through the system share sheet, under their original names.
+  ///
+  /// Fails with [ActionError.attachmentFileMissing], sharing nothing, when a
+  /// file is missing on the phone, and with [ActionError.shareFailed] when
+  /// the system could not share them.
+  Future<ActionResult<void>> share(List<Attachment> attachments) async {
+    final files = await _nativeFilesOf(attachments);
+    if (files == null) {
+      return const ActionFailure(ActionError.attachmentFileMissing);
+    }
+    state = true;
+    try {
+      await ref.read(nativeFilesProvider).shareFiles(files);
+      return const ActionSuccess(null);
+    } on PlatformException {
+      return const ActionFailure(ActionError.shareFailed);
+    } finally {
+      state = false;
+    }
+  }
+
+  /// The files of [attachments] for the native side, or `null` when one of
+  /// them is missing on the phone.
+  Future<List<NativeFile>?> _nativeFilesOf(
+    List<Attachment> attachments,
+  ) async {
+    final repository = ref.read(attachmentRepositoryProvider);
+    final files = <NativeFile>[];
+    for (final attachment in attachments) {
+      if (!await repository.fileExists(attachment)) return null;
+      files.add(
+        NativeFile(
+          path: repository.filePathOf(attachment),
+          name: attachment.fileName,
+          mimeType: attachment.mimeType,
+        ),
+      );
+    }
+    return files;
+  }
+
   /// Sets the caption of the attachment [id]; blank clears it.
   Future<ActionResult<Attachment>> updateCaption(String id, String? caption) =>
       runAction(
@@ -131,6 +208,14 @@ class AttachmentActionsController extends Notifier<bool> {
   /// Brings back the attachment [id] deleted by [delete].
   Future<ActionResult<Attachment>> undo(String id) =>
       runAction(() => ref.read(attachmentRepositoryProvider).restore(id));
+
+  /// Soft-deletes the attachments [ids] (a selection) together.
+  Future<ActionResult<void>> deleteMany(List<String> ids) =>
+      runAction(() => ref.read(attachmentRepositoryProvider).deleteMany(ids));
+
+  /// Brings back together the attachments [ids] deleted by [deleteMany].
+  Future<ActionResult<List<Attachment>>> undoMany(List<String> ids) =>
+      runAction(() => ref.read(attachmentRepositoryProvider).restoreMany(ids));
 }
 
 /// The app-wide [AttachmentActionsController].

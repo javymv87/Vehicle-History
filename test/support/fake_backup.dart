@@ -64,6 +64,25 @@ class FakeNativeFiles implements NativeFiles {
   /// What [freeBytes] answers.
   int? free;
 
+  /// What the folder picker answers: `true` saves, `false` cancels.
+  bool folderChosen = true;
+
+  /// The files saved to a folder, one list per call.
+  final List<List<NativeFile>> folderSaves = [];
+
+  /// The files shared, one list per call.
+  final List<List<NativeFile>> shares = [];
+
+  @override
+  Future<int?> saveFilesToFolder(List<NativeFile> files) async {
+    if (!folderChosen) return null;
+    folderSaves.add(files);
+    return files.length;
+  }
+
+  @override
+  Future<void> shareFiles(List<NativeFile> files) async => shares.add(files);
+
   @override
   Future<SaveFileOutcome> saveFile({
     required String sourcePath,
@@ -100,12 +119,19 @@ class FakeAttachmentPicker implements AttachmentPicker {
   }
 }
 
-/// A picked file named [name] with [bytes] as content.
-PickedFile pickedFile(String name, List<int> bytes, {String? mimeType}) =>
+/// A picked file named [name] with [bytes] as content; [onDeleteSource]
+/// is told when the picker's own copy is deleted.
+PickedFile pickedFile(
+  String name,
+  List<int> bytes, {
+  String? mimeType,
+  void Function()? onDeleteSource,
+}) =>
     PickedFile(
       name: name,
       mimeType: mimeType,
       openRead: () => Stream.value(bytes),
+      deleteSource: () async => onDeleteSource?.call(),
     );
 
 /// [FileOpener] that records what it was asked to open.

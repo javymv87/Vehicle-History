@@ -1455,5 +1455,66 @@
   "errorBackupNoSpace": "There is not enough free space on the phone to import this backup. Nothing was changed.",
   "@errorBackupNoSpace": {
     "description": "Error when the phone has not enough free space for an import."
+  },
+  "attachmentsSelected": "{count} selected",
+  "@attachmentsSelected": {
+    "description": "Title of the contextual bar in the attachment selection mode: how many are selected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "actionCancelSelection": "Cancel selection",
+  "@actionCancelSelection": {
+    "description": "Tooltip of the button that ends the attachment selection mode."
+  },
+  "actionSelectAll": "Select all",
+  "@actionSelectAll": {
+    "description": "Tooltip of the button that selects every attachment of the list."
+  },
+  "actionShare": "Share",
+  "@actionShare": {
+    "description": "Tooltip of the button that shares attachments with another app."
+  },
+  "attachmentsSavedCount": "{count, plural, =1{File saved} other{{count} files saved}}",
+  "@attachmentsSavedCount": {
+    "description": "Brief confirmation after several attachments were saved to a folder.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attachmentsDeletedCount": "{count, plural, =1{Attachment deleted} other{{count} attachments deleted}}",
+  "@attachmentsDeletedCount": {
+    "description": "Snackbar with Undo after several selected attachments were deleted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAttachmentsTitle": "{count, plural, =1{Delete this attachment?} other{Delete {count} attachments?}}",
+  "@deleteAttachmentsTitle": {
+    "description": "Title of the dialog that confirms deleting the selected attachments.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAttachmentsMessage": "{count, plural, =1{The selected attachment will be deleted.} other{The {count} selected attachments will be deleted.}}",
+  "@deleteAttachmentsMessage": {
+    "description": "Body of the dialog that confirms deleting the selected attachments.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorShareFailed": "The files could not be shared.",
+  "@errorShareFailed": {
+    "description": "Error when attachments could not be shared with another app."
   }
 }

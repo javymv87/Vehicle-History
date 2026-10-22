@@ -13,6 +13,7 @@ import 'catalog/country_names.dart';
 import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
 import 'platform/native_files.dart';
+import 'platform/temporary_files.dart';
 import 'repositories/attachment_repository.dart';
 import 'repositories/attachment_writer.dart';
 import 'repositories/drift_attachment_repository.dart';
@@ -69,6 +70,9 @@ final attachmentStoreProvider = Provider<AttachmentStore>(
 /// screen instead of the router. Never retried automatically: a refused or
 /// failed upgrade does not fix itself, and retrying would only repeat it.
 ///
+/// First the app's cache is emptied (`wipeTemporaryDirectorySafely`): the
+/// copies the pickers left and the files prepared for sharing.
+///
 /// The cleanup runs here, once per app start (this provider is created once
 /// and never retried), and only after a successful opening. Its failure is
 /// logged and never stops the start (`runStartupCleanupSafely`). Then the
@@ -77,6 +81,8 @@ final attachmentStoreProvider = Provider<AttachmentStore>(
 final databaseReadyProvider = FutureProvider<void>(
   (ref) async {
     await ref.watch(appSupportDirectoryProvider.future);
+    // Before the database opens: nothing uses the cache yet.
+    await wipeTemporaryDirectorySafely(getTemporaryDirectory);
     final db = ref.watch(appDatabaseProvider);
     await db.open();
     await runStartupCleanupSafely(

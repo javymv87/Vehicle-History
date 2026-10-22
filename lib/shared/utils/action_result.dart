@@ -54,6 +54,9 @@ enum ActionError {
   /// No installed app can open the attachment.
   openNoApp,
 
+  /// The attachments could not be shared with another app.
+  shareFailed,
+
   /// The file of the attachment is missing on the phone.
   attachmentFileMissing,
 

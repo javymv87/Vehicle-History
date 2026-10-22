@@ -326,6 +326,57 @@ void main() {
       ]);
     });
 
+    test(
+        'a selection is deleted together, one audit row each, and one undo '
+        'brings it all back', () async {
+      await attachments.deleteMany([photo.id, pdf.id]);
+      expect(
+        await attachments.getByTarget(AttachmentTarget.owner(ownerId)),
+        isEmpty,
+      );
+      expect(store.stored.containsKey(photo.relativePath), isTrue);
+      expect(store.stored.containsKey(pdf.relativePath), isTrue);
+
+      final restored = await attachments.restoreMany([photo.id, pdf.id]);
+      expect([for (final a in restored) a.id], [photo.id, pdf.id]);
+      expect(
+        await attachments.getByTarget(AttachmentTarget.owner(ownerId)),
+        hasLength(2),
+      );
+      for (final id in [photo.id, pdf.id]) {
+        expect(await auditOf(id), [
+          AuditOperation.create,
+          AuditOperation.delete,
+          AuditOperation.restore,
+        ]);
+      }
+    });
+
+    test('a selection with one attachment already deleted deletes nothing',
+        () async {
+      await attachments.delete(pdf.id);
+      await expectLater(
+        attachments.deleteMany([photo.id, pdf.id]),
+        throwsA(isA<EntityNotFoundException>()),
+      );
+      // Rolled back: the photo is still live, with no delete audited.
+      expect(
+        await attachments.getByTarget(AttachmentTarget.owner(ownerId)),
+        [photo],
+      );
+      expect(await auditOf(photo.id), [AuditOperation.create]);
+
+      // Likewise, an undo that cannot bring everything back brings nothing.
+      await expectLater(
+        attachments.restoreMany([pdf.id, photo.id]),
+        throwsA(isA<EntityNotFoundException>()),
+      );
+      expect(
+        await attachments.getByTarget(AttachmentTarget.owner(ownerId)),
+        [photo],
+      );
+    });
+
     test('undo is refused once the owner is gone', () async {
       await attachments.delete(photo.id);
       // An owner without vehicles can be deleted.

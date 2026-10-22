@@ -994,6 +994,23 @@ class FakeAttachmentRepository implements AttachmentRepository {
       });
 
   @override
+  Future<void> deleteMany(List<String> ids) => store.write(() {
+        if (ids.any((id) => _live(id) == null)) {
+          throw EntityNotFoundException(AuditEntityType.attachment, ids.first);
+        }
+        store.deletedAttachments.addAll(ids);
+      });
+
+  @override
+  Future<List<Attachment>> restoreMany(List<String> ids) => store.write(() {
+        if (!ids.every(store.deletedAttachments.contains)) {
+          throw EntityNotFoundException(AuditEntityType.attachment, ids.first);
+        }
+        store.deletedAttachments.removeAll(ids);
+        return [for (final id in ids) store.attachments[id]!];
+      });
+
+  @override
   String filePathOf(Attachment attachment) =>
       '/fake/${attachment.relativePath}';
 

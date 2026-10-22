@@ -280,5 +280,14 @@
   "errorSaveFailed": "No se pudo guardar el archivo.",
   "errorOpenNoApp": "Ninguna app del teléfono puede abrir este archivo.",
   "errorFileMissing": "No se encontró el archivo de este adjunto en el teléfono.",
-  "errorBackupNoSpace": "No hay espacio libre suficiente en el teléfono para importar esta copia. No ha cambiado nada."
+  "errorBackupNoSpace": "No hay espacio libre suficiente en el teléfono para importar esta copia. No ha cambiado nada.",
+  "attachmentsSelected": "{count, plural, =1{1 seleccionado} other{{count} seleccionados}}",
+  "actionCancelSelection": "Cancelar selección",
+  "actionSelectAll": "Seleccionar todo",
+  "actionShare": "Compartir",
+  "attachmentsSavedCount": "{count, plural, =1{Archivo guardado} other{{count} archivos guardados}}",
+  "attachmentsDeletedCount": "{count, plural, =1{Adjunto eliminado} other{{count} adjuntos eliminados}}",
+  "deleteAttachmentsTitle": "{count, plural, =1{¿Eliminar este adjunto?} other{¿Eliminar {count} adjuntos?}}",
+  "deleteAttachmentsMessage": "{count, plural, =1{Se borrará el adjunto seleccionado.} other{Se borrarán los {count} adjuntos seleccionados.}}",
+  "errorShareFailed": "No se pudieron compartir los archivos."
 }

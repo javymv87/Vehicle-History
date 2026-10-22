@@ -163,8 +163,14 @@ void main() {
   testWidgets(
       'the Documents tab (U25) adds a document with its button and deletes '
       'it with Undo', (tester) async {
+    var sourceDeleted = false;
     fakes.attachmentPicker.files[AttachmentSource.file] = [
-      pickedFile('Polizza.pdf', [1, 2], mimeType: 'application/pdf'),
+      pickedFile(
+        'Polizza.pdf',
+        [1, 2],
+        mimeType: 'application/pdf',
+        onDeleteSource: () => sourceDeleted = true,
+      ),
     ];
     await pumpApp(
       tester,
@@ -186,6 +192,8 @@ void main() {
       store.attachments.values.single.target,
       AttachmentTarget.vehicle(vehicleId),
     );
+    // The picker's own copy in the cache is gone once ours is saved.
+    expect(sourceDeleted, isTrue);
 
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
@@ -205,6 +213,129 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Polizza.pdf'), findsOneWidget);
+  });
+
+  group('selection mode (U29)', () {
+    /// Two documents of the owner, shown on the owner detail.
+    Future<void> pumpOwnerWithTwo(WidgetTester tester) async {
+      store
+        ..addAttachment(AttachmentTarget.owner(ownerId), staged('Patente.pdf'))
+        ..addAttachment(AttachmentTarget.owner(ownerId), staged('DNI.pdf'));
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.owner(ownerId),
+        backup: fakes,
+      );
+      await tester.scrollUntilVisible(find.text('DNI.pdf'), 100);
+    }
+
+    testWidgets(
+        'a long press starts it; select all, share and Back end it as '
+        'expected', (tester) async {
+      await pumpOwnerWithTwo(tester);
+      await tester.longPress(find.text('Patente.pdf'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selected'), findsOneWidget);
+      // The menu gives way to a check box.
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+
+      await tester.tap(find.byTooltip('Select all'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 selected'), findsOneWidget);
+
+      // A tap now unselects instead of opening.
+      await tester.tap(find.text('DNI.pdf'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selected'), findsOneWidget);
+      expect(fakes.fileOpener.opened, isEmpty);
+
+      // Back ends the mode and stays on the page.
+      final handled = await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(handled, isTrue);
+      expect(find.text('1 selected'), findsNothing);
+      expect(find.text('Patente.pdf'), findsOneWidget);
+
+      await tester.longPress(find.text('Patente.pdf'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Select all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Share'));
+      await tester.pumpAndSettle();
+      expect(
+        [for (final file in fakes.nativeFiles.shares.single) file.name],
+        ['Patente.pdf', 'DNI.pdf'],
+      );
+      expect(find.text('2 selected'), findsNothing);
+    });
+
+    testWidgets('several are saved to a folder with their names',
+        (tester) async {
+      await pumpOwnerWithTwo(tester);
+      await tester.longPress(find.text('Patente.pdf'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DNI.pdf'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Save to…'));
+      await tester.pumpAndSettle();
+
+      expect(
+        [for (final file in fakes.nativeFiles.folderSaves.single) file.name],
+        ['Patente.pdf', 'DNI.pdf'],
+      );
+      expect(fakes.nativeFiles.saves, isEmpty);
+      expect(find.text('2 files saved'), findsOneWidget);
+    });
+
+    testWidgets('several are deleted together and one Undo brings them back',
+        (tester) async {
+      await pumpOwnerWithTwo(tester);
+      await tester.longPress(find.text('Patente.pdf'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Select all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Delete').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete 2 attachments?'), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Delete'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(store.liveAttachments, isEmpty);
+      expect(find.text('2 attachments deleted'), findsOneWidget);
+      expect(find.text('2 selected'), findsNothing);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(store.liveAttachments, hasLength(2));
+    });
+
+    testWidgets(
+        'on the Documents tab the add button hides while selecting, and '
+        'leaving the tab ends the mode', (tester) async {
+      store.addAttachment(
+        AttachmentTarget.vehicle(vehicleId),
+        staged('Polizza.pdf'),
+      );
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.vehicle(vehicleId, tab: VehicleTab.documents),
+        backup: fakes,
+      );
+      await tester.longPress(find.text('Polizza.pdf'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selected'), findsOneWidget);
+      expect(find.text('Add document'), findsNothing);
+
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selected'), findsNothing);
+    });
   });
 
   testWidgets('the owner detail has its documents section (U26)',

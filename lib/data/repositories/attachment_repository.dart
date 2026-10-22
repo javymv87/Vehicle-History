@@ -63,6 +63,20 @@ abstract interface class AttachmentRepository {
   /// has that id, and for its entity if that is no longer live.
   Future<Attachment> restore(String id);
 
+  /// Soft-deletes the attachments [ids] (a selection) in one transaction,
+  /// one audit row each; their files stay on disk.
+  ///
+  /// Throws `EntityNotFoundException` and deletes nothing when one of them
+  /// is missing or already deleted.
+  Future<void> deleteMany(List<String> ids);
+
+  /// Brings back the soft-deleted attachments [ids] in one transaction, as
+  /// the "Undo" of [deleteMany], and returns them.
+  ///
+  /// Throws like [restore] and restores nothing when one of them cannot
+  /// come back.
+  Future<List<Attachment>> restoreMany(List<String> ids);
+
   /// The absolute path of the file of [attachment].
   String filePathOf(Attachment attachment);
 

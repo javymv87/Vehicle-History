@@ -18,6 +18,7 @@ import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../attachments/widgets/attachment_actions.dart';
 import '../../attachments/widgets/attachments_section.dart';
+import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../controllers/owner_deletion_controller.dart';
 import '../controllers/owner_detail_controller.dart';
 
@@ -120,21 +121,26 @@ class _OwnerDetailView extends ConsumerWidget {
     final theme = Theme.of(context);
     final owner = detail.owner;
     final birthDate = owner.birthDate;
+    final target = AttachmentTarget.owner(owner.id);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(owner.fullName),
-        actions: [
-          IconButton(
-            tooltip: l10n.actionEdit,
-            icon: const Icon(Icons.edit),
-            onPressed: () => context.push(AppRoutes.editOwner(owner.id)),
-          ),
-          IconButton(
-            tooltip: l10n.actionDelete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _delete(context, ref),
-          ),
-        ],
+      // U29: the contextual bar while documents are selected.
+      appBar: AttachmentSelectionAppBar(
+        target: target,
+        appBar: AppBar(
+          title: Text(owner.fullName),
+          actions: [
+            IconButton(
+              tooltip: l10n.actionEdit,
+              icon: const Icon(Icons.edit),
+              onPressed: () => context.push(AppRoutes.editOwner(owner.id)),
+            ),
+            IconButton(
+              tooltip: l10n.actionDelete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _delete(context, ref),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -189,11 +195,10 @@ class _OwnerDetailView extends ConsumerWidget {
           SectionHeader(
             title: l10n.documentsTitle,
             actionLabel: l10n.addDocument,
-            onAction: () =>
-                addAttachments(context, ref, AttachmentTarget.owner(owner.id)),
+            onAction: () => addAttachments(context, ref, target),
           ),
           AttachmentsSection(
-            target: AttachmentTarget.owner(owner.id),
+            target: target,
             emptyText: l10n.noDocuments,
           ),
         ],
