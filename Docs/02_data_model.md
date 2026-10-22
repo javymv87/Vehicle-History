@@ -52,10 +52,15 @@ registro principal lleva consigo:
      o más de vehículos vivos; y los propietarios borrados hace 30 días o más
      a los que ya no apunta **ningún** vehículo (vivo o borrado). Si algo
      falla, se deshace todo, se anota en el registro y la app arranca igual.
-- El historial de operaciones guarda una fila `purge` por cada vehículo y
-  cada propietario borrados físicamente; las entradas y lecturas que se van
-  con ellos no tienen fila propia. Las filas anteriores del historial que
-  apuntan a lo borrado se quedan (no hay clave externa).
+- El historial de operaciones guarda una fila `purge` por cada elemento
+  borrado físicamente por sí mismo: cada vehículo y cada propietario, y,
+  desde la 0.8.1, cada entrada, lectura y adjunto que la limpieza de los 30
+  días elimina sueltos. Lo que se va **con** su padre (las entradas y
+  lecturas de un vehículo, los adjuntos de un vehículo, entrada o
+  propietario eliminados) no tiene fila propia: la del padre lo cubre. Así
+  la fecha de última modificación de los datos (`last_modified_at`, ver
+  `05_sync_and_storage.md`) nunca retrocede. Las filas anteriores del
+  historial que apuntan a lo borrado se quedan (no hay clave externa).
 - **Adjuntos (desde el esquema v7):** se van con lo que borra el punto 1 (los
   del vehículo y los de sus entradas, sea cual sea su indicador) y con los
   propietarios y las entradas que borra la limpieza; además la limpieza borra
@@ -444,7 +449,8 @@ cuando la entidad a la que apuntan se borra físicamente.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
 - Operación: creación / modificación / eliminación / restauración /
-  eliminación definitiva (`purge`, solo vehículos y propietarios)
+  eliminación definitiva (`purge`: vehículos y propietarios, y entradas,
+  lecturas y adjuntos que la limpieza elimina sueltos)
 - Cuándo: fecha y hora
 
 ### Settings (ajustes)

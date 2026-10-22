@@ -69,8 +69,12 @@ class TrashCleanupService {
   /// 4. deleted attachments that do not travel with a vehicle in the Trash.
   ///
   /// The attachments of a removed vehicle, entry or owner go with it,
-  /// whatever their own flag. Vehicles and owners get a `purge` audit row;
-  /// the entries, readings and attachments do not. Children of a vehicle
+  /// whatever their own flag. Every vehicle, owner, entry (2), reading (2)
+  /// and attachment (4) removed gets a `purge` audit row at [now], in the
+  /// same transaction, so the last-modified stamp of the data
+  /// (`BackupDao.lastModifiedAt`) never goes backwards; the rows that go
+  /// with a removed parent (a vehicle's entries and readings, any
+  /// attachment of a removed entity) are covered by the parent's row. Children of a vehicle
   /// still in the Trash are left alone: they go with their vehicle. If
   /// anything fails, the transaction rolls back, nothing is removed, and the
   /// error is rethrown. The attachment files are deleted only after the
@@ -95,16 +99,25 @@ class TrashCleanupService {
         await _record(AuditEntityType.vehicle, id, now);
       }
 
+      // The expired rows below are all soft-deleted (that is how they were
+      // found), so each one listed is removed and gets its `purge` row.
+
       final entries = expired(await _trash.getDeletedEntriesOfLiveVehicles());
       var removedEntries = 0;
       if (entries.isNotEmpty) {
         final purged = await _trash.purgeEntries(entries);
         removedEntries = purged.rows;
         files.addAll(purged.files);
+        for (final id in entries) {
+          await _record(AuditEntityType.logEntry, id, now);
+        }
       }
       final readings = expired(await _trash.getDeletedReadingsOfLiveVehicles());
       final removedReadings =
           readings.isEmpty ? 0 : await _trash.purgeReadings(readings);
+      for (final id in readings) {
+        await _record(AuditEntityType.mileageReading, id, now);
+      }
 
       final owners = expired(await _trash.getDeletedOwnersWithoutVehicles());
       for (final id in owners) {
@@ -119,6 +132,9 @@ class TrashCleanupService {
         final purged = await _trash.purgeAttachments(attachments);
         removedAttachments = purged.rows;
         files.addAll(purged.files);
+        for (final id in attachments) {
+          await _record(AuditEntityType.attachment, id, now);
+        }
       }
 
       return CleanupReport(
