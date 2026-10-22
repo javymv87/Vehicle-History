@@ -147,7 +147,11 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   blocks the start). The cleanup removes, at `deleted_at` ≤ now − 30 days
   (`trashRetention`): trashed vehicles with their children; deleted entries
   and readings of live vehicles; deleted owners referenced by no vehicle
-  row. Vehicles and owners get a `purge` audit row, children none. An owner
+  row; deleted attachments outside the Trash. Every vehicle and owner
+  removed, and (since 0.8.1) every entry, reading and attachment the
+  cleanup removes on its own, gets a `purge` audit row in the same
+  transaction; what goes with a removed parent gets none (the parent's row
+  covers it). An owner
   with vehicles in the Trash cannot be deleted
   (`OwnerHasTrashedVehiclesException`).
 - **Audit log from v1.** Every repository write adds its `audit_log` row in
@@ -258,6 +262,12 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   `themeMode`; `SettingsController` writes. Formatting follows the chosen
   locale because it goes through `Localizations.localeOf` /
   `l10n.localeName`, never `Intl.defaultLocale`.
+- **`last_modified_at`** of the manifest (`BackupDao.lastModifiedAt`, the
+  version stamp of the step-9 guard) is the latest `updated_at` of owners,
+  vehicles, entries, readings and attachments (deleted rows included) and
+  the latest `purge` audit row, compared as ISO-8601 UTC text. Settings and
+  `import` audit rows never count. Every physical deletion must write a
+  `purge` row in its transaction, or the stamp could go backwards.
 - **`last_export_at` and the package:** `BackupService.exportPackage`
   writes it (the export instant) **before** `VACUUM INTO`, so the package
   carries its own export date and an import shows it. If the package is not

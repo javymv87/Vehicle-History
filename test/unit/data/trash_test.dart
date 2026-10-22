@@ -471,10 +471,15 @@ void main() {
         await db.mileageReadingsDao.getDeletedById(trashedReading),
         isNotNull,
       );
-      // Entries and readings get no audit row of their own.
+      // Each entry and reading removed on its own gets its `purge` row, so
+      // the last-modified stamp never goes backwards.
       expect(
         await auditOf(AuditEntityType.logEntry, oldEntry),
-        [AuditOperation.create, AuditOperation.delete],
+        [AuditOperation.create, AuditOperation.delete, AuditOperation.purge],
+      );
+      expect(
+        await auditOf(AuditEntityType.mileageReading, oldReading),
+        contains(AuditOperation.purge),
       );
     });
 

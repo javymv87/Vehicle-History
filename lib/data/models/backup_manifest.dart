@@ -119,8 +119,13 @@ class BackupManifest {
   /// Live rows of each main table.
   final BackupCounts counts;
 
-  /// The latest `updated_at` across owners, vehicles, entries and readings
-  /// (deleted rows included), in UTC; `null` for an empty database.
+  /// The latest instant at which anything the user records changed, in
+  /// UTC: the latest `updated_at` across owners, vehicles, entries,
+  /// readings and attachments (deleted rows included) and the latest
+  /// `purge` audit row; `null` for an empty database. Settings and imports
+  /// do not count (`BackupDao.lastModifiedAt`). The version stamp the
+  /// backup guard compares; a package from before 0.8.1 carries the
+  /// narrower value of the four main tables only.
   final DateTime? lastModifiedAt;
 
   /// Total size in bytes of the files in `attachments/` (added in step 8;

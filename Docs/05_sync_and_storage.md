@@ -154,9 +154,17 @@ copia en Google Drive y seguirá sirviendo después, como copia manual.
   ISO-8601), `counts` (propietarios, vehículos, entradas y lecturas **vivos**:
   no borrados, y las entradas y lecturas además de un vehículo no borrado;
   más `attachments`, el número de **archivos** de `attachments/`, borrados
-  incluidos), `attachments_bytes` (lo que ocupan) y `last_modified_at` (el
-  `updated_at` más reciente de propietarios, vehículos, entradas y lecturas,
-  borrados incluidos, o `null` si están vacías). En un paquete anterior al
+  incluidos), `attachments_bytes` (lo que ocupan) y `last_modified_at`: el último
+  instante en que cambió algo de lo que registra el usuario, es decir, el
+  `updated_at` más reciente de propietarios, vehículos, entradas, lecturas
+  y **adjuntos** (borrados incluidos) y la fecha de la última fila `purge`
+  del historial (cada borrado físico); `null` si no hay datos. Quedan fuera
+  a propósito los **ajustes** (idioma, tema, fecha de la última
+  exportación: si no, cada exportación lo movería) y las filas `import`
+  (tras importar, los datos son los del paquete y no deben parecer más
+  recientes). Es la base del control de versión del paso 9; un paquete
+  anterior a la 0.8.1 lleva el valor antiguo, solo de las cuatro tablas
+  principales, y se sigue leyendo igual. En un paquete anterior al
   paso 8 faltan `counts.attachments` y `attachments_bytes`: se leen como 0.
 - La base de datos es una copia **entera y coherente**, hecha con
   `VACUUM INTO` en un archivo temporal junto a la base de datos (sea cual sea
@@ -281,7 +289,9 @@ Desde el esquema v5 (paso 5b).
   base de datos, en una sola transacción; si falla, no borra nada y la app
   arranca igual.
 - El historial de operaciones conserva sus filas y añade una `purge` por
-  cada vehículo y propietario borrados físicamente.
+  cada vehículo y propietario borrados físicamente y por cada entrada,
+  lectura o adjunto que la limpieza elimina sueltos (no por lo que se va
+  con su padre).
 - **Adjuntos:** se van con el vehículo, la entrada o el propietario que se
   borra físicamente, con sus archivos; la limpieza borra también los
   adjuntos borrados hace 30 días o más (salvo los que viajan con un vehículo
