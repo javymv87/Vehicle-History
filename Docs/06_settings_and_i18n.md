@@ -40,13 +40,20 @@ v6): una fila por clave.
   | `last_export_at` | Instante de la última exportación del paquete de copia (ver `05_sync_and_storage.md`) | nunca exportado |
   | `language` | `system`, `it`, `es`, `en` | `system` |
   | `theme` | `system`, `light`, `dark` | `system` |
+  | `drive_account` | Email de la cuenta de Google vinculada (no es un secreto: no se guarda ningún token) | sin cuenta |
+  | `drive_device_id` | UUID de este teléfono en las copias que sube | se crea al primer uso |
+  | `drive_mobile_data` | `true` / `false`: la copia automática puede usar datos móviles | `false` |
+  | `drive_sync_account`, `drive_sync_local_stamp`, `drive_sync_upload_id`, `drive_sync_at`, `drive_sync_direction` | El último punto en común con la copia de Drive (cuenta, sello local o `none`, `upload_id`, instante, `upload` / `download`); incompleto = no hay | sin punto en común |
 
   Los valores también son códigos fijos. Un valor desconocido (por ejemplo,
-  escrito por una versión más nueva de la app) se lee como `system`. La nube
-  llegará más adelante.
+  escrito por una versión más nueva de la app) se lee como `system`.
 - La tabla viaja dentro del paquete de copia como el resto de la base de
   datos: al importar un paquete llegan también su idioma y su tema, y la app
-  cambia en ese mismo momento, sin reiniciar.
+  cambia en ese mismo momento, sin reiniciar. Cada clave tiene un **ámbito**
+  (`SettingScope`): las compartidas (`last_export_at`, `language`, `theme`)
+  llegan con el paquete; las del teléfono (`drive_account`,
+  `drive_device_id`, `drive_mobile_data`) se conservan; las del punto en
+  común (`drive_sync_*`) se borran (ver `05_sync_and_storage.md`).
 
 ## Idioma y tema: cómo se aplican
 

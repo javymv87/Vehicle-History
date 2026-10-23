@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/data_providers.dart';
+import '../features/backup/widgets/drive_startup.dart';
 import '../features/settings/controllers/settings_controller.dart';
 import '../l10n/app_localizations.dart';
 import 'locale_resolution.dart';
@@ -44,7 +45,9 @@ class VehicleHistoryApp extends ConsumerWidget {
       // The builder sits below the localisations and the theme, so the
       // startup states are localised and themed like any other page.
       builder: (context, child) => switch (databaseReady) {
-        AsyncData() => child ?? const SizedBox.shrink(),
+        // Once the database is ready, the Drive check (and the automatic
+        // upload when allowed) runs in the background, never blocking.
+        AsyncData() => DriveStartup(child: child ?? const SizedBox.shrink()),
         AsyncError(:final error) => StartupErrorPage(error: error),
         _ => const Scaffold(body: Center(child: CircularProgressIndicator())),
       },

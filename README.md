@@ -95,8 +95,13 @@ added attachments (schema v7): photos and documents on entries, vehicles (a
 Documents tab) and owners, from the camera, the gallery or a file, with a
 viewer, "Save to…" and physical delete with the Trash; the backup package
 now carries every file, is exported streamed through a native "save as",
-and an import restores the attachments folder too if it fails. Next is
-step 9 (Google Drive backup).
+and an import restores the attachments folder too if it fails. Step 9
+added the Google Drive copy: link the phone's account, Upload to Drive and
+Restore from Drive (through the same import and its safety net), the last 3
+copies in a visible folder, the version guard with its status line (and a
+home banner when another phone uploaded a newer copy) and a single automatic
+action: an upload at start when only this phone changed. Next is step 10
+(reminders).
 
 Roadmap to the first usable version:
 
@@ -110,7 +115,7 @@ Roadmap to the first usable version:
 | 6 | ~~Export / import as a package, `settings` table (schema v6), fixed signing key for debug and release~~ — done |
 | 7 | ~~Settings screen: in-app language and theme~~ — done |
 | 8 | ~~Attachments (entries, vehicles, owners), backup package with the files (schema v7)~~ — done |
-| 9 | Google Drive backup |
+| 9 | ~~Google Drive backup with the startup version guard~~ — done |
 
 Then, in an order decided while using the app: maintenance, refuelling,
 documents, reminders, PDF reports.

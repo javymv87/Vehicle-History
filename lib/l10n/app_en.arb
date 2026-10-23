@@ -1516,5 +1516,293 @@
   "errorShareFailed": "The files could not be shared.",
   "@errorShareFailed": {
     "description": "Error when attachments could not be shared with another app."
+  },
+  "driveSectionTitle": "Google Drive",
+  "@driveSectionTitle": {
+    "description": "Backup page: title of the Google Drive section."
+  },
+  "driveNotLinked": "No account linked. Link one to keep a copy of all your data in your Google Drive, uploaded automatically when the app starts.",
+  "@driveNotLinked": {
+    "description": "Backup page: no Google account is linked."
+  },
+  "driveLinkAction": "Link account",
+  "@driveLinkAction": {
+    "description": "Backup page: button that links a Google account."
+  },
+  "driveLinkedTo": "Copy linked to: {email}",
+  "@driveLinkedTo": {
+    "description": "Backup page: the Google account the copy is linked to.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "driveLastUpload": "Last upload: {date}, {time}",
+  "@driveLastUpload": {
+    "description": "Backup page: day and time of the last successful upload to Drive.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      }
+    }
+  },
+  "driveLastDownload": "Last restore: {date}, {time}",
+  "@driveLastDownload": {
+    "description": "Backup page: day and time of the last successful restore from Drive.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      }
+    }
+  },
+  "driveNeverSynced": "No upload or restore yet with this account",
+  "@driveNeverSynced": {
+    "description": "Backup page: no upload or restore yet with the linked account."
+  },
+  "driveStatusNoAccount": "Drive: no account",
+  "@driveStatusNoAccount": {
+    "description": "Status line: no Google account is linked."
+  },
+  "driveStatusChecking": "Drive: checking…",
+  "@driveStatusChecking": {
+    "description": "Status line: the Drive copy is being checked."
+  },
+  "driveStatusUploading": "Drive: uploading…",
+  "@driveStatusUploading": {
+    "description": "Status line: an upload to Drive is running."
+  },
+  "driveStatusUpToDate": "Drive: up to date",
+  "@driveStatusUpToDate": {
+    "description": "Status line: the Drive copy holds the current data."
+  },
+  "driveStatusLocalChanged": "Drive: changes not uploaded yet (uploaded at the next start)",
+  "@driveStatusLocalChanged": {
+    "description": "Status line: local changes not yet uploaded; they are uploaded at the next start."
+  },
+  "driveStatusWaitingWifi": "Drive: changes not uploaded yet, waiting for Wi-Fi",
+  "@driveStatusWaitingWifi": {
+    "description": "Status line: local changes wait for Wi-Fi, mobile data not allowed."
+  },
+  "driveStatusNoCloudCopy": "Drive: no copy yet",
+  "@driveStatusNoCloudCopy": {
+    "description": "Status line: the linked account holds no copy yet."
+  },
+  "driveStatusCloudChanged": "Drive: newer copy in Drive (from another phone)",
+  "@driveStatusCloudChanged": {
+    "description": "Status line: Drive holds a newer copy, uploaded by another phone."
+  },
+  "driveStatusDiverged": "Drive: both this phone and Drive have changed",
+  "@driveStatusDiverged": {
+    "description": "Status line: both this phone and Drive changed since the last sync."
+  },
+  "driveStatusNoCommonPoint": "Drive: copy not compared with this phone; automatic copy paused until you upload or restore",
+  "@driveStatusNoCommonPoint": {
+    "description": "Status line: Drive holds a copy never compared with this phone; nothing is uploaded automatically."
+  },
+  "driveStatusCloudTooNew": "Drive: the copy comes from a newer version of the app; update the app",
+  "@driveStatusCloudTooNew": {
+    "description": "Status line: the Drive copy comes from a newer app version."
+  },
+  "driveStatusUploadFailed": "Drive: the last upload failed (retried at the next start)",
+  "@driveStatusUploadFailed": {
+    "description": "Status line: the last automatic upload failed; it is tried again at the next start."
+  },
+  "driveStatusOffline": "Drive: no connection (retried at the next start)",
+  "@driveStatusOffline": {
+    "description": "Status line: Drive could not be reached; tried again at the next start."
+  },
+  "driveStatusNeedsRelink": "Drive: Google no longer authorises the copy; link the account again",
+  "@driveStatusNeedsRelink": {
+    "description": "Status line: Google no longer authorises the app."
+  },
+  "driveUploadAction": "Upload to Drive",
+  "@driveUploadAction": {
+    "description": "Backup page: button that uploads the data to Drive now."
+  },
+  "driveRestoreAction": "Restore from Drive",
+  "@driveRestoreAction": {
+    "description": "Backup page: button that restores the latest Drive copy."
+  },
+  "driveChangeAccount": "Change account",
+  "@driveChangeAccount": {
+    "description": "Backup page: button that links another Google account."
+  },
+  "driveUnlink": "Unlink",
+  "@driveUnlink": {
+    "description": "Backup page: button that unlinks the Google account."
+  },
+  "driveMobileDataLabel": "Use mobile data for the automatic copy",
+  "@driveMobileDataLabel": {
+    "description": "Backup page: switch allowing the automatic copy on mobile data."
+  },
+  "driveMobileDataHint": "When off, the automatic copy waits for Wi-Fi. Upload and Restore always work.",
+  "@driveMobileDataHint": {
+    "description": "Backup page: what the mobile data switch does when off."
+  },
+  "driveExplanation": "When the app starts, your data is uploaded on its own if only this phone changed. Drive keeps the last {count} copies in the folder “Vehicle History”.",
+  "@driveExplanation": {
+    "description": "Backup page: how the Drive copy works.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "driveUploadingProgress": "Uploading to Drive… {percent}%",
+  "@driveUploadingProgress": {
+    "description": "Backup page: upload to Drive in progress, with the percentage done.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "driveDownloadingProgress": "Downloading from Drive… {percent}%",
+  "@driveDownloadingProgress": {
+    "description": "Backup page: download from Drive in progress, with the percentage done.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "driveLinking": "Linking the account…",
+  "@driveLinking": {
+    "description": "Backup page: the account is being linked."
+  },
+  "driveRestoring": "Restoring the Drive copy…",
+  "@driveRestoring": {
+    "description": "Backup page: the downloaded copy is replacing the data."
+  },
+  "driveChangeAccountTitle": "Change account?",
+  "@driveChangeAccountTitle": {
+    "description": "Change account dialog: title."
+  },
+  "driveChangeAccountMessage": "You are changing the backup account; the previous backup stays in the old account ({email}).",
+  "@driveChangeAccountMessage": {
+    "description": "Change account dialog: the explicit warning required by Docs/05.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "driveUnlinkTitle": "Unlink the account?",
+  "@driveUnlinkTitle": {
+    "description": "Unlink dialog: title."
+  },
+  "driveUnlinkMessage": "The automatic copy stops. The copies stay in the Drive of {email}.",
+  "@driveUnlinkMessage": {
+    "description": "Unlink dialog: what unlinking does.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "driveUploadConfirmTitle": "Replace the copy in Drive?",
+  "@driveUploadConfirmTitle": {
+    "description": "Upload confirmation: title, shown when the upload may lose data in Drive."
+  },
+  "driveUploadConfirmMessage": "The copy in Drive (last change {cloudDate}) will be replaced by the data on this phone (last change {localDate}). Whatever is only in the Drive copy will be lost from the current copy; the previous copies stay in the Drive folder.",
+  "@driveUploadConfirmMessage": {
+    "description": "Upload confirmation: what is replaced, with the dates of both sides.",
+    "placeholders": {
+      "cloudDate": {
+        "type": "String"
+      },
+      "localDate": {
+        "type": "String"
+      }
+    }
+  },
+  "driveNoDataDate": "no data",
+  "@driveNoDataDate": {
+    "description": "Placeholder for a date when a side has no data."
+  },
+  "driveRestoreConfirmTitle": "Restore from Drive?",
+  "@driveRestoreConfirmTitle": {
+    "description": "Restore confirmation: title."
+  },
+  "driveRestoreReplaces": "The data on this phone (last change {date}) will be replaced by the copy in Drive.",
+  "@driveRestoreReplaces": {
+    "description": "Restore confirmation: the local data that will be replaced.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "driveRestoreLosesLocal": "Warning: this phone has changes that are not in Drive; they will be lost.",
+  "@driveRestoreLosesLocal": {
+    "description": "Restore confirmation: warning when this phone has changes that are not in Drive."
+  },
+  "actionUpload": "Upload",
+  "@actionUpload": {
+    "description": "Button that confirms an upload to Drive."
+  },
+  "driveUploaded": "Copy uploaded to Drive",
+  "@driveUploaded": {
+    "description": "Toast after an upload to Drive."
+  },
+  "driveRestored": "Copy restored from Drive",
+  "@driveRestored": {
+    "description": "Toast after a successful restore from Drive."
+  },
+  "driveLinked": "Linked to {email}",
+  "@driveLinked": {
+    "description": "Toast after linking an account.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "driveUnlinked": "Account unlinked",
+  "@driveUnlinked": {
+    "description": "Toast after unlinking the account."
+  },
+  "importConfirmPausesDrive": "The automatic Drive copy will pause until you choose Upload to Drive or Restore from Drive.",
+  "@importConfirmPausesDrive": {
+    "description": "Import dialog: a manual import pauses the automatic Drive copy until the user uploads or restores."
+  },
+  "errorDriveOffline": "No connection. Try again when you are online.",
+  "@errorDriveOffline": {
+    "description": "Error: Google Drive could not be reached."
+  },
+  "errorDriveFailed": "Google Drive did not respond as expected. Try again later.",
+  "@errorDriveFailed": {
+    "description": "Error: a Drive request failed."
+  },
+  "errorDriveRelink": "Google no longer authorises the copy. Link the account again.",
+  "@errorDriveRelink": {
+    "description": "Error: the account no longer authorises the app."
+  },
+  "errorDriveLinkFailed": "The account could not be linked.",
+  "@errorDriveLinkFailed": {
+    "description": "Error: the account could not be linked."
+  },
+  "errorDriveCloudChanged": "The copy in Drive changed meanwhile. Nothing was replaced; check the status and try again.",
+  "@errorDriveCloudChanged": {
+    "description": "Error: the Drive copy changed between the check and the action."
+  },
+  "errorDriveCloudTooNew": "The copy in Drive comes from a newer version of the app. Update the app.",
+  "@errorDriveCloudTooNew": {
+    "description": "Error: the Drive copy comes from a newer app."
+  },
+  "driveBannerRestoreFirst": "Restore before editing.",
+  "@driveBannerRestoreFirst": {
+    "description": "Home banner: after \"newer copy in Drive\", the advice to restore before editing."
   }
 }

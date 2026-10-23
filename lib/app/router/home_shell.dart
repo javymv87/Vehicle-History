@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/backup/controllers/drive_controller.dart';
+import '../../features/backup/widgets/drive_banner.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_routes.dart';
 
-/// The home frame: the navigation bar with Vehicles and Owners, and the
-/// "add" button of the list currently shown.
+/// The home frame: the navigation bar with Vehicles and Owners, the "add"
+/// button of the list currently shown, and on top the Drive banner when
+/// another phone uploaded a newer copy ([DriveBanner]).
 ///
 /// The add button lives here rather than in each list, so the "Undo"
 /// snackbar, which is shown on this scaffold, pushes it up instead of
@@ -25,7 +29,23 @@ class HomeShell extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final onVehicles = navigationShell.currentIndex == vehiclesBranch;
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        children: [
+          const DriveBanner(),
+          // The banner takes the status bar area when shown; the list's own
+          // app bar then needs no top padding.
+          Expanded(
+            child: Consumer(
+              builder: (context, ref, child) => MediaQuery.removePadding(
+                context: context,
+                removeTop: driveShowsBanner(ref.watch(driveControllerProvider)),
+                child: child!,
+              ),
+              child: navigationShell,
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         // A distinct hero tag per branch, so switching tabs never animates
         // one button into the other.

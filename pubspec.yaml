@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.8.1+9
+version: 0.9.0+10
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
@@ -67,6 +67,27 @@ dependencies:
   # exact version published at least two weeks earlier (CLAUDE.md §2): 5.0.0
   # was under two weeks old.
   open_filex: 4.7.0
+  # Google Drive v3 client for the automatic backup copy: metadata queries,
+  # resumable streamed upload and streamed download of the package.
+  googleapis: ^17.0.0
+  # Links the Google account of the phone (system account picker, Credential
+  # Manager) and authorises the `drive.file` scope; access tokens come from
+  # Play Services on demand and are never stored by the app.
+  google_sign_in: ^7.2.0
+  # Android implementation of google_sign_in, normally pulled in implicitly.
+  # Pinned to an exact version published at least two weeks earlier
+  # (CLAUDE.md §2): 7.2.18 was under two weeks old.
+  google_sign_in_android: 7.2.17
+  # iOS implementation of google_sign_in, pinned for the same reason: 6.3.7
+  # and 6.3.8 were under two weeks old. Not used yet (Android first).
+  google_sign_in_ios: 6.3.6
+  # The platform interface of google_sign_in, used directly to ask for a
+  # Drive token for the stored account email without signing in again at
+  # every start (no account picker or "signing in" sheet).
+  google_sign_in_platform_interface: ^3.1.0
+  # HTTP client under googleapis; used directly by the small client that adds
+  # the access token and renews it on a 401.
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

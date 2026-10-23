@@ -59,6 +59,19 @@ package to import, but **no longer for saving**: saving goes through the
 native channel below. No image, thumbnail, share or permission library:
 thumbnails are `Image.file` with `cacheWidth`.
 
+Added in step 9 for the Google Drive copy (mode 1 only; mode 2 with
+`flutter_appauth` and `flutter_secure_storage` is step 9b):
+`googleapis` 17.0.0 (Drive v3: metadata queries, resumable upload,
+streamed download), `google_sign_in` 7.2.0 (Credential Manager account
+picker + Identity `AuthorizationClient` for the scope), its implementations
+pinned by the two-week rule (`google_sign_in_android: 7.2.17`,
+`google_sign_in_ios: 6.3.6`), `google_sign_in_platform_interface` 3.1.0
+(asked directly for a token by the stored email, so no account sheet at
+every start) and `http` 1.6.0 (the bearer-token client). No
+`googleapis_auth` / extension package, no `connectivity_plus`, no
+WorkManager. The manifest declares `INTERNET` (Flutter's template has it
+only in the debug / profile manifests) and `ACCESS_NETWORK_STATE`.
+
 **Native channel** (`MainActivity.kt`, Android only, wrapped by
 `NativeFiles` in `lib/data/platform/native_files.dart`, faked in tests):
 `vehicle_history/files` with `saveFile(sourcePath, suggestedName,
@@ -76,7 +89,11 @@ declares) whose `res/xml/share_paths.xml` exposes `cache/share/` only — and
 `freeBytes(path)` (`StatFs`). A `files` argument is a list of
 `{path, name, mimeType}` (`NativeFile`). Used for the backup package and
 for "Save to…" / "Share" of attachments, which can be too large to pass
-through a channel as bytes. CI does not build Android: compile it with
+through a channel as bytes. A second channel, `vehicle_history/network`
+(`NetworkState`, `lib/data/platform/network_state.dart`), answers
+`networkState()` = `none` / `metered` / `unmetered`
+(`ConnectivityManager.isActiveNetworkMetered`) for the mobile-data setting
+of the automatic Drive copy. CI does not build Android: compile it with
 `fvm flutter build apk --debug` after touching it.
 
 Dependencies are added **one at a time, on explicit request**. Never add a
@@ -240,7 +257,12 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
 - **Settings (v6)** are the key / value table `settings` (`key` text PK,
   `value` nullable text, `updated_at` UTC), with no `deleted` flag and no
   audit rows. Keys are `SettingKey` values with explicit codes
-  (`last_export_at`, `language`, `theme`); `SettingsRepository` has `read`,
+  (`last_export_at`, `language`, `theme`, and since step 9 the `drive_…`
+  keys of `Docs/06_settings_and_i18n.md`). Each key has a `SettingScope`
+  that decides what **every import** does with it: `shared` comes from the
+  package, `device` (`drive_account`, `drive_device_id`,
+  `drive_mobile_data`) keeps the phone's value, `syncPoint`
+  (`drive_sync_*`) is cleared (`BackupService._openImported`); `SettingsRepository` has `read`,
   `write`, `watch`, plus typed accessors (`watchLastExportAt`,
   `writeLastExportAt`, `watchLanguage` / `writeLanguage`,
   `watchThemeMode` / `writeThemeMode`). `language` and `theme` hold the
@@ -318,6 +340,46 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   repository and screen provider rebuilds on the new connection (the router
   shows the progress indicator meanwhile). Anything that outlives this
   captures its messenger and `GoRouter` before the import starts.
+
+- **Google Drive copy (step 9)** (`lib/data/drive/`,
+  `Docs/05_sync_and_storage.md`). `DriveAuthService` (google_sign_in mode
+  1) links the account and hands out access tokens on demand: **no token is
+  ever stored or logged**; `DriveHttpClient` adds the bearer token and on a
+  401 gets a fresh one and resends once (bodies up to 16 MB are buffered for
+  that, so a 4 MB chunk of a resumable upload survives an expiry).
+  `DriveBackupClient` finds packages by `appProperties` (`vh_role=backup`,
+  scope `drive.file`, visible folder "Vehicle History" found the same way),
+  uploads resumable and downloads streamed. Every upload carries
+  `upload_id`, `last_modified_at`, `schema_version`, `app_version`,
+  `device_id` and the counts (`CloudBackup.propertiesOf`). The last common
+  point lives in the `drive_sync_*` settings (`DriveSettings` extension) and
+  is written only after Drive confirmed an upload or after a successful
+  restore (stamp read after the reopen). `evaluateSync` (`sync_guard.dart`)
+  is the pure guard: `noAccount`, `noCloudCopy`, `cloudTooNew`,
+  `noCommonPoint`, `aligned` (also when stamps and counts are equal:
+  `sameContent`, recorded as the new point), `localChanged`,
+  `cloudChanged`, `diverged`. `DriveSyncService` orchestrates link /
+  unlink (both clear the point), check, upload (re-lists first and stops
+  with `DriveCloudChangedException` if the latest copy is not the expected
+  one; never over a newer schema; keeps the last `driveKeptCopies` = 3),
+  and restore of the latest copy through `BackupService.importPackage`.
+  `runStartupAutoUpload` is the **only automatic action**: once per start
+  (`DriveController.runAtStartup`, from `DriveStartup` in the app builder,
+  after `databaseReadyProvider`), upload only for `localChanged` /
+  `noCloudCopy`, on an unmetered network unless `drive_mobile_data`; no
+  retries, a failure shows in the status line until the next start. Right
+  after linking an account with no copy, the first upload runs at once.
+  The status reaches the UI as `DriveViewState` (kept-alive
+  `driveControllerProvider`); `cloudChanged` / `diverged` show the home
+  banner (`DriveBanner` in `HomeShell`). `BackupLock`
+  (`backupLockProvider`, independent of the connection) lets one backup
+  operation (export, import, upload, restore) run at a time; the startup
+  upload skips if busy. The Drive package is built by
+  `BackupService.buildDrivePackage`, which does not touch
+  `last_export_at`. No encryption of the cloud package (Google account
+  security; decided in step 9). Google Cloud: OAuth clients Android
+  (package + SHA-1 of the fixed key) and Web (`driveServerClientId` in
+  `drive_config.dart`, public; its secret is never used or committed).
 
 ### Upgrade safety
 
@@ -455,7 +517,8 @@ lib/
     db/                  # Drift database, tables, migrations
     models/              # domain models
     repositories/        # the only access path to persisted data
-    backup/              # backup package export / import (Drive: step 9)
+    backup/              # backup package export / import, BackupLock
+    drive/               # Google Drive copy: auth, client, guard, sync
     attachments/         # attachment files, staging, pickers, file opener
     platform/            # wrappers of the app's own native channels
   features/
@@ -635,10 +698,14 @@ decision, not a refactor.
 - Local newer than cloud → offer upload (cloud is replaced).
 - **Both changed since the last common point** → warn honestly that either
   direction loses data, and let the user choose. Never resolve silently.
-- Two account-linking modes: the system account picker, and manual
-  OAuth 2.0 + PKCE through the system browser for an app-only account.
-- Tokens are stored via `flutter_secure_storage` (Android Keystore). Never in
-  plain preferences, never in the database, never logged.
+- The only automatic action is the upload at start when only the local
+  data changed or there is no cloud copy; download is never automatic.
+- Two account-linking modes: the system account picker (step 9), and manual
+  OAuth 2.0 + PKCE through the system browser for an app-only account
+  (step 9b).
+- Mode 1 stores no token at all. Mode 2 will store tokens via
+  `flutter_secure_storage` (Android Keystore). Never in plain preferences,
+  never in the database, never logged.
 
 ---
 

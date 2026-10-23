@@ -3,6 +3,8 @@ package io.github.javymv87.vehicle_history
 import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -37,6 +39,11 @@ import java.util.concurrent.Executors
  *   receiving app read access to those copies only. The copies go with the
  *   cache wipe at the next app start.
  * - `freeBytes(path)`: the bytes available to the app on the volume of `path`.
+ *
+ * It also implements the `vehicle_history/network` channel (see
+ * `lib/data/platform/network_state.dart`): `networkState()` answers `none`,
+ * `metered` or `unmetered` for the active network, so the automatic Drive
+ * copy can wait for Wi-Fi.
  *
  * A `files` argument is a list of maps with `path`, `name` and `mimeType`.
  */
@@ -74,6 +81,25 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NETWORK_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "networkState" -> result.success(networkState())
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /**
+     * The active network: `none` when there is none with internet access,
+     * `metered` when the system counts its traffic (mobile data, a phone's
+     * hotspot) and `unmetered` otherwise.
+     */
+    private fun networkState(): String {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return "none"
+        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return "none"
+        if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return "none"
+        return if (manager.isActiveNetworkMetered) "metered" else "unmetered"
     }
 
     /** Whether a save dialog or folder picker is waiting for the user. */
@@ -301,6 +327,9 @@ class MainActivity : FlutterActivity() {
     private companion object {
         /** Must match `MethodChannelNativeFiles` in Dart. */
         const val CHANNEL = "vehicle_history/files"
+
+        /** Must match `MethodChannelNetworkState` in Dart. */
+        const val NETWORK_CHANNEL = "vehicle_history/network"
 
         /** Request code of the "save as" dialog. */
         const val SAVE_REQUEST_CODE = 0x5a7e

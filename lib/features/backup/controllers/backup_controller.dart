@@ -62,19 +62,23 @@ class BackupController extends Notifier<BackupTask?> {
     state = BackupTask.exporting;
     try {
       final service = ref.read(backupServiceProvider);
-      final package = await service.exportPackage();
-      var saved = false;
-      try {
-        saved = await ref.read(nativeFilesProvider).saveFile(
-                  sourcePath: package.path,
-                  suggestedName: package.fileName,
-                  mimeType: _zipMimeType,
-                ) ==
-            SaveFileOutcome.saved;
-      } finally {
-        if (!saved) await service.discardExport(package);
-        await service.deleteExport(package);
-      }
+      // One backup operation at a time: the Drive upload at start may run.
+      final saved = await ref.read(backupLockProvider).run(() async {
+        final package = await service.exportPackage();
+        var saved = false;
+        try {
+          saved = await ref.read(nativeFilesProvider).saveFile(
+                    sourcePath: package.path,
+                    suggestedName: package.fileName,
+                    mimeType: _zipMimeType,
+                  ) ==
+              SaveFileOutcome.saved;
+        } finally {
+          if (!saved) await service.discardExport(package);
+          await service.deleteExport(package);
+        }
+        return saved;
+      });
       return ActionSuccess(saved);
     } on Exception catch (error, stackTrace) {
       debugPrint('Export failed: $error\n$stackTrace');
@@ -128,7 +132,9 @@ class BackupController extends Notifier<BackupTask?> {
     state = BackupTask.importing;
     final service = ref.read(backupServiceProvider);
     try {
-      final manifest = await service.importPackage(package.path);
+      final manifest = await ref
+          .read(backupLockProvider)
+          .run(() => service.importPackage(package.path));
       await _reopenDatabase();
       return ActionSuccess(manifest);
     } on BackupRejectedException catch (error, stackTrace) {
