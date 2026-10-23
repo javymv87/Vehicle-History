@@ -69,8 +69,13 @@ adjuntos (esquema v7): fotos y documentos de las entradas, los vehículos
 archivo, con visor, "Guardar en…" y su borrado físico con la papelera; el
 paquete de copia lleva ahora todos los archivos, se exporta en streaming
 con un "guardar como" nativo y la importación restaura también la carpeta
-de adjuntos si algo falla. Lo siguiente es el paso 9 (copia de seguridad en
-Google Drive).
+de adjuntos si algo falla. El paso 9 añadió la copia en Google Drive:
+vincular la cuenta del teléfono, Subir a Drive y Restaurar desde Drive (por
+la misma importación con su red de seguridad), las 3 últimas copias en una
+carpeta visible, el control de versión con su línea de estado (y un banner
+en la pantalla principal cuando otro teléfono subió una copia más reciente)
+y una única acción automática: subir al arrancar cuando solo ha cambiado
+este teléfono. Lo siguiente es el paso 10 (recordatorios).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -84,7 +89,7 @@ Hoja de ruta hasta la primera versión usable:
 | 6 | ~~Exportar / importar como paquete, tabla `settings` (esquema v6), clave fija de firma para debug y release~~ — hecho |
 | 7 | ~~Pantalla de ajustes: idioma y tema dentro de la app~~ — hecho |
 | 8 | ~~Adjuntos (entradas, vehículos, propietarios), paquete de copia con los archivos (esquema v7)~~ — hecho |
-| 9 | Copia de seguridad en Google Drive |
+| 9 | ~~Copia de seguridad en Google Drive con control de versión al arrancar~~ — hecho |
 
 Después, en el orden que se decida usando la app: mantenimiento, repostajes,
 documentos, recordatorios, informes PDF.

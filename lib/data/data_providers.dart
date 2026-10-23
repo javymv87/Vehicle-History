@@ -8,11 +8,16 @@ import 'attachments/attachment_staging.dart';
 import 'attachments/attachment_store.dart';
 import 'attachments/file_opener.dart';
 import 'backup/backup_file_picker.dart';
+import 'backup/backup_lock.dart';
 import 'backup/backup_service.dart';
 import 'catalog/country_names.dart';
 import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
+import 'drive/drive_auth_service.dart';
+import 'drive/drive_backup_client.dart';
+import 'drive/drive_sync_service.dart';
 import 'platform/native_files.dart';
+import 'platform/network_state.dart';
 import 'platform/temporary_files.dart';
 import 'repositories/attachment_repository.dart';
 import 'repositories/attachment_writer.dart';
@@ -197,6 +202,38 @@ final backupServiceProvider = Provider<BackupService>((ref) {
     openDatabase: AppDatabase.new,
     appVersion: appVersion,
     freeBytes: nativeFiles.freeBytes,
+  );
+});
+
+/// The one-at-a-time lock of the backup operations. Independent of the
+/// database connection, which an import replaces.
+final backupLockProvider = Provider<BackupLock>((ref) => BackupLock());
+
+/// Whether the phone is on a metered network (`MainActivity.kt`).
+final networkStateProvider = Provider<NetworkState>(
+  (ref) => const MethodChannelNetworkState(),
+);
+
+/// The Google account link and the Drive access tokens (never stored).
+final driveAuthServiceProvider = Provider<DriveAuthService>(
+  (ref) => GoogleDriveAuthService(),
+);
+
+/// The packages in the linked account's Drive.
+final driveBackupClientProvider = Provider<DriveBackupClient>(
+  (ref) => GoogleDriveBackupClient(ref.watch(driveAuthServiceProvider)),
+);
+
+/// The Drive copy's operations on the current database connection.
+final driveSyncServiceProvider = Provider<DriveSyncService>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriveSyncService(
+    backup: ref.watch(backupServiceProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+    auth: ref.watch(driveAuthServiceProvider),
+    client: ref.watch(driveBackupClientProvider),
+    schemaVersion: db.schemaVersion,
+    appVersion: appVersion,
   );
 });
 

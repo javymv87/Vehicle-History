@@ -113,6 +113,12 @@ extension ActionErrorMessage on ActionError {
         ActionError.exportFailed => l10n.errorExportFailed,
         ActionError.importFailed => l10n.errorImportFailed,
         ActionError.importRestoreFailed => l10n.errorImportRestoreFailed,
+        ActionError.driveOffline => l10n.errorDriveOffline,
+        ActionError.driveFailed => l10n.errorDriveFailed,
+        ActionError.driveNeedsRelink => l10n.errorDriveRelink,
+        ActionError.driveLinkFailed => l10n.errorDriveLinkFailed,
+        ActionError.driveCloudChanged => l10n.errorDriveCloudChanged,
+        ActionError.driveCloudTooNew => l10n.errorDriveCloudTooNew,
         ActionError.unexpected => l10n.errorUnexpected,
       };
 }

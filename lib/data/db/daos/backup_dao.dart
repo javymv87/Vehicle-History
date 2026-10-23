@@ -75,8 +75,28 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
   /// Compared as text: every timestamp, `audit_log.at` included, is stored
   /// as ISO-8601 UTC in the same format, which sorts like the instants it
   /// represents.
-  Future<DateTime?> lastModifiedAt() async {
+  Future<DateTime?> lastModifiedAt() async =>
+      _lastOf(await _lastModifiedQuery().getSingle());
+
+  /// The number of attachment rows, live or deleted: the attachment figure
+  /// the Drive guard compares (the package carries every row's file).
+  Future<int> attachmentRowCount() async {
     final row = await customSelect(
+      'SELECT COUNT(*) AS n FROM attachments',
+      readsFrom: {attachments},
+    ).getSingle();
+    return row.read<int>('n');
+  }
+
+  /// The value of the row selected by [_lastModifiedQuery].
+  static DateTime? _lastOf(QueryRow row) {
+    final last = row.read<String?>('last');
+    return last == null ? null : DateTime.parse(last).toUtc();
+  }
+
+  /// The query behind [lastModifiedAt].
+  Selectable<QueryRow> _lastModifiedQuery() {
+    return customSelect(
       'SELECT MAX(m) AS last FROM ('
       'SELECT MAX(updated_at) AS m FROM owners UNION ALL '
       'SELECT MAX(updated_at) FROM vehicles UNION ALL '
@@ -92,8 +112,6 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
         attachments,
         auditLog,
       },
-    ).getSingle();
-    final last = row.read<String?>('last');
-    return last == null ? null : DateTime.parse(last).toUtc();
+    );
   }
 }
