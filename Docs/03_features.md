@@ -273,7 +273,7 @@ ruta). Formato del paquete, validación y red de seguridad en
     - Restaurar desde Drive: el diálogo de la importación con título
       "¿Restaurar desde Drive?", lo que contiene la copia, "Los datos de
       este teléfono (último cambio …) se sustituirán por la copia de Drive"
-      y, si hay cambios locales sin subir, "se perderán" en color de error.
+      (o "Este teléfono todavía no tiene datos." si está vacío) y, si hay cambios locales sin subir, "se perderán" en color de error.
       Al terminar, lista de vehículos y toast "Copia restaurada desde
       Drive".
     - Interruptor **Usar datos móviles para la copia automática**

@@ -307,7 +307,12 @@ class DriveSection extends ConsumerWidget {
       prepared.preview,
       title: l10n.driveRestoreConfirmTitle,
       confirmLabel: l10n.actionRestore,
-      notes: [l10n.driveRestoreReplaces(driveDateText(l10n, localStamp))],
+      notes: [
+        if (localStamp == null)
+          l10n.driveRestoreReplacesEmpty
+        else
+          l10n.driveRestoreReplaces(driveDateText(l10n, localStamp)),
+      ],
       warnings: [if (localChanged) l10n.driveRestoreLosesLocal],
     );
     if (!confirmed) {

@@ -344,5 +344,6 @@
   "errorDriveLinkFailed": "No se pudo vincular la cuenta.",
   "errorDriveCloudChanged": "La copia de Drive cambió mientras tanto. No se ha sustituido nada; revisa el estado e inténtalo de nuevo.",
   "errorDriveCloudTooNew": "La copia de Drive viene de una versión más nueva de la app. Actualiza la app.",
-  "driveBannerRestoreFirst": "Restaura antes de editar."
+  "driveBannerRestoreFirst": "Restaura antes de editar.",
+  "driveRestoreReplacesEmpty": "Este teléfono todavía no tiene datos."
 }

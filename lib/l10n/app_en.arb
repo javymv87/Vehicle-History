@@ -1804,5 +1804,9 @@
   "driveBannerRestoreFirst": "Restore before editing.",
   "@driveBannerRestoreFirst": {
     "description": "Home banner: after \"newer copy in Drive\", the advice to restore before editing."
+  },
+  "driveRestoreReplacesEmpty": "This phone has no data yet.",
+  "@driveRestoreReplacesEmpty": {
+    "description": "Restore confirmation: this phone has no data, so nothing of its own is replaced."
   }
 }

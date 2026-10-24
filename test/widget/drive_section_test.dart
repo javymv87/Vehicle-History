@@ -212,6 +212,21 @@ void main() {
     );
   });
 
+  testWidgets(
+      'restoring onto an empty phone says it has no data, with no loss '
+      'warning', (tester) async {
+    await backup.settings.writeDriveAccount(me);
+    backup.driveClient.put(me.email, uploadId: 'theirs', stamp: 'none');
+    backup.service.local = emptyLocal;
+    await pumpBackup(tester);
+    await showText(tester, 'Restore from Drive');
+
+    await tester.tap(find.text('Restore from Drive'));
+    await tester.pumpAndSettle();
+    expect(find.text('This phone has no data yet.'), findsOneWidget);
+    expect(find.textContaining('they will be lost'), findsNothing);
+  });
+
   testWidgets('restore with changes not in Drive warns they will be lost',
       (tester) async {
     await linkedAndUploaded();
