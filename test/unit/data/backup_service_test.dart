@@ -746,6 +746,81 @@ void main() {
     });
   });
 
+  group('Drive', () {
+    test(
+        'the Drive package does not touch last_export_at and carries the '
+        'local state it was built from', () async {
+      await seed(db);
+      final service = serviceOf();
+      final package = await service.buildDrivePackage();
+      addTearDown(service.deleteDrivePackage);
+      expect(await db.settingsDao.readValue(SettingKey.lastExportAt), isNull);
+      expect(File(package.path).existsSync(), isTrue);
+      expect(package.local.stamp, await db.backupDao.lastModifiedAt());
+      expect(package.local.counts.vehicles, 1);
+      expect(package.local.counts.logEntries, 2);
+      expect(package.manifest.lastModifiedAt, package.local.stamp);
+      await service.deleteDrivePackage();
+      expect(File(package.path).existsSync(), isFalse);
+      expect(dir.listSync().where((f) => f.path.endsWith('.tmp')), isEmpty);
+    });
+
+    test('localSyncState counts the attachment rows, deleted ones included',
+        () async {
+      await seed(db);
+      final state = await serviceOf().localSyncState();
+      expect(state.counts.attachments, 0);
+      expect(state.counts.owners, 1);
+      expect(state.stamp, await db.backupDao.lastModifiedAt());
+    });
+
+    test(
+        'an import keeps the phone\'s Drive link and clears the last common '
+        'point, whatever the package carries', () async {
+      await seed(db);
+      // The package comes from a phone linked to another account, with its
+      // own common point.
+      final now = clock();
+      Future<void> put(SettingKey key, String value) =>
+          db.settingsDao.writeValue(key, value, now);
+      await put(SettingKey.driveAccount, 'other@example.com');
+      await put(SettingKey.driveDeviceId, 'other-phone');
+      await put(SettingKey.driveSyncUploadId, 'their-upload');
+      await put(SettingKey.driveSyncLocalStamp, 'their-stamp');
+      await put(SettingKey.driveSyncAccount, 'other@example.com');
+      await put(SettingKey.driveSyncAt, now.toIso8601String());
+      await put(SettingKey.driveSyncDirection, 'upload');
+      await put(SettingKey.language, 'it');
+      final package = await exportToFile();
+
+      // This phone: linked to me, its own device id, mobile data allowed,
+      // a common point of its own.
+      await put(SettingKey.driveAccount, 'me@example.com');
+      await put(SettingKey.driveDeviceId, 'this-phone');
+      await put(SettingKey.driveMobileData, 'true');
+      await put(SettingKey.driveSyncUploadId, 'my-upload');
+      await put(SettingKey.language, 'es');
+
+      await serviceOf().importPackage(package);
+      final imported = openFile();
+      addTearDown(imported.close);
+      final settings = imported.settingsDao;
+      expect(
+        await settings.readValue(SettingKey.driveAccount),
+        'me@example.com',
+      );
+      expect(await settings.readValue(SettingKey.driveDeviceId), 'this-phone');
+      expect(await settings.readValue(SettingKey.driveMobileData), 'true');
+      for (final key in SettingKey.values) {
+        if (key.scope == SettingScope.syncPoint) {
+          expect(await settings.readValue(key), isNull, reason: key.code);
+        }
+      }
+      // Preferences travel with the data.
+      expect(await settings.readValue(SettingKey.language), 'it');
+    });
+  });
+
   group('attachments', () {
     late String ownerId;
 

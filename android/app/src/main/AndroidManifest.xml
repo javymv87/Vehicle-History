@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Google Drive backup. Flutter's template declares INTERNET only in the
+         debug and profile manifests, so a release build needs it here. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Whether the active network is metered (MainActivity.networkState):
+         the automatic Drive copy waits for an unmetered network unless the
+         user allows mobile data. A normal permission, never asked. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Photos for attachments (image_picker). Requested at runtime by the
          plugin the first time the camera is used. -->
     <uses-permission android:name="android.permission.CAMERA" />

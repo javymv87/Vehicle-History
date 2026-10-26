@@ -250,6 +250,46 @@ ruta). Formato del paquete, validación y red de seguridad en
     cambiado".
   - Diseño: Material 3, botones de al menos 48 dp, modo oscuro, texto grande
     y 360 dp de ancho.
+  - **Sección Google Drive** (paso 9, ver `05_sync_and_storage.md`), debajo
+    de exportar / importar:
+    - Sin cuenta: una explicación y **Vincular cuenta** (selector de cuentas
+      del sistema y consentimiento de Google); al vincular una cuenta sin
+      copia, la primera se sube al momento; toast "Vinculada a …".
+    - Con cuenta: "Copia vinculada a: usuario@gmail.com", "Última subida: …"
+      / "Última restauración: …" (o "Todavía sin subidas ni
+      restauraciones"), la **línea de estado** del guard ("Drive: al día",
+      "cambios sin subir", "copia más reciente en Drive (de otro teléfono)",
+      "han cambiado los dos", "copia sin comparar…", "versión más nueva…",
+      "error en la última subida (se reintentará en el próximo arranque)",
+      "sin conexión…", "vuelve a vincular la cuenta"), una nota de que la
+      copia se sube sola al arrancar y Drive guarda las 3 últimas copias,
+      y los botones **Subir a Drive** y **Restaurar desde Drive** (los dos
+      desactivados con una copia de una versión más nueva; Restaurar, sin
+      copia), con barra de progreso y porcentaje.
+    - Subir a Drive sobre una copia que este teléfono no contiene (nube
+      cambiada, ambos cambiados, sin punto común) pide confirmación con las
+      fechas de los dos lados, en color de error. Toast "Copia subida a
+      Drive".
+    - Restaurar desde Drive: el diálogo de la importación con título
+      "¿Restaurar desde Drive?", lo que contiene la copia, "Los datos de
+      este teléfono (último cambio …) se sustituirán por la copia de Drive"
+      (o "Este teléfono todavía no tiene datos." si está vacío) y, si hay cambios locales sin subir, "se perderán" en color de error.
+      Al terminar, lista de vehículos y toast "Copia restaurada desde
+      Drive".
+    - Interruptor **Usar datos móviles para la copia automática**
+      (desactivado por defecto).
+    - **Cambiar de cuenta** (aviso: "la copia de seguridad anterior se queda
+      en la cuenta antigua") y **Desvincular** (aviso: las copias se quedan
+      en el Drive de esa cuenta).
+    - La confirmación de una importación manual, con cuenta vinculada,
+      añade: "La copia automática de Drive quedará en pausa hasta que elijas
+      Subir a Drive o Restaurar desde Drive."
+  - **Al abrir la app** (sin diálogos): si Drive tiene una copia más
+    reciente o han cambiado los dos, un **banner discreto** arriba en la
+    pantalla principal con la línea de estado ("Restaura antes de editar."
+    en el primer caso) y el botón "Copia de seguridad"; se queda hasta que
+    el estado cambia. Sin punto común, copia más nueva o cuenta por
+    vincular: un mensaje breve una vez, con el mismo acceso.
 - **U21 — Pantalla Ajustes** (ruta `/settings`), desde el menú de las listas
   de inicio, junto a Copia de seguridad, Papelera y Acerca de. Dos ajustes,
   cada uno una fila con su valor actual que abre un diálogo con botones de

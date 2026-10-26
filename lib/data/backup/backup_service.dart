@@ -4,6 +4,7 @@ import '../attachments/attachment_store.dart';
 import '../db/app_database.dart';
 import '../db/database_file_inspector.dart';
 import '../db/upgrade_safety.dart';
+import '../drive/drive_models.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/backup_manifest.dart';
@@ -39,6 +40,34 @@ class ExportedPackage {
   /// unset), put back by [BackupService.discardExport] if the package is
   /// never saved.
   final String? previousLastExportAt;
+}
+
+/// A package built by [BackupService.buildDrivePackage] for an upload to
+/// Google Drive, with the local state it was built from.
+class DrivePackage {
+  /// Creates the package.
+  const DrivePackage({
+    required this.fileName,
+    required this.path,
+    required this.manifest,
+    required this.local,
+  });
+
+  /// File name in Drive, `vehicle-history-YYYYMMDD-HHmm.zip`.
+  final String fileName;
+
+  /// The temporary zip on disk, deleted by
+  /// [BackupService.deleteDrivePackage].
+  final String path;
+
+  /// What the package holds.
+  final BackupManifest manifest;
+
+  /// The stamp and counts read before the database copy: what the last
+  /// common point records once the upload is confirmed. A write during the
+  /// build makes the live stamp differ from it, which only causes one more
+  /// upload later, never a lost change.
+  final LocalSyncState local;
 }
 
 /// What a package holds, as checked before the import confirmation.
@@ -159,15 +188,94 @@ class BackupService {
     final paths = await _paths();
     final settings = _settings();
     final exportedAt = utcNow(_clock);
-    await _files.deleteIfExists(paths.exportTemp);
-    await _files.deleteIfExists(paths.packageTemp);
     final previousLastExportAt = await settings.read(SettingKey.lastExportAt);
     await settings.writeLastExportAt(exportedAt);
     try {
-      final dao = _database.backupDao;
-      final counts = await dao.liveCounts();
-      final lastModifiedAt = await dao.lastModifiedAt();
-      await dao.vacuumInto(paths.exportTemp);
+      final built = await _buildPackage(
+        zipPath: paths.packageTemp,
+        databaseCopyPath: paths.exportTemp,
+        exportedAt: exportedAt,
+      );
+      return ExportedPackage(
+        fileName: backupFileName(exportedAt.toLocal()),
+        path: paths.packageTemp,
+        manifest: built.manifest,
+        previousLastExportAt: previousLastExportAt,
+      );
+    } on Object {
+      await settings.write(SettingKey.lastExportAt, previousLastExportAt);
+      rethrow;
+    }
+  }
+
+  /// Builds a package for an upload to Google Drive, like [exportPackage]
+  /// but in its own temporary file and **without** touching
+  /// `last_export_at`, which is the date of the last manual export.
+  ///
+  /// The caller deletes it with [deleteDrivePackage] once uploaded (or
+  /// not); a failure here deletes it itself.
+  Future<DrivePackage> buildDrivePackage() async {
+    final paths = await _paths();
+    final exportedAt = utcNow(_clock);
+    final built = await _buildPackage(
+      zipPath: paths.drivePackageTemp,
+      databaseCopyPath: paths.driveExportTemp,
+      exportedAt: exportedAt,
+    );
+    return DrivePackage(
+      fileName: backupFileName(exportedAt.toLocal()),
+      path: paths.drivePackageTemp,
+      manifest: built.manifest,
+      local: built.local,
+    );
+  }
+
+  /// Deletes the temporary zip of a [DrivePackage], uploaded or not.
+  Future<void> deleteDrivePackage() async =>
+      _files.deleteIfExists((await _paths()).drivePackageTemp);
+
+  /// Where a package downloaded from Drive is written before it is checked
+  /// and imported: a temporary file next to the database.
+  Future<String> downloadedPackagePath() async =>
+      (await _paths()).downloadedTemp;
+
+  /// Deletes the file at [downloadedPackagePath], imported or not.
+  Future<void> deleteDownloadedPackage() async =>
+      _files.deleteIfExists((await _paths()).downloadedTemp);
+
+  /// The local data as the Drive guard compares them: the version stamp,
+  /// the live counts and the number of attachment rows.
+  Future<LocalSyncState> localSyncState() async {
+    final dao = _database.backupDao;
+    final counts = await dao.liveCounts();
+    return LocalSyncState(
+      stamp: await dao.lastModifiedAt(),
+      counts: BackupCounts(
+        owners: counts.owners,
+        vehicles: counts.vehicles,
+        logEntries: counts.logEntries,
+        mileageReadings: counts.mileageReadings,
+        attachments: await dao.attachmentRowCount(),
+      ),
+    );
+  }
+
+  /// Writes a package with a consistent copy of the whole database and
+  /// every attachment file to [zipPath], through the temporary database
+  /// copy [databaseCopyPath], which is always deleted. A failure deletes
+  /// the zip too.
+  Future<({BackupManifest manifest, LocalSyncState local})> _buildPackage({
+    required String zipPath,
+    required String databaseCopyPath,
+    required DateTime exportedAt,
+  }) async {
+    final paths = await _paths();
+    await _files.deleteIfExists(databaseCopyPath);
+    await _files.deleteIfExists(zipPath);
+    try {
+      final local = await localSyncState();
+      final counts = local.counts;
+      await _database.backupDao.vacuumInto(databaseCopyPath);
 
       final store = IoAttachmentStore(paths.directory);
       final attachments = <String, String>{};
@@ -195,27 +303,21 @@ class BackupService {
           mileageReadings: counts.mileageReadings,
           attachments: attachments.length,
         ),
-        lastModifiedAt: lastModifiedAt,
+        lastModifiedAt: local.stamp,
         attachmentsBytes: attachmentBytes,
       );
       await writeBackupPackage(
-        paths.packageTemp,
+        zipPath,
         manifest: manifest,
-        databasePath: paths.exportTemp,
+        databasePath: databaseCopyPath,
         attachments: attachments,
       );
-      return ExportedPackage(
-        fileName: backupFileName(exportedAt.toLocal()),
-        path: paths.packageTemp,
-        manifest: manifest,
-        previousLastExportAt: previousLastExportAt,
-      );
+      return (manifest: manifest, local: local);
     } on Object {
-      await settings.write(SettingKey.lastExportAt, previousLastExportAt);
-      await _files.deleteIfExists(paths.packageTemp);
+      await _files.deleteIfExists(zipPath);
       rethrow;
     } finally {
-      await _files.deleteIfExists(paths.exportTemp);
+      await _files.deleteIfExists(databaseCopyPath);
     }
   }
 
@@ -288,6 +390,7 @@ class BackupService {
   /// but a rejection: the caller must open a new one.
   Future<BackupManifest> importPackage(String packagePath) async {
     final paths = await _paths();
+    final deviceSettings = await _deviceSettings();
     final package = await BackupPackageReader.open(packagePath);
     var replaced = false;
     var attachmentsMoved = false;
@@ -313,7 +416,7 @@ class BackupService {
         await _deleteSidecars(paths.database);
         await _files.rename(paths.importTemp, paths.database);
 
-        await _openImported(paths);
+        await _openImported(paths, deviceSettings);
         await _deletePreviousImport(paths);
         return validated.preview.manifest;
         // Deliberately catches everything, errors included: whatever stopped
@@ -391,12 +494,39 @@ class BackupService {
     await _files.deleteDirectoryIfExists(paths.previousPreImportAttachments);
   }
 
-  /// Opens the imported file on a new connection: migration, startup
-  /// cleanup and the `import` audit row. Always closes the connection.
-  Future<void> _openImported(_BackupPaths paths) async {
+  /// The values of this phone's [SettingScope.device] settings, which the
+  /// imported database must keep.
+  Future<Map<SettingKey, String?>> _deviceSettings() async {
+    final settings = _settings();
+    return {
+      for (final key in SettingKey.values)
+        if (key.scope == SettingScope.device) key: await settings.read(key),
+    };
+  }
+
+  /// Opens the imported file on a new connection: migration, then the
+  /// phone's own settings put back ([deviceSettings]) and the last common
+  /// point with Drive cleared (the local data are no longer those of that
+  /// point), startup cleanup and the `import` audit row. Always closes the
+  /// connection.
+  Future<void> _openImported(
+    _BackupPaths paths,
+    Map<SettingKey, String?> deviceSettings,
+  ) async {
     final db = _openDatabase();
     try {
       await db.open();
+      final settings = DriftSettingsRepository(db.settingsDao, clock: _clock);
+      for (final key in SettingKey.values) {
+        switch (key.scope) {
+          case SettingScope.shared:
+            break;
+          case SettingScope.device:
+            await settings.write(key, deviceSettings[key]);
+          case SettingScope.syncPoint:
+            await settings.write(key, null);
+        }
+      }
       final store = IoAttachmentStore(paths.directory);
       await runStartupCleanupSafely(
         TrashCleanupService(db.trashDao, db.auditLogDao, store),
@@ -593,6 +723,15 @@ class _BackupPaths {
 
   /// The zip being exported, until it is saved.
   String get packageTemp => '$_stem.package.zip.tmp';
+
+  /// The database copy of a package being built for Drive.
+  String get driveExportTemp => '$_stem.drive_export.tmp';
+
+  /// The zip being uploaded to Drive.
+  String get drivePackageTemp => '$_stem.drive_package.zip.tmp';
+
+  /// A package downloaded from Drive, before it is checked and imported.
+  String get downloadedTemp => '$_stem.downloaded.zip.tmp';
 
   /// The database of a package being validated or imported, before it takes
   /// the place of [database].

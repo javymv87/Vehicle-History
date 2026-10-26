@@ -11,13 +11,29 @@ import '../../../shared/utils/file_size.dart';
 ///
 /// Resolves to `true` only when the user taps "Import", which is drawn in
 /// the error colour like every destructive action; cancel is the default.
+///
+/// The restore from Drive uses the same dialog with its own [title] and
+/// [confirmLabel], and [notes] above the bold warning: what is replaced,
+/// with its date, and any data that would be lost ([warnings], in the
+/// error colour). A manual import with a linked account notes that the
+/// automatic Drive copy pauses.
 Future<bool> confirmImport(
   BuildContext context,
-  ImportPreview preview,
-) async {
+  ImportPreview preview, {
+  String? title,
+  String? confirmLabel,
+  List<String> notes = const [],
+  List<String> warnings = const [],
+}) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (context) => ImportConfirmationDialog(preview: preview),
+    builder: (context) => ImportConfirmationDialog(
+      preview: preview,
+      title: title,
+      confirmLabel: confirmLabel,
+      notes: notes,
+      warnings: warnings,
+    ),
   );
   return confirmed ?? false;
 }
@@ -25,10 +41,29 @@ Future<bool> confirmImport(
 /// The dialog shown by [confirmImport].
 class ImportConfirmationDialog extends StatelessWidget {
   /// Creates the dialog for the package described by [preview].
-  const ImportConfirmationDialog({super.key, required this.preview});
+  const ImportConfirmationDialog({
+    super.key,
+    required this.preview,
+    this.title,
+    this.confirmLabel,
+    this.notes = const [],
+    this.warnings = const [],
+  });
 
   /// What the package holds.
   final ImportPreview preview;
+
+  /// The title; "Import backup?" by default.
+  final String? title;
+
+  /// The confirming button; "Import" by default.
+  final String? confirmLabel;
+
+  /// Further lines shown before the bold warning.
+  final List<String> notes;
+
+  /// Lines about data that would be lost, in the error colour.
+  final List<String> warnings;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +74,7 @@ class ImportConfirmationDialog extends StatelessWidget {
     return AlertDialog(
       // Long messages with very large text scroll instead of overflowing.
       scrollable: true,
-      title: Text(l10n.importConfirmTitle),
+      title: Text(title ?? l10n.importConfirmTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,6 +103,17 @@ class ImportConfirmationDialog extends StatelessWidget {
               style: TextStyle(color: theme.colorScheme.error),
             ),
           ],
+          for (final note in notes) ...[
+            const SizedBox(height: 8),
+            Text(note),
+          ],
+          for (final warning in warnings) ...[
+            const SizedBox(height: 8),
+            Text(
+              warning,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ],
           const SizedBox(height: 12),
           Text(
             l10n.importConfirmWarning,
@@ -85,7 +131,7 @@ class ImportConfirmationDialog extends StatelessWidget {
             foregroundColor: theme.colorScheme.error,
           ),
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.actionImport),
+          child: Text(confirmLabel ?? l10n.actionImport),
         ),
       ],
     );

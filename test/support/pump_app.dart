@@ -6,9 +6,11 @@ import 'package:vehicle_history/app/app.dart';
 import 'package:vehicle_history/app/router/app_router.dart';
 import 'package:vehicle_history/data/attachments/attachment_staging.dart';
 import 'package:vehicle_history/data/data_providers.dart';
+import 'package:vehicle_history/data/drive/drive_sync_service.dart';
 
 import 'catalog_fixtures.dart';
 import 'fake_backup.dart';
+import 'fake_drive.dart';
 import 'fake_repositories.dart';
 import 'memory_attachment_store.dart';
 
@@ -35,6 +37,25 @@ class BackupFakes {
 
   /// Where staged attachment files go.
   final MemoryAttachmentStore attachmentStore = MemoryAttachmentStore();
+
+  /// The Google account link.
+  final FakeDriveAuthService driveAuth = FakeDriveAuthService();
+
+  /// The in-memory Drive.
+  final FakeDriveBackupClient driveClient = FakeDriveBackupClient();
+
+  /// The network kind.
+  final FakeNetworkState network = FakeNetworkState();
+
+  /// The Drive operations on the fakes above.
+  late final DriveSyncService driveService = DriveSyncService(
+    backup: service,
+    settings: settings,
+    auth: driveAuth,
+    client: driveClient,
+    schemaVersion: 7,
+    appVersion: '0.9.0+10',
+  );
 }
 
 /// Provider overrides that run the app on [store] instead of a database,
@@ -54,6 +75,8 @@ List<Override> fakeDataOverrides(FakeStore store, {BackupFakes? backup}) {
     backupServiceProvider.overrideWithValue(fakes.service),
     backupFilePickerProvider.overrideWithValue(fakes.picker),
     nativeFilesProvider.overrideWithValue(fakes.nativeFiles),
+    networkStateProvider.overrideWithValue(fakes.network),
+    driveSyncServiceProvider.overrideWithValue(fakes.driveService),
     attachmentRepositoryProvider
         .overrideWithValue(FakeAttachmentRepository(store)),
     attachmentStoreProvider.overrideWithValue(fakes.attachmentStore),

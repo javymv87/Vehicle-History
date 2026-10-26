@@ -9,18 +9,36 @@ import '../../../shared/utils/file_size.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../controllers/backup_controller.dart';
+import '../controllers/drive_controller.dart';
+import '../widgets/drive_section.dart';
 import '../widgets/import_confirmation_dialog.dart';
 
 /// The Backup page (U20, U27): when the last export happened, how many
 /// attachment files the package will carry and their size, what the package
 /// contains, and the Export and Import buttons, with a progress indicator
-/// while one of them works. Opened from the overflow menu of the home lists.
-class BackupPage extends ConsumerWidget {
+/// while one of them works; then the Google Drive section ([DriveSection]).
+/// Opened from the overflow menu of the home lists.
+class BackupPage extends ConsumerStatefulWidget {
   /// Creates the Backup page.
   const BackupPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BackupPage> createState() => _BackupPageState();
+}
+
+/// Reads the Drive status again when the page opens.
+class _BackupPageState extends ConsumerState<BackupPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Metadata only; skipped while the startup run or an action is busy.
+    Future.microtask(
+      () => ref.read(driveControllerProvider.notifier).refresh(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final task = ref.watch(backupControllerProvider);
@@ -85,6 +103,10 @@ class BackupPage extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
           ],
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          DriveSection(otherTaskRunning: busy),
         ],
       ),
     );
@@ -131,7 +153,14 @@ class BackupPage extends ConsumerWidget {
       await controller.cancelImport(package);
       return;
     }
-    if (!await confirmImport(context, package.preview)) {
+    // A manual import clears the last common point with Drive: say that the
+    // automatic copy pauses until the user chooses at the next start.
+    final driveLinked = ref.read(driveAccountProvider).value != null;
+    if (!await confirmImport(
+      context,
+      package.preview,
+      notes: [if (driveLinked) l10n.importConfirmPausesDrive],
+    )) {
       await controller.cancelImport(package);
       return;
     }

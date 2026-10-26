@@ -3,6 +3,9 @@ import 'package:flutter/services.dart' show PlatformException;
 
 import '../../data/attachments/attachment_picker.dart';
 import '../../data/backup/backup_exceptions.dart';
+import '../../data/drive/drive_auth_service.dart';
+import '../../data/drive/drive_backup_client.dart';
+import '../../data/drive/drive_sync_service.dart';
 import '../../data/models/audit_entry.dart';
 import '../../data/repositories/repository_exceptions.dart';
 
@@ -95,6 +98,25 @@ enum ActionError {
   /// kept in the `pre_import` copy.
   importRestoreFailed,
 
+  /// Google Drive could not be reached.
+  driveOffline,
+
+  /// A Google Drive request failed.
+  driveFailed,
+
+  /// The Google account no longer authorises the app: link it again.
+  driveNeedsRelink,
+
+  /// The Google account could not be linked.
+  driveLinkFailed,
+
+  /// The Drive copy changed between the check and the action; nothing was
+  /// replaced.
+  driveCloudChanged,
+
+  /// The Drive copy comes from a newer version of the app.
+  driveCloudTooNew,
+
   /// Anything else, such as a disk or SQLite failure.
   unexpected,
 }
@@ -147,6 +169,12 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
     BackupRejectedException() => ActionError.backupNotAPackage,
     BackupImportFailedException() => ActionError.importFailed,
     BackupRestoreFailedException() => ActionError.importRestoreFailed,
+    DriveAuthorizationRequiredException() => ActionError.driveNeedsRelink,
+    DriveAuthException() => ActionError.driveLinkFailed,
+    DriveRequestException(offline: true) => ActionError.driveOffline,
+    DriveRequestException() => ActionError.driveFailed,
+    DriveCloudChangedException() => ActionError.driveCloudChanged,
+    DriveCloudTooNewException() => ActionError.driveCloudTooNew,
     _ => _unexpected(error, stackTrace),
   };
 }

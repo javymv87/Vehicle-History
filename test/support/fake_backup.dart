@@ -5,6 +5,7 @@ import 'package:vehicle_history/data/attachments/file_opener.dart';
 import 'package:vehicle_history/data/backup/backup_exceptions.dart';
 import 'package:vehicle_history/data/backup/backup_file_picker.dart';
 import 'package:vehicle_history/data/backup/backup_service.dart';
+import 'package:vehicle_history/data/drive/drive_models.dart';
 import 'package:vehicle_history/data/models/backup_manifest.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/platform/native_files.dart';
@@ -242,9 +243,82 @@ class FakeBackupService implements BackupService {
     final rejection = rejectWith ?? importFailure;
     if (rejection != null) throw rejection;
     imports++;
+    // Like the real import: the data become the package's, the phone's
+    // own settings stay and the last common point with Drive is cleared.
+    local = localAfterImport;
+    for (final key in SettingKey.values) {
+      if (key.scope == SettingScope.syncPoint) {
+        await settings.write(key, null);
+      }
+    }
     return sampleManifest;
   }
+
+  /// The local data as the Drive guard sees them.
+  LocalSyncState local = emptyLocal;
+
+  /// What [local] becomes after an import.
+  LocalSyncState localAfterImport = sampleLocal;
+
+  /// When set, building a Drive package throws it.
+  Exception? buildFailure;
+
+  /// How many Drive packages were built, and deleted.
+  int driveBuilds = 0;
+
+  /// How many Drive packages were deleted.
+  int driveDeletes = 0;
+
+  /// How many downloaded packages were deleted.
+  int downloadDeletes = 0;
+
+  @override
+  Future<LocalSyncState> localSyncState() async => local;
+
+  @override
+  Future<DrivePackage> buildDrivePackage() async {
+    final failure = buildFailure;
+    if (failure != null) throw failure;
+    driveBuilds++;
+    return DrivePackage(
+      fileName: 'vehicle-history-20261020-1830.zip',
+      path: '/fake/drive_package.zip.tmp',
+      manifest: sampleManifest,
+      local: local,
+    );
+  }
+
+  @override
+  Future<void> deleteDrivePackage() async => driveDeletes++;
+
+  @override
+  Future<String> downloadedPackagePath() async => '/fake/downloaded.zip.tmp';
+
+  @override
+  Future<void> deleteDownloadedPackage() async => downloadDeletes++;
 }
+
+/// The local state of an empty database.
+const LocalSyncState emptyLocal = LocalSyncState(
+  stamp: null,
+  counts: BackupCounts(
+    owners: 0,
+    vehicles: 0,
+    logEntries: 0,
+    mileageReadings: 0,
+  ),
+);
+
+/// A local state with data, last changed on 18 October 2026 at noon.
+final LocalSyncState sampleLocal = LocalSyncState(
+  stamp: DateTime.utc(2026, 10, 18, 12),
+  counts: const BackupCounts(
+    owners: 1,
+    vehicles: 1,
+    logEntries: 3,
+    mileageReadings: 1,
+  ),
+);
 
 /// A rejection for a file that is not a package.
 const BackupRejectedException notAPackage =

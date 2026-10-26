@@ -15,9 +15,12 @@
    relativas a esa carpeta. Desde el paso 8 los adjuntos viven en su
    subcarpeta `attachments/` (ver `02_data_model.md`, "Attachment").
 2. **Copia de seguridad en la nube** — una copia de toda la base de datos + las
-   imágenes, empaquetada y subida a Google Drive, para poder recuperarlo todo en
-   otro teléfono. NO es una sincronización continua: es una copia de seguridad
-   (backup) / restauración manual con alguna protección.
+   imágenes, empaquetada (el mismo `.zip` de exportar / importar) y subida a
+   Google Drive, para poder recuperarlo todo en otro teléfono. NO es una
+   sincronización continua: es una copia de seguridad (backup) /
+   restauración con control de versión. Desde el paso 9 conviven las dos
+   vías: la exportación / importación manual a un archivo y la copia en
+   Drive de la cuenta vinculada.
 
 No hay que confundir el esquema de la base de datos local (doc 02) con el
 archivo de copia de seguridad: son cosas distintas.
@@ -46,6 +49,9 @@ que autoriza el acceso a Drive), pero con flujos distintos.
 
 ### Modalidad 2 — Vincular una cuenta manualmente (avanzada)
 
+> **Pendiente (paso 9b).** El paso 9 implementa solo la Modalidad 1; esta
+> se mantiene como diseño.
+
 Para usar una cuenta que **no es** (y no debe pasar a ser) una cuenta del
 teléfono: la usa **solo la app**.
 
@@ -64,7 +70,12 @@ teléfono: la usa **solo la app**.
   cualquier caso, Google la bloquea.
 - Los **tokens** se guardan en el **almacén cifrado del sistema** (Android
   Keystore, a través de `flutter_secure_storage`), nunca en archivos o
-  preferencias en claro.
+  preferencias en claro. Con la Modalidad 1 (paso 9) la app **no guarda
+  ningún token**: cada vez que necesita uno se lo pide a Google Play
+  Services para la cuenta vinculada (sin pantalla), lo usa solo en memoria
+  para esa petición y, si Drive lo rechaza (caduca a la hora), pide otro y
+  repite la petición. `flutter_secure_storage` llegará con la Modalidad 2.
+  Ningún token aparece nunca en el registro.
 - La app muestra siempre con claridad **qué cuenta está vinculada** a la copia
   de seguridad (p. ej. "Copia de seguridad vinculada a: usuario@gmail.com") con
   un botón para **cambiar de cuenta**.
@@ -76,6 +87,22 @@ Drives distintos**: no se comunican. El cambio de cuenta debe tratarse como una
 operación consciente, con un aviso explícito: "Estás cambiando la cuenta de la
 copia de seguridad; la copia de seguridad anterior se queda en la cuenta
 antigua."
+
+### Ámbito de Drive y carpeta
+
+- La app pide solo el ámbito **`drive.file`**: ve y toca únicamente los
+  archivos que ella misma creó. Es un ámbito **no sensible**: la pantalla
+  de consentimiento no necesita verificación de Google.
+- Las copias van a una carpeta **visible** "Vehicle History" en el Drive del
+  usuario, que puede descargarlas a mano desde la web de Drive como red de
+  seguridad adicional.
+- La app encuentra sus copias por sus **propiedades** (`appProperties` de
+  Drive, rol `backup`), nunca por el nombre de la carpeta ni del archivo:
+  mover o renombrar la carpeta no hace creer a la app que no hay copia.
+- **Sin cifrado propio** del paquete: la protección es la de la cuenta de
+  Google (con verificación en dos pasos). Una contraseña olvidada sería una
+  copia perdida. Decisión consciente, sabiendo que en Drive habrá fotos de
+  documentos (DNI, carné); se puede revisar más adelante.
 
 ### Nota administrativa (Google Cloud Console)
 
@@ -90,6 +117,16 @@ tiene un límite de usuarios de prueba — aceptable para uso personal / pocos
 usuarios. La verificación solo se vuelve necesaria en caso de distribución
 amplia. Es un paso administrativo, no de código, pero hay que planificarlo.
 
+Con solo `drive.file` (no sensible) la app se puede publicar "En producción"
+sin verificación; en "Prueba" la autorización de los ámbitos caduca a los 7
+días y habría que volver a vincular cada semana. Publicar exige en la
+información de la marca una página principal y una política de privacidad
+en el mismo dominio (dominio autorizado). El proyecto usa un cliente OAuth
+**Android** (paquete + SHA-1 de la clave fija de firma, la misma en debug y
+release) y un cliente **Web**, cuyo ID es el `serverClientId` que pide
+`google_sign_in` en Android (público, en el código; su secreto no se usa ni
+se guarda).
+
 ## Estrategia elegida: "Strada A" (vía A) — copia de seguridad/restauración con control de versión
 
 Elección consciente de simplicidad (la app es monousuario). No hay fusión
@@ -97,39 +134,131 @@ automática de los datos: **una copia manda**. Para evitar que "fácil" se
 convierta en "peligroso", se añade un control de versión (version guard)
 ligero.
 
-### Metadatos de versión
+### Versión: sello local, propiedades de la copia y último punto en común
 
-Tanto la base de datos local como la copia de seguridad en Drive llevan dos
-datos ligeros:
+No hay un contador de versiones ni cambio de esquema.
 
-- un **número de versión** que aumenta en 1 con cada modificación de la base de
-  datos;
-- la **fecha/hora de la última modificación**.
+- **Sello local**: `last_modified_at` (ver más abajo, "Formato del
+  paquete"): el último cambio de lo que registra el usuario, purgas
+  incluidas, ajustes e importaciones excluidos.
+- **Propiedades de la copia en Drive** (se leen sin descargarla):
+  `upload_id` (un UUID nuevo en cada subida), `last_modified_at`,
+  `schema_version`, `app_version`, `device_id` (el teléfono que subió) y los
+  recuentos (propietarios, vehículos, entradas, lecturas vivos y filas de
+  adjuntos).
+- **Último punto en común**, en la tabla `settings` del teléfono: la cuenta,
+  el sello local y el `upload_id` de la copia en el momento de la última
+  subida o restauración correcta, y cuándo y cómo (subida / restauración).
+  Se anota **solo** cuando Drive ha confirmado la subida o la importación ha
+  terminado bien; un fallo a medias deja el anterior. Tras restaurar, el
+  sello local se lee después de reabrir (la limpieza puede haber purgado
+  filas).
+- Local cambiado = su sello no es el anotado. Nube cambiada = su `upload_id`
+  no es el anotado. Se comparan como valores anotados, no como horas: un
+  reloj mal puesto en otro teléfono no cambia nada.
 
-### Comprobación al abrir la app
+### El control de versión (guard)
 
-Al arrancar, la app lee **solo estos dos metadatos** de la nube (no descarga
-toda la base de datos) y los compara con los locales. Cuatro casos:
+Lee solo los metadatos de la copia más reciente y decide uno de estos
+estados, que la app muestra como **línea de estado** (nunca un diálogo):
 
-1. **Iguales** → sincronizado, ninguna acción.
-2. **Nube más reciente que local** → mensaje: "En la nube hay una versión
-   más reciente. ¿Quieres descargarla?" Si sí, la local se **sustituye**.
-3. **Local más reciente que la nube** → mensaje: "Tienes cambios todavía no
-   subidos. ¿Quieres subirlos?" Si sí, la nube se **sustituye**.
-4. **Divergencia** (tanto la local como la nube modificadas respecto al último
-   punto en común) → la app **avisa con honestidad**: "Atención: tanto este
-   teléfono como la nube han cambiado. Si descargas pierdes los cambios
-   locales; si subes sobrescribes los de la nube." Decide el usuario. Ninguna
-   sobrescritura silenciosa, ninguna pérdida de datos a escondidas.
+| Estado | Cuándo | Línea de estado |
+| --- | --- | --- |
+| Sin cuenta | No hay cuenta vinculada | "Drive: sin cuenta" |
+| Al día | Ni local ni nube han cambiado desde el punto en común | "Drive: al día" |
+| Solo local cambiado | La nube sigue igual que en el punto en común | "Drive: cambios sin subir" — se sube sola al arrancar |
+| Sin copia en la nube | La cuenta no tiene copia | "Drive: todavía no hay copia" — se sube sola al arrancar |
+| Nube cambiada | Otro teléfono subió una copia | "Drive: copia más reciente en Drive (de otro teléfono)" |
+| Ambos han cambiado | Local y nube cambiaron desde el punto en común | "Drive: han cambiado los dos, este teléfono y Drive" |
+| Sin punto común | Hay copia pero ningún punto en común (primera vinculación, teléfono nuevo, otra cuenta, tras una importación manual) | "Drive: copia sin comparar con este teléfono; copia automática en pausa" |
+| Copia más nueva | La copia es de un esquema más nuevo que la app | "Drive: la copia es de una versión más nueva de la app; actualiza la app" — ni descarga ni subida automática |
 
-### Operaciones manuales
+- **Mismos datos = al día.** Si no hay punto en común (o la nube cambió) pero
+  los dos lados tienen el mismo sello no vacío **y** los mismos recuentos,
+  es "al día" y ese estado se anota como nuevo punto en común.
+- Un punto anotado con otra cuenta no cuenta.
+- Si la última subida automática falló: "Drive: error en la última subida
+  (se reintentará en el próximo arranque)" o "sin conexión"; si Google ya no
+  autoriza la app: "vuelve a vincular la cuenta".
 
-Además de la comprobación al arrancar, el usuario puede en cualquier momento:
+**Dónde se ve.** En la pantalla Copia de seguridad, siempre. Además, como
+dos teléfonos pueden compartir la misma copia de Drive y hay que restaurar
+antes de editar, **"copia más reciente en Drive"** y **"ambos han
+cambiado"** aparecen al abrir la app como un **banner discreto** en la
+pantalla principal (con "Restaura antes de editar." en el primer caso y un
+acceso a Copia de seguridad), que se queda hasta que el estado cambia. Los
+demás estados que piden algo al usuario (sin punto común, copia más nueva,
+volver a vincular) se avisan una vez al arrancar con un mensaje breve
+(snackbar) con el mismo acceso. Nunca un diálogo.
 
-- **Subir a la nube** (copia de seguridad)
-- **Descargar de la nube** (restauración)
+### La única acción automática: la subida al arrancar
 
-siempre con las mismas protecciones descritas arriba.
+Una vez por arranque, después de abrir la base de datos (nunca antes, y sin
+bloquear el arranque ni las pantallas):
+
+1. La app lee los metadatos de Drive y ejecuta el guard.
+2. Solo si el estado es **solo local cambiado** o **sin copia en la nube**
+   (lo que se sustituye ya está contenido en los datos locales, o no hay
+   nada), sube una copia nueva en segundo plano, sin diálogo.
+3. Justo antes de subir **vuelve a leer** los metadatos: si la copia cambió
+   entretanto (otro teléfono subió), no sube nada y el estado pasa a
+   "ambos han cambiado".
+4. **Datos móviles**: el ajuste "Usar datos móviles para la copia
+   automática" está **desactivado** por defecto; con una red de pago (datos
+   móviles, punto de acceso) la subida espera ("cambios sin subir,
+   esperando wifi"). Subir y Restaurar a mano funcionan siempre.
+5. Si falla (sin conexión, error de Drive), la línea de estado lo dice y se
+   intenta otra vez **en el siguiente arranque**. Sin reintentos, sin subida
+   al pasar a segundo plano, sin tareas en segundo plano.
+
+Además, justo después de **vincular** una cuenta que no tiene copia, la
+primera copia se sube al momento (no se puede perder nada).
+
+Nunca se descarga nada automáticamente y nunca hay fusión.
+
+### Operaciones manuales (pantalla Copia de seguridad)
+
+- **Subir a Drive**: sube una copia nueva. Si el estado es "nube cambiada",
+  "ambos han cambiado" o "sin punto común", antes pide confirmación
+  repitiendo el aviso, con las fechas de los dos lados. Si la copia de Drive
+  cambió desde lo que se mostró, no sube nada.
+- **Restaurar desde Drive**: descarga la copia **más reciente** junto a la
+  base de datos y la pasa por la importación de siempre: la misma
+  comprobación, el mismo diálogo de confirmación con fechas y recuentos
+  (más "los datos de este teléfono, último cambio …, se sustituirán" y, si
+  hay cambios locales que no están en Drive, el aviso de que se perderán) y
+  la misma red de seguridad `pre_import`.
+- **Historial**: Drive guarda en silencio las **3 últimas copias**; tras cada
+  subida se borran las más antiguas. No hay pantalla de historial: una copia
+  anterior se puede descargar a mano desde la carpeta de Drive e importar.
+- **Cambiar de cuenta** (con el aviso de que la copia anterior se queda en
+  la cuenta antigua) y **Desvincular**: los dos borran el último punto en
+  común. Con otra cuenta que ya tiene copia, el estado es "sin punto común"
+  y no se sube nada sobre ella hasta que el usuario elija.
+
+### Subida y descarga en streaming
+
+Como la exportación del paso 8, nada pasa entero por la memoria: el paquete
+se escribe en un archivo temporal junto a la base de datos (sin tocar
+`last_export_at`, que es la fecha de la última exportación manual), se sube
+con la subida **reanudable** de Drive a trozos de 4 MB y se borra al
+terminar; la descarga se escribe a disco a medida que llega. Si el token
+caduca a mitad de una subida, el trozo rechazado se vuelve a enviar con un
+token nuevo. Una barra de progreso muestra el avance (sin cancelar).
+
+### Los ajustes y la importación
+
+La tabla `settings` viaja dentro del paquete, pero lo que describe el
+vínculo de **este teléfono** con Drive no debe llegar de otro:
+
+- se conservan los del teléfono: la cuenta vinculada, el identificador del
+  teléfono y el ajuste de datos móviles;
+- el último punto en común se **borra** en toda importación (manual o
+  desde Drive): los datos ya no son los de ese punto. La restauración desde
+  Drive anota el nuevo al terminar; tras una importación manual el estado
+  queda "sin punto común" y la copia automática en pausa hasta que el
+  usuario suba o restaure, y la confirmación de la importación lo avisa.
+- El idioma, el tema y `last_export_at` siguen viajando con los datos.
 
 ### Exportar / importar: el paquete de copia
 
