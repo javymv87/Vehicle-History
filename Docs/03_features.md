@@ -252,10 +252,21 @@ ruta). Formato del paquete, validación y red de seguridad en
     y 360 dp de ancho.
   - **Sección Google Drive** (paso 9, ver `05_sync_and_storage.md`), debajo
     de exportar / importar:
-    - Sin cuenta: una explicación y **Vincular cuenta** (selector de cuentas
-      del sistema y consentimiento de Google); al vincular una cuenta sin
-      copia, la primera se sube al momento; toast "Vinculada a …".
-    - Con cuenta: "Copia vinculada a: usuario@gmail.com", "Última subida: …"
+    - Sin cuenta: una explicación y dos acciones, cada una con una línea que
+      la explica (paso 9b):
+      - **Vincular con cuenta del teléfono**: selector de cuentas del sistema
+        y consentimiento de Google (Modalidad 1);
+      - **Vincular cuenta manualmente**: inicio de sesión en el navegador,
+        sin añadir la cuenta al teléfono (Modalidad 2). Si se cierra el
+        navegador, no pasa nada. Sin conexión, "Sin conexión…". Después de
+        vincular, un aviso que se cierra con Aceptar: la sesión de Google
+        puede quedar abierta en el navegador.
+
+      Al vincular una cuenta sin copia, la primera se sube al momento;
+      toast "Vinculada a …".
+    - Con cuenta: "Copia vinculada a: usuario@gmail.com" y debajo, con su
+      icono, la modalidad ("Cuenta del teléfono" / "Vinculada manualmente
+      (solo en esta app)"), "Última subida: …"
       / "Última restauración: …" (o "Todavía sin subidas ni
       restauraciones"), la **línea de estado** del guard ("Drive: al día",
       "cambios sin subir", "copia más reciente en Drive (de otro teléfono)",
@@ -278,9 +289,13 @@ ruta). Formato del paquete, validación y red de seguridad en
       Drive".
     - Interruptor **Usar datos móviles para la copia automática**
       (desactivado por defecto).
-    - **Cambiar de cuenta** (aviso: "la copia de seguridad anterior se queda
-      en la cuenta antigua") y **Desvincular** (aviso: las copias se quedan
-      en el Drive de esa cuenta).
+    - **Cambiar de cuenta**, en la misma modalidad (aviso: "la copia de
+      seguridad anterior se queda en la cuenta antigua"), y **Desvincular**
+      (aviso: las copias se quedan en el Drive de esa cuenta; en la
+      Modalidad 2, además, Google retira el acceso de la app). Si la
+      revocación falla, la cuenta se desvincula igual y un mensaje largo
+      explica dónde quitar el acceso a mano. Para cambiar de modalidad hay
+      que desvincular primero.
     - La confirmación de una importación manual, con cuenta vinculada,
       añade: "La copia automática de Drive quedará en pausa hasta que elijas
       Subir a Drive o Restaurar desde Drive."

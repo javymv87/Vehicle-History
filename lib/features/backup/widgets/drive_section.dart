@@ -14,10 +14,12 @@ import '../controllers/drive_controller.dart';
 import 'drive_status_text.dart';
 import 'import_confirmation_dialog.dart';
 
-/// The Google Drive section of the Backup page (U20): the linked account,
-/// the status line, the last upload or restore, Upload to Drive, Restore
-/// from Drive, the mobile-data switch, Change account and Unlink. With no
-/// account, only the explanation and Link account.
+/// The Google Drive section of the Backup page (U20): the linked account
+/// and how it was linked, the status line, the last upload or restore,
+/// Upload to Drive, Restore from Drive, the mobile-data switch, Change
+/// account and Unlink. With no account, the explanation and the two ways
+/// to link one (`Docs/05_sync_and_storage.md`): a phone account (mode 1)
+/// or an account signed in manually in the browser (mode 2).
 class DriveSection extends ConsumerWidget {
   /// Creates the section.
   const DriveSection({super.key, required this.otherTaskRunning});
@@ -50,10 +52,23 @@ class DriveSection extends ConsumerWidget {
           const SizedBox(height: 16),
           FilledButton.icon(
             style: FilledButton.styleFrom(minimumSize: buttonSize),
-            onPressed: busy ? null : () => _link(context, ref),
-            icon: const Icon(Icons.add_to_drive),
-            label: Text(l10n.driveLinkAction),
+            onPressed:
+                busy ? null : () => _link(context, ref, DriveAuthMode.system),
+            icon: const Icon(Icons.smartphone),
+            label: Text(l10n.driveLinkSystemAction),
           ),
+          const SizedBox(height: 4),
+          Text(l10n.driveLinkSystemHint, style: secondary),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: buttonSize),
+            onPressed:
+                busy ? null : () => _link(context, ref, DriveAuthMode.manual),
+            icon: const Icon(Icons.open_in_browser),
+            label: Text(l10n.driveLinkManualAction),
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.driveLinkManualHint, style: secondary),
           if (view.task == DriveTask.linking) ...[
             const SizedBox(height: 16),
             const LinearProgressIndicator(),
@@ -70,6 +85,29 @@ class DriveSection extends ConsumerWidget {
         Text(l10n.driveSectionTitle, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         Text(l10n.driveLinkedTo(account.email)),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(
+              switch (account.mode) {
+                DriveAuthMode.system => Icons.smartphone,
+                DriveAuthMode.manual => Icons.open_in_browser,
+              },
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                switch (account.mode) {
+                  DriveAuthMode.system => l10n.driveModeSystem,
+                  DriveAuthMode.manual => l10n.driveModeManual,
+                },
+                style: secondary,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 4),
         Text(
           switch (lastSync) {
@@ -178,13 +216,28 @@ class DriveSection extends ConsumerWidget {
     };
   }
 
-  /// Links an account; "Linked to …" once done, nothing on cancel.
-  static Future<void> _link(BuildContext context, WidgetRef ref) async {
+  /// Links an account in [mode]; "Linked to …" once done, nothing on
+  /// cancel. After a manual link (mode 2), a notice says the browser may
+  /// keep the Google session: Android offers no private Custom Tab.
+  static Future<void> _link(
+    BuildContext context,
+    WidgetRef ref,
+    DriveAuthMode mode,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    switch (await ref.read(driveControllerProvider.notifier).link()) {
+    final result =
+        await ref.read(driveControllerProvider.notifier).link(mode: mode);
+    switch (result) {
       case ActionSuccess(:final value?):
         showSavedSnackBar(messenger, l10n.driveLinked(value.email));
+        if (value.mode == DriveAuthMode.manual && context.mounted) {
+          await showInfoDialog(
+            context,
+            title: l10n.driveBrowserSessionTitle,
+            message: l10n.driveBrowserSessionMessage,
+          );
+        }
       case ActionSuccess():
         break;
       case ActionFailure(:final error):
@@ -193,7 +246,7 @@ class DriveSection extends ConsumerWidget {
   }
 
   /// Warns that the old backup stays in the old account, then links
-  /// another one.
+  /// another one in the same mode (changing the mode needs an unlink).
   static Future<void> _changeAccount(
     BuildContext context,
     WidgetRef ref,
@@ -207,10 +260,12 @@ class DriveSection extends ConsumerWidget {
       confirmLabel: l10n.driveChangeAccount,
     );
     if (!confirmed || !context.mounted) return;
-    await _link(context, ref);
+    await _link(context, ref, account.mode);
   }
 
-  /// Asks, then unlinks the account.
+  /// Asks, then unlinks the account. For a manual account the access is
+  /// revoked at Google too; if that fails (offline) the link is gone anyway
+  /// and a long message says where to remove the access by hand.
   static Future<void> _unlink(
     BuildContext context,
     WidgetRef ref,
@@ -221,13 +276,18 @@ class DriveSection extends ConsumerWidget {
     final confirmed = await confirmAction(
       context,
       title: l10n.driveUnlinkTitle,
-      message: l10n.driveUnlinkMessage(account.email),
+      message: switch (account.mode) {
+        DriveAuthMode.system => l10n.driveUnlinkMessage(account.email),
+        DriveAuthMode.manual => l10n.driveUnlinkManualMessage(account.email),
+      },
       confirmLabel: l10n.driveUnlink,
     );
     if (!confirmed) return;
     switch (await ref.read(driveControllerProvider.notifier).unlink()) {
-      case ActionSuccess():
+      case ActionSuccess(value: true):
         showSavedSnackBar(messenger, l10n.driveUnlinked);
+      case ActionSuccess(value: false):
+        showErrorSnackBar(messenger, l10n.driveUnlinkedRevokeFailed);
       case ActionFailure(:final error):
         showErrorSnackBar(messenger, error.message(l10n));
     }

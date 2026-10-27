@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.9.0+10
+version: 0.9.1+11
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
@@ -88,6 +88,13 @@ dependencies:
   # HTTP client under googleapis; used directly by the small client that adds
   # the access token and renews it on a 401.
   http: ^1.6.0
+  # Mode 2 of the Drive link: OAuth 2.0 Authorization Code + PKCE in the
+  # system browser (Custom Tab, never a WebView), for an account that is not
+  # added to Android. Also refreshes the access token.
+  flutter_appauth: ^12.1.0
+  # Keeps mode 2's refresh token, and only that, encrypted with a key in the
+  # Android Keystore. Never the settings table, never a file, never a log.
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:

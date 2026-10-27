@@ -29,37 +29,86 @@ class DriveAuthorizationRequiredException extends DriveAuthException {
       : super('Drive access needs the user to link the account again');
 }
 
-/// Links a Google account for the Drive copy and hands out short-lived
-/// access tokens for it (mode 1 of `Docs/05_sync_and_storage.md`: the
-/// phone's own accounts, through the system picker).
-///
-/// No token is ever stored by the app: each one is asked for when needed
-/// and only kept in memory by the caller for the request it serves.
-abstract interface class DriveAuthService {
-  /// Shows the account picker and the consent screen for the Drive scope,
-  /// and returns the chosen account.
-  ///
-  /// Throws [DriveAuthException] (with `cancelled` when the user backed
-  /// out).
-  Future<DriveAccount> link();
+/// Unlinking removed the link on this phone, but Google could not be told
+/// to revoke the authorisation (typically no connection): the user can
+/// remove it from the Google account's security settings.
+class DriveRevocationFailedException implements Exception {
+  /// Creates the exception.
+  const DriveRevocationFailedException(this.message);
 
+  /// What went wrong, for the log. Never contains a token.
+  final String message;
+
+  @override
+  String toString() => 'DriveRevocationFailedException($message)';
+}
+
+/// Hands out short-lived access tokens with the Drive scope for a linked
+/// account: all the Drive client needs.
+abstract interface class DriveTokenProvider {
   /// An access token for [account] with the Drive scope, without any UI.
   ///
   /// Throws [DriveAuthorizationRequiredException] when the account no
   /// longer authorises the app.
   Future<String> accessToken(DriveAccount account);
 
-  /// Drops [token] from the platform cache, after Drive refused it, so the
-  /// next [accessToken] returns a fresh one.
+  /// Drops [token] from the cache, after Drive refused it, so the next
+  /// [accessToken] returns a fresh one.
   Future<void> invalidate(String token);
+}
 
-  /// Forgets the link on this phone (sign out). The authorisation itself
-  /// can be revoked from the Google account's settings.
+/// Links a Google account for the Drive copy in one of the modes of
+/// `Docs/05_sync_and_storage.md` and hands out its access tokens.
+///
+/// Access tokens are only ever kept in memory. Mode 1 stores no token at
+/// all; mode 2 stores its refresh token in the secure storage only.
+abstract interface class DriveAuthService implements DriveTokenProvider {
+  /// Shows the account choice and the consent screen for the Drive scope,
+  /// and returns the chosen account.
+  ///
+  /// Throws [DriveAuthException] (with `cancelled` when the user backed
+  /// out).
+  Future<DriveAccount> link();
+
+  /// Forgets the link on this phone. Throws
+  /// [DriveRevocationFailedException] when the link is gone but Google
+  /// could not be told.
   Future<void> unlink();
 }
 
-/// [DriveAuthService] on `google_sign_in` 7: Credential Manager for the
-/// account, the Identity `AuthorizationClient` for the Drive scope.
+/// The [DriveTokenProvider] of the Drive client: hands each account's
+/// token requests to the service of the mode it was linked with.
+class DriveAuthRouter implements DriveTokenProvider {
+  /// Creates the router over the services of each mode.
+  DriveAuthRouter(this._services);
+
+  /// The service of each mode.
+  final Map<DriveAuthMode, DriveAuthService> _services;
+
+  /// The service that handed out the last token. Only one account is
+  /// linked at a time, so every token in flight comes from it.
+  DriveAuthService? _issuer;
+
+  /// The service of [mode].
+  DriveAuthService _serviceOf(DriveAuthMode mode) =>
+      _services[mode] ??
+      (throw DriveAuthException('No service for mode ${mode.code}'));
+
+  @override
+  Future<String> accessToken(DriveAccount account) {
+    final service = _serviceOf(account.mode);
+    _issuer = service;
+    return service.accessToken(account);
+  }
+
+  @override
+  Future<void> invalidate(String token) async {
+    await _issuer?.invalidate(token);
+  }
+}
+
+/// Mode 1's [DriveAuthService] on `google_sign_in` 7: Credential Manager
+/// for the account, the Identity `AuthorizationClient` for the Drive scope.
 class GoogleDriveAuthService implements DriveAuthService {
   /// Creates the service. Stateless apart from the one-time initialisation.
   GoogleDriveAuthService();
@@ -124,6 +173,8 @@ class GoogleDriveAuthService implements DriveAuthService {
         .clearAuthorizationToken(accessToken: token);
   }
 
+  /// Signs out on this phone. The authorisation itself stays in the Google
+  /// account, which is a phone account the user manages in Android.
   @override
   Future<void> unlink() async {
     await _ensureInitialized();

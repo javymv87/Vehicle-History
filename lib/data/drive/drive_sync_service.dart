@@ -106,10 +106,12 @@ class DriveSyncService {
     required DriveBackupClient client,
     required int schemaVersion,
     required String appVersion,
+    DriveAuthService? manualAuth,
     UtcClock clock = systemUtcClock,
   })  : _backup = backup,
         _settings = settings,
         _auth = auth,
+        _manualAuth = manualAuth,
         _client = client,
         _schemaVersion = schemaVersion,
         _appVersion = appVersion,
@@ -117,7 +119,14 @@ class DriveSyncService {
 
   final BackupService _backup;
   final SettingsRepository _settings;
+
+  /// Mode 1: the phone's accounts.
   final DriveAuthService _auth;
+
+  /// Mode 2: an account typed in the browser; `null` where it is not
+  /// available.
+  final DriveAuthService? _manualAuth;
+
   final DriveBackupClient _client;
 
   /// This app's database schema version.
@@ -132,13 +141,26 @@ class DriveSyncService {
   /// The linked account, from the settings.
   Future<DriveAccount?> linkedAccount() => _settings.readDriveAccount();
 
-  /// Links an account through the system picker and consent screen.
+  /// The service of [mode].
+  DriveAuthService _serviceOf(DriveAuthMode mode) => switch (mode) {
+        DriveAuthMode.system => _auth,
+        DriveAuthMode.manual => _manualAuth ??
+            (throw const DriveAuthException('Manual linking unavailable')),
+      };
+
+  /// Links an account in [mode]: the system picker (mode 1) or the
+  /// browser sign-in (mode 2), then the consent screen.
   ///
   /// The last common point is cleared: it belonged to the previous account
   /// (or to none), and an existing copy in the new account must never be
-  /// treated as known.
-  Future<DriveAccount> link() async {
-    final account = await _auth.link();
+  /// treated as known. Changing the mode needs an unlink first (the UI
+  /// offers only the linked mode), so a link in another mode is refused.
+  Future<DriveAccount> link({DriveAuthMode mode = DriveAuthMode.system}) async {
+    final current = await linkedAccount();
+    if (current != null && current.mode != mode) {
+      throw const DriveAuthException('Another mode is linked; unlink first');
+    }
+    final account = await _serviceOf(mode).link();
     await _settings.clearSyncPoint();
     await _settings.writeDriveAccount(account);
     return account;
@@ -146,16 +168,25 @@ class DriveSyncService {
 
   /// Unlinks the account on this phone and clears the last common point.
   /// The copies stay in that account's Drive.
-  Future<void> unlink() async {
+  ///
+  /// Returns `false` when the link is gone but Google could not be told to
+  /// revoke the authorisation (mode 2 offline): the user should remove it
+  /// from the Google account's security settings.
+  Future<bool> unlink() async {
+    final account = await linkedAccount();
     await _settings.clearSyncPoint();
     await _settings.writeDriveAccount(null);
     try {
-      await _auth.unlink();
+      await _serviceOf(account?.mode ?? DriveAuthMode.system).unlink();
+    } on DriveRevocationFailedException catch (error) {
+      debugPrint('Drive revocation failed: $error');
+      return false;
     } on Exception catch (error) {
       // The local link is gone, which is what matters; the sign-out is a
       // courtesy.
       debugPrint('Drive sign-out failed: $error');
     }
+    return true;
   }
 
   /// Reads the Drive metadata (never a package) and runs the guard.

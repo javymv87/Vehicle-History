@@ -49,19 +49,71 @@ que autoriza el acceso a Drive), pero con flujos distintos.
 
 ### Modalidad 2 — Vincular una cuenta manualmente (avanzada)
 
-> **Pendiente (paso 9b).** El paso 9 implementa solo la Modalidad 1; esta
-> se mantiene como diseño.
+Implementada en el paso 9b. Sirve para usar una cuenta que **no es** (y no
+debe pasar a ser) una cuenta del teléfono: la usa **solo la app**. Caso
+típico: el teléfono de otra persona de la familia guarda la copia en la
+cuenta del propietario sin que esa cuenta aparezca en Gmail, Play Store o
+el selector de cuentas de Chrome de ese teléfono.
 
-Para usar una cuenta que **no es** (y no debe pasar a ser) una cuenta del
-teléfono: la usa **solo la app**.
-
-- Flujo **OAuth 2.0 Authorization Code + PKCE**, a través de `flutter_appauth`.
+- Flujo **OAuth 2.0 Authorization Code + PKCE (S256)**, a través de
+  `flutter_appauth` (AppAuth-Android). Cliente OAuth **Android** del
+  proyecto (cliente público, **sin secreto**). El redirect es el ID de
+  cliente invertido (`com.googleusercontent.apps.…:/oauth2redirect`). En
+  Cloud Console ese cliente tiene activado "Enable custom URI scheme":
+  Google lo desactiva por defecto en los clientes Android nuevos. Los
+  endpoints salen del documento de descubrimiento de Google.
 - El inicio de sesión tiene lugar en el **navegador del sistema** (Android
-  Custom Tab), en la página real de Google: el usuario escribe allí el email y
-  la contraseña. También la verificación en dos pasos la gestiona Google.
-- **La app nunca ve la contraseña**: solo recibe, al final, los tokens de
-  acceso/refresh.
+  Custom Tab), en la página real de Google, con `prompt=select_account`:
+  siempre se puede elegir o escribir otra cuenta. El usuario escribe allí
+  el email y la contraseña, y Google gestiona también la verificación en
+  dos pasos.
+- **La app nunca ve la contraseña**: al final solo recibe los tokens.
+- Ámbitos: `openid email` (solo para mostrar qué cuenta está vinculada; el
+  email se lee del ID token, sin otra llamada) y `drive.file`, el mismo de
+  la Modalidad 1. Si en el consentimiento se desmarca Drive, la vinculación
+  se rechaza y el token se revoca.
 - La cuenta **no** se añade a nivel de Android: permanece interna a la app.
+- **Dónde viven los tokens:**
+  - el **refresh token**, y nada más, en `flutter_secure_storage`, cifrado
+    con una clave del Android Keystore;
+  - el token de acceso, solo en memoria; se renueva solo cuando está a
+    punto de caducar (a la hora);
+  - nunca en la tabla `settings`, en archivos ni en el registro, que solo
+    anota nombres de evento.
+  - Los archivos de `flutter_secure_storage` están excluidos de la copia de
+    seguridad propia de Android y de la transferencia entre dispositivos:
+    el token no sale nunca del teléfono, y su clave del Keystore tampoco
+    viajaría.
+- **Pestaña privada: no disponible en Android.** Ni `flutter_appauth` ni
+  AppAuth-Android ofrecen una Custom Tab efímera, así que la sesión de
+  Google puede quedar abierta en el navegador predeterminado (Chrome, Brave…)
+  como sesión web, no como cuenta del teléfono. Tras vincular, la app lo
+  avisa una vez: "La sesión de Google puede quedar abierta en el navegador
+  del teléfono; cierra allí la sesión de Google si no quieres que quede
+  guardada."
+- **Afinidad de tarea.** `MainActivity` no lleva `android:taskAffinity=""`
+  (la plantilla de Flutter lo pone): con él, la redirección de Google llega
+  a una tarea nueva de Android, donde AppAuth no encuentra la solicitud en
+  curso, y el navegador se queda abierto sin volver a la app.
+- **Google rechaza el refresh token** (`invalid_grant`: acceso retirado,
+  contraseña cambiada…): la app borra el token y conserva la cuenta y la
+  modalidad, con la línea de estado "vuelve a vincular la cuenta", igual
+  que en la Modalidad 1.
+- **Desvincular** revoca el token en Google (`oauth2.googleapis.com/revoke`,
+  que retira también el acceso de la app en la cuenta) y borra el almacén
+  seguro y las claves de ajustes. Si no se puede revocar, por ejemplo sin
+  conexión, la desvinculación se hace igual y la app explica cómo quitar el
+  acceso a mano: cuenta de Google → Seguridad → Conexiones con terceros.
+- **Una modalidad a la vez.** Para pasar a la otra hay que desvincular
+  primero. "Cambiar de cuenta" vincula otra cuenta en la misma modalidad
+  (en la 2, el token anterior se revoca).
+- **Las mismas copias.** `drive.file` es por proyecto de Cloud, y los dos
+  clientes OAuth son del mismo proyecto: la misma cuenta ve las mismas
+  copias en las dos modalidades, y el punto en común se guarda por email.
+
+La modalidad activa se guarda en el ajuste `drive_auth_mode` (`system` /
+`manual`, del teléfono; sin fila = `system`, como las vinculaciones de la
+0.9.0).
 
 ### Reglas de seguridad (válidas para ambas modalidades)
 
@@ -69,13 +121,14 @@ teléfono: la usa **solo la app**.
   navegador del sistema/Custom Tab. Una WebView es menos segura y, en
   cualquier caso, Google la bloquea.
 - Los **tokens** se guardan en el **almacén cifrado del sistema** (Android
-  Keystore, a través de `flutter_secure_storage`), nunca en archivos o
-  preferencias en claro. Con la Modalidad 1 (paso 9) la app **no guarda
-  ningún token**: cada vez que necesita uno se lo pide a Google Play
-  Services para la cuenta vinculada (sin pantalla), lo usa solo en memoria
-  para esa petición y, si Drive lo rechaza (caduca a la hora), pide otro y
-  repite la petición. `flutter_secure_storage` llegará con la Modalidad 2.
-  Ningún token aparece nunca en el registro.
+  Keystore, a través de `flutter_secure_storage`), nunca en la tabla
+  `settings`, en archivos o en preferencias en claro. Con la Modalidad 1
+  la app **no guarda ningún token**: cada vez que necesita uno se lo pide a
+  Google Play Services para la cuenta vinculada (sin pantalla), lo usa solo
+  en memoria para esa petición y, si Drive lo rechaza (caduca a la hora),
+  pide otro y repite la petición. Con la Modalidad 2 solo se guarda el
+  refresh token, en `flutter_secure_storage`. Ningún token ni código de
+  autorización aparece nunca en el registro.
 - La app muestra siempre con claridad **qué cuenta está vinculada** a la copia
   de seguridad (p. ej. "Copia de seguridad vinculada a: usuario@gmail.com") con
   un botón para **cambiar de cuenta**.
@@ -109,8 +162,9 @@ antigua."
 Ambas modalidades requieren que la app esté registrada en la **Google Cloud
 Console** con la pantalla de consentimiento configurada para el ámbito (*scope*)
 de Drive. La Modalidad 1 necesita además un ID de cliente OAuth para Android
-(nombre del paquete + SHA-1 del certificado de firma); la Modalidad 2 utiliza,
-además, el flujo a través del navegador con PKCE. El acceso a Drive conlleva un
+(nombre del paquete + SHA-1 del certificado de firma); la Modalidad 2 usa
+ese mismo cliente Android para el flujo a través del navegador con PKCE,
+con "Enable custom URI scheme" activado. El acceso a Drive conlleva un
 proceso de **verificación de la app** por parte de Google. Mientras la app no
 esté verificada funciona igual, pero muestra un aviso de "app no verificada" y
 tiene un límite de usuarios de prueba — aceptable para uso personal / pocos

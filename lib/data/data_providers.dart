@@ -15,7 +15,9 @@ import 'catalog/vehicle_catalog.dart';
 import 'db/app_database.dart';
 import 'drive/drive_auth_service.dart';
 import 'drive/drive_backup_client.dart';
+import 'drive/drive_models.dart';
 import 'drive/drive_sync_service.dart';
+import 'drive/manual_drive_auth_service.dart';
 import 'platform/native_files.dart';
 import 'platform/network_state.dart';
 import 'platform/temporary_files.dart';
@@ -214,14 +216,28 @@ final networkStateProvider = Provider<NetworkState>(
   (ref) => const MethodChannelNetworkState(),
 );
 
-/// The Google account link and the Drive access tokens (never stored).
+/// Mode 1 of the Google account link: the phone's accounts; the Drive
+/// access tokens are never stored.
 final driveAuthServiceProvider = Provider<DriveAuthService>(
   (ref) => GoogleDriveAuthService(),
 );
 
-/// The packages in the linked account's Drive.
+/// Mode 2 of the Google account link: an account signed in through the
+/// browser; only its refresh token is stored, in the secure storage.
+/// Kept for the whole process: it holds the access token in memory.
+final driveManualAuthServiceProvider = Provider<DriveAuthService>(
+  (ref) => ManualDriveAuthService(),
+);
+
+/// The packages in the linked account's Drive, with the tokens of the mode
+/// the account was linked with.
 final driveBackupClientProvider = Provider<DriveBackupClient>(
-  (ref) => GoogleDriveBackupClient(ref.watch(driveAuthServiceProvider)),
+  (ref) => GoogleDriveBackupClient(
+    DriveAuthRouter({
+      DriveAuthMode.system: ref.watch(driveAuthServiceProvider),
+      DriveAuthMode.manual: ref.watch(driveManualAuthServiceProvider),
+    }),
+  ),
 );
 
 /// The Drive copy's operations on the current database connection.
@@ -231,6 +247,7 @@ final driveSyncServiceProvider = Provider<DriveSyncService>((ref) {
     backup: ref.watch(backupServiceProvider),
     settings: ref.watch(settingsRepositoryProvider),
     auth: ref.watch(driveAuthServiceProvider),
+    manualAuth: ref.watch(driveManualAuthServiceProvider),
     client: ref.watch(driveBackupClientProvider),
     schemaVersion: db.schemaVersion,
     appVersion: appVersion,

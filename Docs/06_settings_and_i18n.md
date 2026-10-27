@@ -40,7 +40,8 @@ v6): una fila por clave.
   | `last_export_at` | Instante de la última exportación del paquete de copia (ver `05_sync_and_storage.md`) | nunca exportado |
   | `language` | `system`, `it`, `es`, `en` | `system` |
   | `theme` | `system`, `light`, `dark` | `system` |
-  | `drive_account` | Email de la cuenta de Google vinculada (no es un secreto: no se guarda ningún token) | sin cuenta |
+  | `drive_account` | Email de la cuenta de Google vinculada (no es un secreto: los tokens nunca van a esta tabla) | sin cuenta |
+  | `drive_auth_mode` | `system` (cuenta del teléfono) / `manual` (vinculada en el navegador; su refresh token está en `flutter_secure_storage`) | `system` |
   | `drive_device_id` | UUID de este teléfono en las copias que sube | se crea al primer uso |
   | `drive_mobile_data` | `true` / `false`: la copia automática puede usar datos móviles | `false` |
   | `drive_sync_account`, `drive_sync_local_stamp`, `drive_sync_upload_id`, `drive_sync_at`, `drive_sync_direction` | El último punto en común con la copia de Drive (cuenta, sello local o `none`, `upload_id`, instante, `upload` / `download`); incompleto = no hay | sin punto en común |
@@ -52,7 +53,8 @@ v6): una fila por clave.
   cambia en ese mismo momento, sin reiniciar. Cada clave tiene un **ámbito**
   (`SettingScope`): las compartidas (`last_export_at`, `language`, `theme`)
   llegan con el paquete; las del teléfono (`drive_account`,
-  `drive_device_id`, `drive_mobile_data`) se conservan; las del punto en
+  `drive_auth_mode`, `drive_device_id`, `drive_mobile_data`) se conservan;
+  las del punto en
   común (`drive_sync_*`) se borran (ver `05_sync_and_storage.md`).
 
 ## Idioma y tema: cómo se aplican

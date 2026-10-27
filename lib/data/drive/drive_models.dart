@@ -1,22 +1,53 @@
 import '../models/backup_manifest.dart';
 
+/// How the Google account of the Drive copy was linked
+/// (`Docs/05_sync_and_storage.md`, "Vinculación de la cuenta").
+enum DriveAuthMode {
+  /// Mode 1: one of the phone's Google accounts, through the system picker
+  /// (`google_sign_in`). No token is stored.
+  system('system'),
+
+  /// Mode 2: an account typed in the system browser (OAuth 2.0 + PKCE
+  /// through `flutter_appauth`) that is never added to Android. Its refresh
+  /// token lives only in the secure storage.
+  manual('manual');
+
+  const DriveAuthMode(this.code);
+
+  /// Text stored in `drive_auth_mode`.
+  final String code;
+
+  /// The mode stored as [code]. Absent or unknown means [system]: links
+  /// made before mode 2 existed (0.9.0) are all system links.
+  static DriveAuthMode fromCode(String? code) {
+    for (final mode in values) {
+      if (mode.code == code) return mode;
+    }
+    return system;
+  }
+}
+
 /// The Google account the Drive copy is linked to.
 class DriveAccount {
-  /// Creates the account with its [email].
-  const DriveAccount(this.email);
+  /// Creates the account with its [email], linked through [mode].
+  const DriveAccount(this.email, {this.mode = DriveAuthMode.system});
 
-  /// The account's email, shown as "Copy linked to: …".
+  /// The account's email, shown as "Copy linked to: …". The last common
+  /// point and the copies belong to the email, whatever the [mode].
   final String email;
+
+  /// How the account was linked, which decides who hands out its tokens.
+  final DriveAuthMode mode;
 
   @override
   bool operator ==(Object other) =>
-      other is DriveAccount && other.email == email;
+      other is DriveAccount && other.email == email && other.mode == mode;
 
   @override
-  int get hashCode => email.hashCode;
+  int get hashCode => Object.hash(email, mode);
 
   @override
-  String toString() => 'DriveAccount($email)';
+  String toString() => 'DriveAccount($email, ${mode.code})';
 }
 
 /// The text form of a version stamp (`BackupDao.lastModifiedAt`), as

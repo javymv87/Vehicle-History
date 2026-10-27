@@ -5,22 +5,35 @@ import 'drive_models.dart';
 
 /// Typed access to the Drive settings (`SettingKey.drive…`).
 extension DriveSettings on SettingsRepository {
-  /// The linked account, or `null` when none.
-  Future<DriveAccount?> readDriveAccount() async {
-    final email = await read(SettingKey.driveAccount);
-    return email == null || email.isEmpty ? null : DriveAccount(email);
+  /// The linked account with its mode, or `null` when none.
+  Future<DriveAccount?> readDriveAccount() async =>
+      _accountOf(await read(SettingKey.driveAccount));
+
+  /// Emits the linked account now and after every change. The mode is
+  /// written before the email ([writeDriveAccount]), so it is read here
+  /// when the email changes.
+  Stream<DriveAccount?> watchDriveAccount() =>
+      watch(SettingKey.driveAccount).asyncMap(_accountOf).distinct();
+
+  /// The account of [email] with the stored mode, or `null` for none.
+  Future<DriveAccount?> _accountOf(String? email) async {
+    if (email == null || email.isEmpty) return null;
+    final mode = DriveAuthMode.fromCode(await read(SettingKey.driveAuthMode));
+    return DriveAccount(email, mode: mode);
   }
 
-  /// Emits the linked account now and after every change.
-  Stream<DriveAccount?> watchDriveAccount() => watch(SettingKey.driveAccount)
-      .map(
-        (email) => email == null || email.isEmpty ? null : DriveAccount(email),
-      )
-      .distinct();
-
-  /// Stores [account] as the linked one (`null` unlinks).
-  Future<void> writeDriveAccount(DriveAccount? account) =>
-      write(SettingKey.driveAccount, account?.email);
+  /// Stores [account] as the linked one with its mode (`null` unlinks and
+  /// clears the mode too).
+  Future<void> writeDriveAccount(DriveAccount? account) async {
+    if (account == null) {
+      await write(SettingKey.driveAccount, null);
+      await write(SettingKey.driveAuthMode, null);
+      return;
+    }
+    // The mode first: watchDriveAccount reads it when the email changes.
+    await write(SettingKey.driveAuthMode, account.mode.code);
+    await write(SettingKey.driveAccount, account.email);
+  }
 
   /// This phone's id in the copies it uploads, created on first use.
   Future<String> driveDeviceId() async {

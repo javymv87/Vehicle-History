@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/app/router/app_routes.dart';
+import 'package:vehicle_history/data/drive/drive_auth_service.dart';
 import 'package:vehicle_history/data/drive/drive_models.dart';
 import 'package:vehicle_history/data/drive/drive_settings.dart';
 import 'package:vehicle_history/data/platform/network_state.dart';
@@ -43,23 +44,70 @@ void main() {
     await backup.driveService.upload(expectedUploadId: null);
   }
 
-  testWidgets('without an account: the explanation and Link account',
+  testWidgets('without an account: the explanation and both ways to link',
       (tester) async {
     await pumpBackup(tester);
-    await showText(tester, 'Link account');
+    await showText(tester, 'Link a phone account');
 
     expect(find.textContaining('No account linked.'), findsOneWidget);
     expect(find.text('Upload to Drive'), findsNothing);
     expect(backup.driveClient.listings, 0);
+    await showText(tester, 'Link an account manually');
+    expect(find.textContaining('Sign in in the browser'), findsOneWidget);
+  });
+
+  testWidgets(
+      'linking manually shows the mode and the browser-session notice once',
+      (tester) async {
+    await pumpBackup(tester);
+    await showText(tester, 'Link an account manually');
+
+    await tester.tap(find.text('Link an account manually'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Browser session'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Browser session'), findsNothing);
+
+    await showText(tester, 'Linked manually (only in this app)');
+    expect(find.text('Link a phone account'), findsNothing);
+    expect(
+      await backup.settings.readDriveAccount(),
+      const DriveAccount('me@example.com', mode: DriveAuthMode.manual),
+    );
+  });
+
+  testWidgets(
+      'unlinking a manual account revokes it, and says so when Google '
+      'could not be told', (tester) async {
+    await backup.settings.writeDriveAccount(
+      const DriveAccount('me@example.com', mode: DriveAuthMode.manual),
+    );
+    backup.driveManualAuth.unlinkFailure =
+        const DriveRevocationFailedException('offline');
+    await pumpBackup(tester);
+    await showText(tester, 'Unlink');
+
+    await tester.tap(find.text('Unlink'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining("withdraws this app's access"), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Unlink').last);
+    await tester.pumpAndSettle();
+
+    expect(backup.driveManualAuth.unlinks, 1);
+    expect(backup.driveAuth.unlinks, 0);
+    expect(find.textContaining('Google could not be told'), findsOneWidget);
+    expect(await backup.settings.readDriveAccount(), isNull);
   });
 
   testWidgets(
       'linking an account with no copy in Drive uploads the first one at '
       'once', (tester) async {
     await pumpBackup(tester);
-    await showText(tester, 'Link account');
+    await showText(tester, 'Link a phone account');
 
-    await tester.tap(find.text('Link account'));
+    await tester.tap(find.text('Link a phone account'));
     await tester.pumpAndSettle();
 
     expect(find.text('Linked to me@example.com'), findsOneWidget);

@@ -76,7 +76,7 @@ class GoogleDriveBackupClient implements DriveBackupClient {
       : _httpClient = httpClient ?? http.Client.new;
 
   /// Hands out the access tokens.
-  final DriveAuthService _auth;
+  final DriveTokenProvider _auth;
 
   /// Creates the client under the bearer-token wrapper.
   final http.Client Function() _httpClient;
@@ -279,7 +279,7 @@ class _AccountTokens implements AccessTokenSource {
   _AccountTokens(this._auth, this._account);
 
   /// Hands out the tokens.
-  final DriveAuthService _auth;
+  final DriveTokenProvider _auth;
 
   /// Whose tokens.
   final DriveAccount _account;
