@@ -1,10 +1,12 @@
 import '../../data/models/app_preferences.dart';
+import '../../data/models/archive_reason.dart';
 import '../../data/models/fuel_type.dart';
 import '../../data/models/log_entry_type.dart';
 import '../../data/models/vehicle.dart';
 import '../../data/models/vehicle_kind.dart';
 import '../../l10n/app_localizations.dart';
 import 'action_result.dart';
+import 'calendar_date_conversion.dart';
 
 /// Localised label of a [FuelType].
 extension FuelTypeLabel on FuelType {
@@ -21,6 +23,21 @@ extension FuelTypeLabel on FuelType {
       };
 }
 
+/// Localised label of an [ArchiveReason].
+extension ArchiveReasonLabel on ArchiveReason {
+  /// The name of this archive reason in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        ArchiveReason.none => l10n.archiveReasonNone,
+        ArchiveReason.sold => l10n.archiveReasonSold,
+        ArchiveReason.scrapped => l10n.archiveReasonScrapped,
+        ArchiveReason.stolen => l10n.archiveReasonStolen,
+        ArchiveReason.destroyed => l10n.archiveReasonDestroyed,
+        ArchiveReason.givenAway => l10n.archiveReasonGivenAway,
+        ArchiveReason.leaseEnded => l10n.archiveReasonLeaseEnded,
+        ArchiveReason.other => l10n.archiveReasonOther,
+      };
+}
+
 /// How a vehicle is named in dialog titles.
 extension VehicleDisplayName on Vehicle {
   /// Make and model followed by the plate, e.g. "Fiat Punto (AB123CD)", or
@@ -29,6 +46,19 @@ extension VehicleDisplayName on Vehicle {
         final name? => l10n.vehicleNameWithPlate(name, plate),
         null => plate,
       };
+
+  /// The archive chip of an archived vehicle, e.g. "Sold · Mar 2026" or
+  /// "Sold · Mar 2026 · 184,300 km"; `null` for an active one.
+  String? archiveChipLabel(AppLocalizations l10n) {
+    final day = archivedAt;
+    if (day == null) return null;
+    final reason = (archiveReason ?? ArchiveReason.none).label(l10n);
+    final month = day.toLocalDateTime();
+    return switch (archivedKm) {
+      final km? => l10n.archiveChipWithKm(reason, month, km),
+      null => l10n.archiveChip(reason, month),
+    };
+  }
 }
 
 /// Localised label of a [VehicleKind].
@@ -91,6 +121,7 @@ extension ActionErrorMessage on ActionError {
           l10n.errorOwnerHasTrashedVehicles,
         ActionError.ownerNotFound => l10n.errorOwnerNotFound,
         ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
+        ActionError.vehicleArchived => l10n.errorVehicleArchived,
         ActionError.entryNotFound => l10n.errorEntryNotFound,
         ActionError.readingNotFound => l10n.errorReadingNotFound,
         ActionError.attachmentNotFound => l10n.errorAttachmentNotFound,

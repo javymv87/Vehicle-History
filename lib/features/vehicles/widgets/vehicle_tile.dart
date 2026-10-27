@@ -6,13 +6,19 @@ import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../controllers/vehicle_list_controller.dart';
 
 /// One row of the vehicle list: kind icon, make and model, plate, nickname,
-/// owner, current km and fuel.
+/// owner, current km and fuel, and on the archived list ([showArchive]) a
+/// chip with the archive reason, month and final km.
 ///
 /// A vehicle without make and model (created at schema v1) shows its plate
 /// as the main line instead.
 class VehicleTile extends StatelessWidget {
   /// Creates the row for [item], calling [onTap] when tapped.
-  const VehicleTile({super.key, required this.item, required this.onTap});
+  const VehicleTile({
+    super.key,
+    required this.item,
+    required this.onTap,
+    this.showArchive = false,
+  });
 
   /// The vehicle shown, with its owner.
   final VehicleWithOwner item;
@@ -20,12 +26,16 @@ class VehicleTile extends StatelessWidget {
   /// Opens the vehicle detail.
   final VoidCallback onTap;
 
+  /// Whether to show the archive chip of an archived vehicle.
+  final bool showArchive;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final vehicle = item.vehicle;
     final makeAndModel = vehicle.makeAndModel;
+    final archiveChip = showArchive ? vehicle.archiveChipLabel(l10n) : null;
     return ListTile(
       leading: CircleAvatar(
         child: Icon(vehicle.kind.icon, semanticLabel: vehicle.kind.label(l10n)),
@@ -48,6 +58,16 @@ class VehicleTile extends StatelessWidget {
               vehicle.fuelType.label(l10n),
             ),
           ),
+          if (archiveChip != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Chip(
+                avatar: const Icon(Icons.archive_outlined, size: 18),
+                label: Text(archiveChip),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
         ],
       ),
       trailing: const Icon(Icons.chevron_right),

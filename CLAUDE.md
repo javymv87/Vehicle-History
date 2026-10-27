@@ -139,11 +139,12 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v7: `owners`, `vehicles`, `audit_log`,
+Settled for the database (schema v8: `owners`, `vehicles`, `audit_log`,
 `log_entries`, `mileage_readings`, `settings`, `attachments`; v2 added the
 vehicle kind, make / model, model year and version; v3 added `log_entries`;
 v4 added `mileage_readings` with one initial reading per vehicle; v5 added
-`deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`):
+`deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`;
+v8 added the archive columns of `vehicles`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -192,8 +193,8 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   text with no CHECK, so a new code only needs its converter
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
   this way in v3, `mileageReading` in v4, operation `purge` in v5, operation
-  `import` with entity `database` in v6, entity `attachment` in v7), not a
-  schema change; an older build that meets an unknown code throws when
+  `import` with entity `database` in v6, entity `attachment` in v7,
+  operations `archive` and `reactivate` in v8), not a schema change; an older build that meets an unknown code throws when
   reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
@@ -265,6 +266,31 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   confirmed by the UI (`odometer_checks.dart`). The entry form warns, never
   blocks, when an entry has more km than the first reading of a later day
   (`laterReadingBelowEntryKm`).
+- **Archived vehicles (v8)** (`Docs/02_data_model.md`, "Archivo de
+  vehículos"): `vehicles.archived_at` (a **`CalendarDate`**, `yyyy-MM-dd`,
+  never an instant), `archive_reason` (`ArchiveReason` codes through
+  `ArchiveReasonConverter`), `archive_note`, `archived_km`
+  (`NULL CHECK (archived_km >= 0)`), all `NULL` while active. *Active* =
+  `deleted = 0 AND archived_at IS NULL`: the one expression
+  `VehiclesDao.isActive`, behind `watchActive` (the main list) and, negated
+  over live rows, `watchArchived`; step 11 reuses it. `getById` /
+  `watchById` / `watchByOwner` return archived vehicles too.
+  `VehicleRepository.archive` runs in one transaction: with a km it first
+  calls `MileageReadingRepository.create` (a nested drift transaction, so
+  the reading rules refuse the whole archive), then writes the four columns
+  and the `archive` audit row; `reactivate` clears them (`reactivate` row)
+  and leaves every reading alone. **Read-only guard:** the entry, reading
+  and attachment repositories check `vehicleStateOf`
+  (`lib/data/db/vehicle_state.dart`, one shared query; `targetStateOf` for
+  attachment targets) before every write and throw
+  `VehicleArchivedException` (`ActionError.vehicleArchived`); only
+  `delete`, `restore`, `reactivate`, the Trash purge, the startup cleanup
+  and the import bypass it (they never go through those writes). UI:
+  `vehicleReadOnlyProvider` / `attachmentTargetReadOnlyProvider` hide every
+  add / edit / delete affordance; the vehicle page's overflow menu holds
+  Archive or Reactivate plus Move to Trash; the archived list is
+  `/vehicles/archived` (declared before `/:id`); the forms refuse an
+  archived vehicle reached by deep link.
 - **Make and model** are stored as the display name (always) plus an
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches
@@ -548,7 +574,7 @@ lib/
     attachments/         # attachment files, staging, pickers, file opener
     platform/            # wrappers of the app's own native channels
   features/
-    vehicles/            # pages/ widgets/ controllers/
+    vehicles/            # pages/ widgets/ controllers/ (archive too)
     owners/              # pages/ widgets/ controllers/
     entries/             # pages/ widgets/ controllers/
     maintenance/         # pages/ widgets/ controllers/
@@ -704,6 +730,21 @@ decision, not a refactor.
   fill-up. It is **not** derived from the distance between two consecutive
   fill-ups.
 - Total fuel spend is **not** auto-computed. The user stays in control.
+
+### Archived vehicles
+- Archive ≠ Trash: the Trash is a mistake (purged after 30 days), the
+  archive is an end (kept forever). The two states are independent: an
+  archived vehicle can go to the Trash and comes back archived.
+- Archived = **strictly read-only** (vehicle, entries, readings,
+  attachments), enforced in the repositories, not only in the UI. The only
+  actions are Reactivate (always allowed, no confirmation, touches no
+  reading) and Move to Trash.
+- Archived vehicles are excluded from everything "current" (main list,
+  default selections and, in step 11, reminders) through the single
+  `VehiclesDao.isActive` filter. The owner page still lists them, folded.
+- The final km of an archive **is** an odometer reading, inserted by the
+  normal reading path under its rules; `archived_km` is only its snapshot.
+- Reasons are a fixed list (`ArchiveReason`), never free text.
 
 ### Odometer history (`MileageReading`)
 - An independent series, separate from log entries by design.

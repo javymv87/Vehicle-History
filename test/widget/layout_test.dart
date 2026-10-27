@@ -197,7 +197,9 @@ void main() {
         location: AppRoutes.vehicle(vehicleId),
         locale: const Locale('it'),
       );
-      await tester.tap(find.byTooltip('Elimina'));
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sposta nel cestino'));
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(tester.takeException(), isNull);

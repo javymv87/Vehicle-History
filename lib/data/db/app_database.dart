@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/archive_reason.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
@@ -161,6 +162,21 @@ class AppDatabase extends _$AppDatabase {
       await m.createTable(schema.attachments);
       await m.createIndex(schema.attachmentsEntity);
     },
+    // v8: the archive columns of `vehicles`. Only new nullable columns, no
+    // backfill: every existing vehicle stays active (`archived_at` NULL).
+    // `audit_log` needs no change, since `operation` has no CHECK and
+    // accepts the new `archive` / `reactivate` codes as they are.
+    from7To8: (m, schema) async {
+      final vehicles = schema.vehicles;
+      for (final column in [
+        vehicles.archivedAt,
+        vehicles.archiveReason,
+        vehicles.archiveNote,
+        vehicles.archivedKm,
+      ]) {
+        await m.addColumn(vehicles, column);
+      }
+    },
   );
 
   /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
@@ -234,7 +250,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   /// Opens the connection now, running any pending migration.
   ///

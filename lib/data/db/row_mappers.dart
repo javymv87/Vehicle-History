@@ -83,6 +83,10 @@ extension VehicleRowMapping on VehicleRow {
         recommendedEngineOil: recommendedEngineOil,
         manufacturerNotes: manufacturerNotes,
         photoPath: photoPath,
+        archivedAt: archivedAt,
+        archiveReason: archiveReason,
+        archiveNote: archiveNote,
+        archivedKm: archivedKm,
         createdAt: createdAt.toUtc(),
         updatedAt: updatedAt.toUtc(),
       );
@@ -110,12 +114,17 @@ extension VehicleCompanionMapping on Vehicle {
         recommendedEngineOil: Value(recommendedEngineOil),
         manufacturerNotes: Value(manufacturerNotes),
         photoPath: Value(photoPath),
+        archivedAt: Value(archivedAt),
+        archiveReason: Value(archiveReason),
+        archiveNote: Value(archiveNote),
+        archivedKm: Value(archivedKm),
       );
 
   /// User-editable fields plus `updated_at`.
   ///
   /// Deliberately leaves out `current_odometer_km`: the vehicle form never
-  /// changes it (that belongs to the mileage feature).
+  /// changes it (that belongs to the mileage feature). The archive columns
+  /// are written only by `archiveLive` / `reactivateArchived`.
   VehiclesCompanion toUpdateCompanion() => VehiclesCompanion(
         updatedAt: Value(updatedAt),
         plate: Value(plate),

@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/router/navigation.dart';
 import '../../../data/data_providers.dart';
 import '../../../data/models/attachment.dart';
+import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
@@ -22,8 +23,10 @@ import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../controllers/owner_deletion_controller.dart';
 import '../controllers/owner_detail_controller.dart';
 
-/// Detail of one owner, with their vehicles. The owner id comes from the
-/// path; an unknown or deleted id shows a not-found page.
+/// Detail of one owner, with their vehicles: the active ones, then, when
+/// there are any, the archived ones in a collapsed "Archived (n)" section,
+/// each with its archive chip. The owner id comes from the path; an
+/// unknown or deleted id shows a not-found page.
 class OwnerDetailPage extends ConsumerWidget {
   /// Creates the page for the owner with [ownerId].
   const OwnerDetailPage({super.key, required this.ownerId});
@@ -120,6 +123,10 @@ class _OwnerDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final owner = detail.owner;
+    final archived = [
+      for (final vehicle in detail.vehicles)
+        if (vehicle.isArchived) vehicle,
+    ];
     final birthDate = owner.birthDate;
     final target = AttachmentTarget.owner(owner.id);
     return Scaffold(
@@ -177,19 +184,22 @@ class _OwnerDetailView extends ConsumerWidget {
           ),
           if (detail.vehicles.isEmpty)
             ListTile(title: Text(l10n.ownerNoVehicles))
-          else
+          else ...[
             for (final vehicle in detail.vehicles)
-              ListTile(
-                leading: Icon(vehicle.kind.icon),
-                title: Text(vehicle.makeAndModel ?? vehicle.plate),
-                subtitle: Text(
-                  vehicle.makeAndModel != null
-                      ? vehicle.plate
-                      : vehicle.nickname ?? vehicle.fuelType.label(l10n),
+              if (!vehicle.isArchived) _OwnerVehicleTile(vehicle: vehicle),
+            if (archived.isNotEmpty)
+              ExpansionTile(
+                leading: Icon(
+                  Icons.archive_outlined,
+                  semanticLabel: l10n.archivedVehicleSemantics,
                 ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(AppRoutes.vehicle(vehicle.id)),
+                title: Text(l10n.archivedVehiclesRow(archived.length)),
+                children: [
+                  for (final vehicle in archived)
+                    _OwnerVehicleTile(vehicle: vehicle),
+                ],
               ),
+          ],
           const Divider(height: 32),
           // U26: the owner's documents (driving licence, ID card, ...).
           SectionHeader(
@@ -203,6 +213,35 @@ class _OwnerDetailView extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// One vehicle of the owner: kind icon, name, plate, and the archive chip
+/// text as a third line for an archived one. Opens the vehicle page.
+class _OwnerVehicleTile extends StatelessWidget {
+  const _OwnerVehicleTile({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final archiveChip = vehicle.archiveChipLabel(l10n);
+    return ListTile(
+      leading: Icon(vehicle.kind.icon),
+      title: Text(vehicle.makeAndModel ?? vehicle.plate),
+      subtitle: Text(
+        [
+          vehicle.makeAndModel != null
+              ? vehicle.plate
+              : vehicle.nickname ?? vehicle.fuelType.label(l10n),
+          if (archiveChip != null) archiveChip,
+        ].join('\n'),
+      ),
+      isThreeLine: archiveChip != null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.push(AppRoutes.vehicle(vehicle.id)),
     );
   }
 }

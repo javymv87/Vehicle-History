@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
+import 'package:vehicle_history/data/models/archive_reason.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/app/router/app_routes.dart';
+import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
+import 'package:vehicle_history/features/vehicles/pages/archived_vehicle_list_page.dart';
 import 'package:vehicle_history/features/vehicles/pages/vehicle_detail_page.dart';
 import 'package:vehicle_history/features/vehicles/pages/vehicle_form_page.dart';
 import 'package:vehicle_history/features/vehicles/pages/vehicle_list_page.dart';
@@ -74,6 +78,14 @@ void main() {
       find.widgetWithText(TextFormField, 'Current km'),
       '1000',
     );
+  }
+
+  /// Opens the overflow menu of the vehicle page and taps "Move to Trash".
+  Future<void> moveToTrash(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move to Trash'));
+    await tester.pumpAndSettle();
   }
 
   /// Taps Save in the app bar.
@@ -463,8 +475,7 @@ void main() {
     await tester.tap(find.text('Fiat Punto'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Delete'));
-    await tester.pumpAndSettle();
+    await moveToTrash(tester);
     // U16: name and plate in the title, live counts in the body.
     expect(find.text('Delete Fiat Punto (AB123CD)?'), findsOneWidget);
     expect(
@@ -502,8 +513,7 @@ void main() {
     await tester.tap(find.text('AB123CD'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Delete'));
-    await tester.pumpAndSettle();
+    await moveToTrash(tester);
     // No make and model: the plate alone names the vehicle.
     expect(find.text('Delete AB123CD?'), findsOneWidget);
     expect(
@@ -513,5 +523,236 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(store.liveVehicles, [vehicle]);
+  });
+
+  group('archive', () {
+    /// Fiat Punto AB123CD of Mario, with a second reading of 1500 km.
+    Vehicle addPunto() {
+      final owner = store.addOwner('Mario');
+      final vehicle = store.addVehicle(
+        'AB123CD',
+        ownerId: owner.id,
+        make: 'Fiat',
+        model: 'Punto',
+      );
+      store.addReading(
+        vehicle.id,
+        date: CalendarDate(store.now.year, store.now.month, store.now.day),
+        km: 1500,
+      );
+      return store.vehicles[vehicle.id]!;
+    }
+
+    /// The phone's today, which the dialog defaults to, as the reading
+    /// stores it.
+    final today = DateTime.now();
+    final todayDay = CalendarDate(today.year, today.month, today.day);
+
+    /// Today as the dialog and the banner show it. Called after the app is
+    /// pumped: the locale data is loaded with the localisations.
+    String todayText() => DateFormat.yMMMd('en').format(today);
+
+    /// Archives [vehicle] in the store as sold today, with 1500 final km.
+    Vehicle archiveInStore(Vehicle vehicle) {
+      final archived = vehicle.copyWith(
+        archivedAt:
+            CalendarDate(store.now.year, store.now.month, store.now.day),
+        archiveReason: ArchiveReason.sold,
+        archivedKm: 1500,
+        archiveNote: 'To Luca',
+      );
+      store.vehicles[vehicle.id] = archived;
+      return archived;
+    }
+
+    testWidgets('the list shows the "Archived" row only when there is one',
+        (tester) async {
+      final punto = addPunto();
+      await pumpApp(tester, store);
+      expect(find.text('Fiat Punto'), findsOneWidget);
+      expect(find.textContaining('Archived ('), findsNothing);
+
+      // Archived meanwhile (the store notifies on the next write).
+      archiveInStore(punto);
+      await FakeVehicleRepository(store).reactivate(punto.id);
+      await FakeVehicleRepository(store).archive(
+        punto.id,
+        reason: ArchiveReason.sold,
+        date: CalendarDate(store.now.year, store.now.month, store.now.day),
+      );
+      await tester.pumpAndSettle();
+      // Out of the main list, into the row at the bottom.
+      expect(find.text('Fiat Punto'), findsNothing);
+      expect(find.text('Archived (1)'), findsOneWidget);
+
+      await tester.tap(find.text('Archived (1)'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ArchivedVehicleListPage), findsOneWidget);
+      expect(find.text('Fiat Punto'), findsOneWidget);
+      expect(find.text('Sold · Mar 2024'), findsOneWidget);
+      // No add button on the archived list.
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('the archived detail shows the banner and no add or edit',
+        (tester) async {
+      final punto = archiveInStore(addPunto());
+      await pumpApp(tester, store, location: AppRoutes.vehicle(punto.id));
+
+      expect(find.byType(VehicleDetailPage), findsOneWidget);
+      expect(
+        find.text('Archived on Mar 4, 2024 · Sold · 1,500 km'),
+        findsOneWidget,
+      );
+      expect(find.text('To Luca'), findsOneWidget);
+      expect(find.text('Reactivate'), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byTooltip('Edit'), findsNothing);
+      expect(find.byTooltip('Delete'), findsNothing);
+      // The menu keeps only "Move to Trash" beside "Reactivate".
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text('Move to Trash'), findsOneWidget);
+      expect(find.text('Archive'), findsNothing);
+      await tester.tap(find.text('Move to Trash'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // No FAB on any tab, and tapping a reading opens no actions.
+      for (final tab in ['Mileage', 'Documents', 'Details']) {
+        await tester.tap(find.text(tab));
+        await tester.pumpAndSettle();
+        expect(find.byType(FloatingActionButton), findsNothing);
+      }
+      await tester.tap(find.text('Mileage'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1,500 km').first);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('Reactivate brings the vehicle back, editable', (tester) async {
+      final punto = archiveInStore(addPunto());
+      await pumpApp(tester, store, location: AppRoutes.vehicle(punto.id));
+
+      await tester.tap(find.text('Reactivate'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Vehicle reactivated'), findsOneWidget);
+      expect(find.textContaining('Archived on'), findsNothing);
+      expect(find.byTooltip('Edit'), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final active = store.vehicles[punto.id]!;
+      expect(active.isArchived, isFalse);
+      expect(active.archivedKm, isNull);
+      // The readings are left alone.
+      expect(store.liveReadingsOf(punto.id), hasLength(2));
+    });
+
+    testWidgets(
+        'the archive dialog prefills the last km and records it as a reading',
+        (tester) async {
+      final punto = addPunto();
+      await pumpApp(tester, store, location: AppRoutes.vehicle(punto.id));
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      expect(find.text('Archive vehicle'), findsOneWidget);
+      // Reason "None" by default, today, the last reading as the final km.
+      expect(find.text('None'), findsOneWidget);
+      expect(find.text(todayText()), findsOneWidget);
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField).first)
+            .controller!
+            .text,
+        '1500',
+      );
+      await tester.tap(find.text('None'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sold').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Note'),
+        'To Luca',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Vehicle archived'), findsOneWidget);
+      expect(
+        find.text('Archived on ${todayText()} · Sold · 1,500 km'),
+        findsOneWidget,
+      );
+      final archived = store.vehicles[punto.id]!;
+      expect(archived.archiveReason, ArchiveReason.sold);
+      expect(archived.archiveNote, 'To Luca');
+      expect(archived.archivedKm, 1500);
+      // A third reading, equal to the last, dated today.
+      final readings = store.liveReadingsOf(punto.id);
+      expect(readings, hasLength(3));
+      expect(readings.first.km, 1500);
+      expect(readings.first.date, todayDay);
+    });
+
+    testWidgets('a final km below the last reading blocks the dialog',
+        (tester) async {
+      final punto = addPunto();
+      await pumpApp(tester, store, location: AppRoutes.vehicle(punto.id));
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Final km'),
+        '900',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await tester.pumpAndSettle();
+
+      // The reading form's own message; the dialog stays open.
+      expect(
+        find.text('At least 1,500 km: the odometer never goes backwards'),
+        findsOneWidget,
+      );
+      expect(find.text('Archive vehicle'), findsOneWidget);
+      expect(store.vehicles[punto.id]!.isArchived, isFalse);
+      expect(store.liveReadingsOf(punto.id), hasLength(2));
+
+      // Empty: no reading, archived all the same.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Final km'),
+        '',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+      await tester.pumpAndSettle();
+      expect(store.vehicles[punto.id]!.isArchived, isTrue);
+      expect(store.vehicles[punto.id]!.archivedKm, isNull);
+      expect(store.liveReadingsOf(punto.id), hasLength(2));
+      expect(find.text('Archived on ${todayText()} · None'), findsOneWidget);
+    });
+
+    testWidgets('the owner page lists archived vehicles in a collapsed section',
+        (tester) async {
+      final punto = archiveInStore(addPunto());
+      store.addVehicle(
+        'XY987ZW',
+        ownerId: punto.ownerId,
+        make: 'Fiat',
+        model: '500',
+      );
+      await pumpApp(tester, store, location: AppRoutes.owner(punto.ownerId));
+
+      expect(find.text('Fiat 500'), findsOneWidget);
+      expect(find.text('Fiat Punto'), findsNothing);
+      await tester.tap(find.text('Archived (1)'));
+      await tester.pumpAndSettle();
+      expect(find.text('Fiat Punto'), findsOneWidget);
+      expect(find.textContaining('Sold · Mar 2024'), findsOneWidget);
+    });
   });
 }

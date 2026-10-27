@@ -45,6 +45,14 @@ enum AuditOperation {
   /// Written once, into the imported database, after the import succeeded;
   /// recorded with [AuditEntityType.database].
   import,
+
+  /// The vehicle was archived (v8): it left the current vehicles, keeping
+  /// its whole history read-only. The reading inserted with it has its own
+  /// `create` row.
+  archive,
+
+  /// An archived vehicle was reactivated (v8): back among the current ones.
+  reactivate,
 }
 
 /// One row of the audit log: which entity was written, how, and when.

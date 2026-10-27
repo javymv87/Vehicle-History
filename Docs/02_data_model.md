@@ -67,6 +67,49 @@ registro principal lleva consigo:
   los adjuntos borrados hace 30 días o más que no viajan con un vehículo de
   la papelera. Con la fila se borra su archivo (ver "Attachment").
 
+### Archivo de vehículos (esquema v8)
+
+Un vehículo que ya no es del usuario o ya no se usa (vendido, desguazado,
+robado…) se **archiva**: conserva todo su historial (entradas, lecturas,
+adjuntos, estado de papelera) y sale de la lista principal. El archivo
+**no es la papelera**: la papelera es un error, se vacía a los 30 días; el
+archivo es un final, se conserva para siempre y es de **solo lectura**
+hasta que se reactiva. Los dos estados son independientes.
+
+- Cuatro columnas en `vehicles`, todas vacías (`NULL`) mientras el vehículo
+  está activo: `archived_at` (**fecha de calendario** `yyyy-MM-dd`, como la
+  de las lecturas: el día que se eligió, nunca un instante), `archive_reason`
+  (código fijo: `none`, `sold`, `scrapped`, `stolen`, `destroyed`,
+  `given_away`, `lease_ended`, `other`; nunca texto libre, "otro" + nota es
+  la salida), `archive_note` (texto opcional) y `archived_km` (entero
+  opcional, ≥ 0). La migración v7 → v8 solo añade las columnas.
+- **Km finales = lectura del cuentakilómetros.** Si al archivar se indica un
+  km (el diálogo lo rellena con la última lectura), el archivo inserta una
+  lectura normal con ese valor y la fecha de archivo, **por el mismo camino
+  y con las mismas reglas** que "Actualizar km" (ni por debajo de la última
+  lectura, ni antes de su día, ni después de hoy); si la lectura se rechaza,
+  no se archiva nada. Igual a la última lectura también vale: marca el
+  cierre. `archived_km` guarda el mismo valor como resumen para el banner y
+  el chip. Sin km, no hay lectura.
+- **Activo = vivo y no archivado.** Es el único filtro de los vehículos
+  "actuales" (lista principal, y los recordatorios del paso 11); la ficha
+  del propietario muestra también los archivados, en una sección plegable.
+- **Solo lectura:** mientras está archivado, los repositorios rechazan
+  cualquier escritura sobre el vehículo, sus entradas, sus lecturas y sus
+  adjuntos (`VehicleArchivedException`); solo quedan **reactivar**, **mover a
+  la papelera** y **restaurar**. Importar, restaurar desde Drive, eliminar
+  definitivamente y la limpieza de los 30 días no pasan por esa puerta.
+- **Reactivar** vacía las cuatro columnas y no toca ninguna lectura, tampoco
+  la creada al archivar.
+- **Papelera:** un vehículo archivado se puede mover a la papelera como
+  cualquier otro; allí no aparece en la lista de archivados. Al restaurarlo
+  vuelve a Archivados si tenía `archived_at`, a la lista principal si no.
+- Historial de operaciones: `archive` y `reactivate` sobre el vehículo; la
+  lectura del archivo tiene su propio `create`.
+- La copia de seguridad, Drive y la importación llevan las columnas como
+  cualquier otra del vehículo, sin trato especial; una copia v7 importa con
+  todos los vehículos activos.
+
 ## Moneda e importes
 
 Todos los importes están en **euros**. La moneda es fija: no existe un campo

@@ -195,7 +195,13 @@ void main() {
     // The picker's own copy in the cache is gone once ours is saved.
     expect(sourceDeleted, isTrue);
 
-    await tester.tap(find.byIcon(Icons.more_vert));
+    // The file's own menu, not the page's overflow menu.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ListTile),
+        matching: find.byIcon(Icons.more_vert),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();

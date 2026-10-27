@@ -41,6 +41,11 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        db.mileageReadingsDao,
+        db.auditLogDao,
+        clock: clock.call,
+      ),
       attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );

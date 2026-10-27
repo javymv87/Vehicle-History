@@ -9,6 +9,7 @@ import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/drift_attachment_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
+import 'package:vehicle_history/data/repositories/drift_mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
 
 import 'test_support.dart';
@@ -31,6 +32,11 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        db.mileageReadingsDao,
+        db.auditLogDao,
+        clock: longAgo.call,
+      ),
       attachmentFiles: MemoryAttachmentStore(),
       clock: longAgo.call,
     );
@@ -52,6 +58,10 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        db.mileageReadingsDao,
+        db.auditLogDao,
+      ),
       attachmentFiles: MemoryAttachmentStore(),
     ).delete(recentVehicle);
   });

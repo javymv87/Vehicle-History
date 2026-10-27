@@ -98,6 +98,26 @@ class OwnerHasTrashedVehiclesException extends RepositoryException {
       '$vehicleCount)';
 }
 
+/// The vehicle is archived, so it and everything that belongs to it (its
+/// entries, readings and attachments) are read-only until it is reactivated
+/// (`Docs/02_data_model.md`, "Archivo"). Nothing was written.
+class VehicleArchivedException extends RepositoryException {
+  /// Creates the exception for the refused write on the entity of
+  /// [entityType] with [entityId]: the vehicle itself, or what belongs to
+  /// it.
+  const VehicleArchivedException(this.entityType, this.entityId);
+
+  /// Kind of the entity the write targeted.
+  final AuditEntityType entityType;
+
+  /// Id of the entity the write targeted.
+  final String entityId;
+
+  @override
+  String toString() =>
+      'VehicleArchivedException(${entityType.name}, id: $entityId)';
+}
+
 /// A file is larger than an attachment may be (`maxAttachmentBytes`,
 /// 25 MB). Nothing was stored.
 class AttachmentTooLargeException extends RepositoryException {

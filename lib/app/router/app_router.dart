@@ -12,6 +12,7 @@ import '../../features/owners/pages/owner_list_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/trash/pages/trash_page.dart';
 import '../../features/vehicles/controllers/vehicle_tab_controller.dart';
+import '../../features/vehicles/pages/archived_vehicle_list_page.dart';
 import '../../features/vehicles/pages/vehicle_detail_page.dart';
 import '../../features/vehicles/pages/vehicle_form_page.dart';
 import '../../features/vehicles/pages/vehicle_list_page.dart';
@@ -31,8 +32,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 ///
 /// The two lists live in a [StatefulShellRoute] under the navigation bar;
 /// details and forms are top-level routes, so they are pushed full screen on
-/// top of it. `/vehicles/new`, `/owners/new` and `entries/new` are declared
-/// before the matching `:id` routes so that "new" is never read as an id.
+/// top of it. `/vehicles/new`, `/vehicles/archived`, `/owners/new` and
+/// `entries/new` are declared before the matching `:id` routes so that
+/// "new" and "archived" are never read as ids.
 /// The history entries and the odometer readings live under their vehicle
 /// (`/vehicles/:id/entries/...`, `/vehicles/:id/mileage/...`), so pushing
 /// one keeps the vehicle page below it. The vehicle page reads its tab from
@@ -70,6 +72,10 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
       GoRoute(
         path: AppRoutes.newVehicle,
         builder: (context, state) => const VehicleFormPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.archivedVehicles,
+        builder: (context, state) => const ArchivedVehicleListPage(),
       ),
       GoRoute(
         path: '${AppRoutes.vehicles}/:id',

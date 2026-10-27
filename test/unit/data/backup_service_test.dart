@@ -12,6 +12,7 @@ import 'package:vehicle_history/data/backup/backup_files.dart';
 import 'package:vehicle_history/data/backup/backup_package.dart';
 import 'package:vehicle_history/data/backup/backup_service.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
+import 'package:vehicle_history/data/models/archive_reason.dart';
 import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/backup_manifest.dart';
@@ -138,6 +139,11 @@ void main() {
       database.mileageReadingsDao,
       database.trashDao,
       database.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        database.mileageReadingsDao,
+        database.auditLogDao,
+        clock: clock.call,
+      ),
       attachmentFiles: storeOf(),
       clock: clock.call,
     );
@@ -604,6 +610,74 @@ void main() {
       expect(dir.listSync().where((f) => f.path.endsWith('.tmp')), isEmpty);
     });
 
+    test('an archived vehicle round-trips with its four columns', () async {
+      await seed(db);
+      final punto = (await db.vehiclesDao.getActive()).single;
+      clock.advance(const Duration(days: 1));
+      final day = CalendarDate.localDayOf(clock());
+      await DriftVehicleRepository(
+        db.vehiclesDao,
+        db.mileageReadingsDao,
+        db.trashDao,
+        db.auditLogDao,
+        readingRepository: DriftMileageReadingRepository(
+          db.mileageReadingsDao,
+          db.auditLogDao,
+          clock: clock.call,
+        ),
+        attachmentFiles: storeOf(),
+        clock: clock.call,
+      ).archive(
+        punto.id,
+        reason: ArchiveReason.leaseEnded,
+        date: day,
+        km: 2000,
+        note: 'Fine leasing',
+      );
+      final package = await exportToFile();
+      // The manifest counts the live vehicles, archived ones included (OLD1
+      // is in the Trash).
+      expect(
+        (await serviceOf().inspectPackage(package)).manifest.counts.vehicles,
+        1,
+      );
+
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      expect(await imported.vehiclesDao.getActive(), isEmpty);
+      final archived = (await imported.vehiclesDao.getLiveById(punto.id))!;
+      expect(archived.archivedAt, day);
+      expect(archived.archiveReason, ArchiveReason.leaseEnded);
+      expect(archived.archiveNote, 'Fine leasing');
+      expect(archived.archivedKm, 2000);
+      expect(archived.currentOdometerKm, 2000);
+      // The final reading travelled too.
+      final readings =
+          await imported.mileageReadingsDao.getLiveByVehicle(punto.id);
+      expect(readings.first.km, 2000);
+      expect(readings.first.date, day);
+    });
+
+    test('a step-9 (v7) package imports with every vehicle active', () async {
+      final package = await _v7Package(pathOf('v7.sqlite'));
+
+      final preview = await serviceOf().inspectPackage(package);
+      expect(preview.manifest.schemaVersion, 7);
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      final vehicle = (await imported.vehiclesDao.getActive()).single;
+      expect(vehicle.plate, 'AB123CD');
+      expect(vehicle.isArchived, isFalse);
+      expect(vehicle.archiveReason, isNull);
+      expect(vehicle.archiveNote, isNull);
+      expect(vehicle.archivedKm, isNull);
+      expect(await imported.vehiclesDao.watchArchived().first, isEmpty);
+    });
+
     test('a second import replaces the older pre_import copy', () async {
       await seed(db);
       final package = await exportToFile();
@@ -643,7 +717,7 @@ void main() {
       final version =
           await imported.customSelect('PRAGMA user_version').getSingle();
       expect(version.read<int>('user_version'), imported.schemaVersion);
-      final vehicle = (await imported.vehiclesDao.getLive()).single;
+      final vehicle = (await imported.vehiclesDao.getActive()).single;
       expect((vehicle.plate, vehicle.make), ('ZZ999ZZ', 'Lancia'));
       expect(vehicle.currentOdometerKm, 54321);
       final readings = await imported.mileageReadingsDao.getLiveByVehicle('v1');
@@ -1171,6 +1245,60 @@ class _UnreadableFiles extends IoBackupFiles {
   Future<int> sizeOf(String path) async => path.contains('attachments')
       ? throw FileSystemException('unreadable', path)
       : super.sizeOf(path);
+}
+
+/// Writes a v7 database (step 8 / 9 app) with one owner, one vehicle and
+/// its initial reading to [path] and returns the path of a package holding
+/// it, with an empty `attachments/`: a package from before the archive
+/// columns existed.
+Future<String> _v7Package(String path) async {
+  const ts = '2026-10-20T16:30:00.000Z';
+  final old =
+      GeneratedHelper().databaseForVersion(NativeDatabase(File(path)), 7);
+  await old.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, first_name) '
+    "VALUES ('o1', '$ts', '$ts', 0, 'Ana')",
+  );
+  await old.customStatement(
+    'INSERT INTO vehicles (id, created_at, updated_at, deleted, plate, kind, '
+    'make, model, owner_id, current_odometer_km, fuel_type) VALUES '
+    "('v1', '$ts', '$ts', 0, 'AB123CD', 'car', 'Fiat', 'Punto', 'o1', 1000, "
+    "'petrol')",
+  );
+  await old.customStatement(
+    'INSERT INTO mileage_readings (id, created_at, updated_at, deleted, '
+    "vehicle_id, reading_date, km) VALUES ('r1', '$ts', '$ts', 0, 'v1', "
+    "'2026-10-20', 1000)",
+  );
+  await old.close();
+  final manifestJson = {
+    'format_version': 1,
+    'schema_version': 7,
+    'app_version': '0.9.1+11',
+    'exported_at': ts,
+    'counts': {
+      'owners': 1,
+      'vehicles': 1,
+      'log_entries': 0,
+      'mileage_readings': 1,
+      'attachments': 0,
+    },
+    'attachments_bytes': 0,
+    'last_modified_at': ts,
+  };
+  final zip = '$path.zip';
+  final encoder = ZipFileEncoder()..create(zip);
+  encoder
+    ..addArchiveFile(
+      ArchiveFile.bytes(
+        manifestEntryName,
+        utf8.encode(jsonEncode(manifestJson)),
+      ),
+    )
+    ..addArchiveFile(ArchiveFile.directory(attachmentsEntryName));
+  await encoder.addFile(File(path), databaseEntryName);
+  await encoder.close();
+  return zip;
 }
 
 /// Writes a v6 database (step 6 / 7 app) with one owner and its settings to

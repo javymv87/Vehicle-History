@@ -1,4 +1,5 @@
 import '../db/daos/attachments_dao.dart';
+import '../db/vehicle_state.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import 'attachment_repository.dart';
@@ -51,7 +52,7 @@ class DriftAttachmentRepository implements AttachmentRepository {
     AttachmentWriter.checkSize(file);
     return _writer.runWithMovedFiles(
       (moved) => _attachments.transaction(() async {
-        await _requireLiveTarget(target);
+        await _requireActiveTarget(target);
         final added = await _writer.addStaged(target, [file], now, moved);
         return added.single;
       }),
@@ -63,6 +64,7 @@ class DriftAttachmentRepository implements AttachmentRepository {
     final now = utcNow(_clock);
     return _attachments.transaction(() async {
       final current = await _requireLive(id);
+      await _requireActiveTarget(current.target);
       final trimmed = trimToNull(caption);
       await _attachments.updateCaption(id, trimmed, now);
       await _writer.record(id, AuditOperation.update, now);
@@ -74,6 +76,7 @@ class DriftAttachmentRepository implements AttachmentRepository {
   Future<void> reorder(AttachmentTarget target, List<String> orderedIds) {
     final now = utcNow(_clock);
     return _attachments.transaction(() async {
+      await _requireActiveTarget(target);
       final current = await _attachments.getLiveOf(target);
       final currentIds = {for (final a in current) a.id};
       final ordered = orderedIds.toSet();
@@ -107,6 +110,7 @@ class DriftAttachmentRepository implements AttachmentRepository {
     return _attachments.transaction(() async {
       for (final id in ids.toSet()) {
         final current = await _requireLive(id);
+        await _requireActiveTarget(current.target);
         await _writer.softDelete(current.target, id, now);
       }
     });
@@ -122,9 +126,10 @@ class DriftAttachmentRepository implements AttachmentRepository {
         if (deleted == null) {
           throw EntityNotFoundException(AuditEntityType.attachment, id);
         }
-        // What it belongs to may have been deleted since: the attachment
-        // would come back invisible, so the undo is refused instead.
-        await _requireLiveTarget(deleted.target);
+        // What it belongs to may have been deleted or archived since: the
+        // attachment would come back invisible or read-only, so the undo is
+        // refused instead.
+        await _requireActiveTarget(deleted.target);
         await _attachments.restoreDeleted(id, now);
         await _writer.record(id, AuditOperation.restore, now);
         restored.add(deleted.copyWith(updatedAt: now));
@@ -142,13 +147,22 @@ class DriftAttachmentRepository implements AttachmentRepository {
       _writer.store.exists(attachment.relativePath);
 
   /// Throws `EntityNotFoundException` for the entity unless [target] is
-  /// live.
-  Future<void> _requireLiveTarget(AttachmentTarget target) async {
-    if (!await _attachments.isTargetLive(target)) {
-      throw EntityNotFoundException(
-        auditEntityTypeOf(target.entityType),
-        target.entityId,
-      );
+  /// live, and `VehicleArchivedException` when the vehicle it belongs to is
+  /// archived: its attachments are read-only then.
+  Future<void> _requireActiveTarget(AttachmentTarget target) async {
+    switch (await _attachments.targetStateOf(target)) {
+      case VehicleState.active:
+        return;
+      case VehicleState.archived:
+        throw VehicleArchivedException(
+          auditEntityTypeOf(target.entityType),
+          target.entityId,
+        );
+      case VehicleState.absent:
+        throw EntityNotFoundException(
+          auditEntityTypeOf(target.entityType),
+          target.entityId,
+        );
     }
   }
 

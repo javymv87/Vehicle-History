@@ -22,14 +22,19 @@ import '../../attachments/controllers/attachment_selection_controller.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
+import '../controllers/vehicle_archive_controller.dart';
 import '../controllers/vehicle_deletion_controller.dart';
 import '../controllers/vehicle_detail_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 import '../controllers/vehicle_tab_controller.dart';
+import '../widgets/archive_banner.dart';
+import '../widgets/archive_dialog.dart';
 
 /// The page of one vehicle: its history first, then its odometer readings,
-/// its documents and its details. The vehicle id comes from the path; an unknown or
-/// deleted id shows a not-found page.
+/// its documents and its details. The vehicle id comes from the path; an
+/// unknown or deleted id shows a not-found page. An archived vehicle opens
+/// read-only: a banner under the app bar, no add, edit or delete affordance
+/// anywhere, only "Reactivate" and "Move to Trash".
 class VehicleDetailPage extends ConsumerWidget {
   /// Creates the page for the vehicle with [vehicleId], opened on
   /// [initialTab].
@@ -68,7 +73,9 @@ class VehicleDetailPage extends ConsumerWidget {
 
 /// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15, U25): a
 /// compact header, then four tabs, History (the default), Mileage,
-/// Documents and Details, and a button that adds what the tab shows.
+/// Documents and Details, and a button that adds what the tab shows. The
+/// overflow menu archives the vehicle, or reactivates it, and moves it to
+/// the Trash.
 class _VehicleDetailView extends ConsumerStatefulWidget {
   const _VehicleDetailView({required this.item, required this.initialTab});
 
@@ -165,10 +172,48 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     }
   }
 
+  /// Opens the archive dialog, with the last reading as the final km, and
+  /// says so when the vehicle was archived. The page stays open and turns
+  /// read-only by itself: the vehicle provider emits the archived vehicle.
+  Future<void> _archive() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final vehicle = widget.item.vehicle;
+    final lastReading = await ref
+        .read(vehicleArchiveControllerProvider.notifier)
+        .lastReading(vehicle.id);
+    if (!mounted) return;
+    final archived = await showArchiveDialog(
+      context,
+      vehicle: vehicle,
+      lastReading: lastReading,
+    );
+    if (archived != null) {
+      showSavedSnackBar(messenger, l10n.vehicleArchivedToast);
+    }
+  }
+
+  /// Reactivates the vehicle, with no confirmation: it is always allowed
+  /// and always reversible.
+  Future<void> _reactivate() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await ref
+        .read(vehicleArchiveControllerProvider.notifier)
+        .reactivate(widget.item.vehicle.id);
+    switch (result) {
+      case ActionSuccess():
+        showSavedSnackBar(messenger, l10n.vehicleReactivatedToast);
+      case ActionFailure(:final error):
+        showErrorSnackBar(messenger, error.message(l10n));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final vehicle = widget.item.vehicle;
+    final readOnly = vehicle.isArchived;
     final filter = ref.watch(logEntryFilterProvider(vehicle.id));
     // An action that outlived its page (the odometer offer) asks for a tab.
     ref.listen(vehicleTabRequestProvider, (previous, request) {
@@ -194,48 +239,65 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
                 ),
                 onPressed: () => openLogEntryFilters(context, ref, vehicle.id),
               ),
-            IconButton(
-              tooltip: l10n.actionEdit,
-              icon: const Icon(Icons.edit),
-              onPressed: () => context.push(AppRoutes.editVehicle(vehicle.id)),
-            ),
-            IconButton(
-              tooltip: l10n.actionDelete,
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _delete,
+            if (!readOnly)
+              IconButton(
+                tooltip: l10n.actionEdit,
+                icon: const Icon(Icons.edit),
+                onPressed: () =>
+                    context.push(AppRoutes.editVehicle(vehicle.id)),
+              ),
+            PopupMenuButton<VoidCallback>(
+              onSelected: (action) => action(),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: readOnly ? _reactivate : _archive,
+                  child: Text(
+                    readOnly ? l10n.reactivateAction : l10n.archiveAction,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _delete,
+                  child: Text(l10n.moveToTrashAction),
+                ),
+              ],
             ),
           ],
         ),
       ),
-      floatingActionButton: switch (_tab) {
-        // On Details the button keeps adding entries, as before step 5.
-        VehicleTab.history ||
-        VehicleTab.details =>
-          FloatingActionButton.extended(
-            heroTag: AppRoutes.newEntry(vehicle.id),
-            onPressed: () => context.push(AppRoutes.newEntry(vehicle.id)),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addEntry),
-          ),
-        VehicleTab.mileage => FloatingActionButton.extended(
-            heroTag: AppRoutes.newMileageReading(vehicle.id),
-            onPressed: () =>
-                context.push(AppRoutes.newMileageReading(vehicle.id)),
-            icon: const Icon(Icons.speed),
-            label: Text(l10n.addMileageReading),
-          ),
-        // Hidden in the selection mode, as the page's own actions are.
-        VehicleTab.documents when selectingDocuments => null,
-        VehicleTab.documents => FloatingActionButton.extended(
-            heroTag: 'documents-${vehicle.id}',
-            onPressed: () => addAttachments(context, ref, _documents),
-            icon: const Icon(Icons.note_add_outlined),
-            label: Text(l10n.addDocument),
-          ),
-      },
+      // No button at all on an archived vehicle: nothing can be added.
+      floatingActionButton: readOnly
+          ? null
+          : switch (_tab) {
+              // On Details the button keeps adding entries, as before step 5.
+              VehicleTab.history ||
+              VehicleTab.details =>
+                FloatingActionButton.extended(
+                  heroTag: AppRoutes.newEntry(vehicle.id),
+                  onPressed: () => context.push(AppRoutes.newEntry(vehicle.id)),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.addEntry),
+                ),
+              VehicleTab.mileage => FloatingActionButton.extended(
+                  heroTag: AppRoutes.newMileageReading(vehicle.id),
+                  onPressed: () =>
+                      context.push(AppRoutes.newMileageReading(vehicle.id)),
+                  icon: const Icon(Icons.speed),
+                  label: Text(l10n.addMileageReading),
+                ),
+              // Hidden in the selection mode, as the page's own actions are.
+              VehicleTab.documents when selectingDocuments => null,
+              VehicleTab.documents => FloatingActionButton.extended(
+                  heroTag: 'documents-${vehicle.id}',
+                  onPressed: () => addAttachments(context, ref, _documents),
+                  icon: const Icon(Icons.note_add_outlined),
+                  label: Text(l10n.addDocument),
+                ),
+            },
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (readOnly)
+            ArchiveBanner(vehicle: vehicle, onReactivate: _reactivate),
           _VehicleHeader(vehicle: vehicle),
           TabBar(
             controller: _tabs,

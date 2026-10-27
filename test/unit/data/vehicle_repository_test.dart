@@ -6,6 +6,7 @@ import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
+import 'package:vehicle_history/data/repositories/drift_mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
 import 'package:vehicle_history/data/repositories/repository_exceptions.dart';
 
@@ -28,6 +29,11 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        db.mileageReadingsDao,
+        db.auditLogDao,
+        clock: clock.call,
+      ),
       attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );
@@ -98,7 +104,7 @@ void main() {
               .having((e) => e.field, 'field', 'currentOdometerKm'),
         ),
       );
-      expect(await vehicles.getAll(), isEmpty);
+      expect(await vehicles.getActive(), isEmpty);
     });
 
     test('refuses a plate already used by a live vehicle', () async {
@@ -110,7 +116,7 @@ void main() {
               .having((e) => e.plate, 'plate', 'AB123CD'),
         ),
       );
-      expect(await vehicles.getAll(), hasLength(1));
+      expect(await vehicles.getActive(), hasLength(1));
     });
 
     test('allows reusing the plate of a deleted vehicle', () async {
@@ -233,7 +239,7 @@ void main() {
       await vehicles.delete(v.id);
 
       expect(await vehicles.getById(v.id), isNull);
-      expect(await vehicles.getAll(), isEmpty);
+      expect(await vehicles.getActive(), isEmpty);
       expect(await vehicles.getByOwner(mario.id), isEmpty);
     });
 
@@ -259,7 +265,7 @@ void main() {
       await createVehicle(plate: 'MM000AA', ownerId: luigi.id);
 
       expect(
-        [for (final v in await vehicles.getAll()) v.plate],
+        [for (final v in await vehicles.getActive()) v.plate],
         ['AA000AA', 'MM000AA', 'ZZ000AA'],
       );
       expect(
@@ -389,7 +395,7 @@ void main() {
           ),
         );
       }
-      expect(await vehicles.getAll(), isEmpty);
+      expect(await vehicles.getActive(), isEmpty);
     });
 
     test('refuses a slug without its name', () async {

@@ -11,6 +11,9 @@ abstract final class AppRoutes {
   /// Form that creates a vehicle.
   static const String newVehicle = '/vehicles/new';
 
+  /// The archived vehicles, reached from the bottom of the vehicle list.
+  static const String archivedVehicles = '/vehicles/archived';
+
   /// Owner list.
   static const String owners = '/owners';
 
