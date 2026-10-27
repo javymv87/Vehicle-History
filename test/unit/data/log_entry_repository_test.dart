@@ -11,6 +11,7 @@ import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/audit_log_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_log_entry_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
+import 'package:vehicle_history/data/repositories/drift_mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
 import 'package:vehicle_history/data/repositories/repository_exceptions.dart';
 
@@ -37,6 +38,11 @@ void main() {
       db.mileageReadingsDao,
       db.trashDao,
       db.auditLogDao,
+      readingRepository: DriftMileageReadingRepository(
+        db.mileageReadingsDao,
+        db.auditLogDao,
+        clock: clock.call,
+      ),
       attachmentFiles: MemoryAttachmentStore(),
       clock: clock.call,
     );

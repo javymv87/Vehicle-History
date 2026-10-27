@@ -30,6 +30,9 @@ enum ActionError {
   /// The vehicle involved is missing or deleted.
   vehicleNotFound,
 
+  /// The vehicle involved is archived and read-only; nothing was written.
+  vehicleArchived,
+
   /// The history entry involved is missing or deleted.
   entryNotFound,
 
@@ -140,6 +143,7 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.readingNotFound,
     EntityNotFoundException(entityType: AuditEntityType.attachment) =>
       ActionError.attachmentNotFound,
+    VehicleArchivedException() => ActionError.vehicleArchived,
     AttachmentTooLargeException() => ActionError.attachmentTooLarge,
     AttachmentPickException(failure: AttachmentPickFailure.cameraDenied) =>
       ActionError.cameraDenied,

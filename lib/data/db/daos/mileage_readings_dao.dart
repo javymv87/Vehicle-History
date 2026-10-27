@@ -113,18 +113,6 @@ class MileageReadingsDao extends DatabaseAccessor<AppDatabase>
     return row?.toModel();
   }
 
-  /// Whether a live vehicle with [vehicleId] exists.
-  ///
-  /// The foreign key alone cannot tell: a soft-deleted vehicle still has a
-  /// row.
-  Future<bool> isVehicleLive(String vehicleId) async {
-    final rows = await (select(vehicles)
-          ..where((v) => v.id.equals(vehicleId) & v.deleted.equals(false))
-          ..limit(1))
-        .get();
-    return rows.isNotEmpty;
-  }
-
   /// Inserts [reading] as a new live row.
   Future<void> insertReading(MileageReading reading) =>
       into(mileageReadings).insert(reading.toInsertCompanion());

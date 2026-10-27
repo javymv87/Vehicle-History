@@ -7,6 +7,7 @@ import '../converters.dart';
 import '../log_entries_table.dart';
 import '../owners_table.dart';
 import '../row_mappers.dart';
+import '../vehicle_state.dart';
 import '../vehicles_table.dart';
 
 part 'attachments_dao.g.dart';
@@ -98,12 +99,14 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
     return value == null ? 0 : value + 1;
   }
 
-  /// Whether [target] exists and is live: a live owner, a live vehicle, or
-  /// a live entry of a live vehicle.
+  /// Whether [target] exists and can be written to: a live owner, or the
+  /// [VehicleState] of the vehicle a live vehicle target or a live entry
+  /// target belongs to.
   ///
   /// There is no foreign key (the table is polymorphic), so this is the only
-  /// check that an attachment is written for something the user can see.
-  Future<bool> isTargetLive(AttachmentTarget target) async {
+  /// check that an attachment is written for something the user can see,
+  /// and not for an archived vehicle, which is read-only.
+  Future<VehicleState> targetStateOf(AttachmentTarget target) async {
     final id = target.entityId;
     switch (target.entityType) {
       case AttachmentEntityType.owner:
@@ -111,24 +114,25 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
               ..where((o) => o.id.equals(id) & o.deleted.equals(false))
               ..limit(1))
             .get();
-        return rows.isNotEmpty;
+        return rows.isEmpty ? VehicleState.absent : VehicleState.active;
       case AttachmentEntityType.vehicle:
-        final rows = await (select(vehicles)
-              ..where((v) => v.id.equals(id) & v.deleted.equals(false))
-              ..limit(1))
-            .get();
-        return rows.isNotEmpty;
+        return vehicleStateOf(id);
       case AttachmentEntityType.logEntry:
-        final query = select(logEntries).join([
+        final query = selectOnly(logEntries).join([
           innerJoin(vehicles, vehicles.id.equalsExp(logEntries.vehicleId)),
         ])
+          ..addColumns([vehicles.archivedAt])
           ..where(
             logEntries.id.equals(id) &
                 logEntries.deleted.equals(false) &
                 vehicles.deleted.equals(false),
           )
           ..limit(1);
-        return (await query.get()).isNotEmpty;
+        final row = await query.getSingleOrNull();
+        if (row == null) return VehicleState.absent;
+        return row.read(vehicles.archivedAt) == null
+            ? VehicleState.active
+            : VehicleState.archived;
     }
   }
 

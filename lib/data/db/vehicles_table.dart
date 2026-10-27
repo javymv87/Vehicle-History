@@ -72,6 +72,27 @@ class Vehicles extends Table with TechnicalColumns {
   /// Photo path relative to the app support directory.
   TextColumn get photoPath => text().nullable()();
 
+  /// Day the vehicle was archived (schema v8), as `yyyy-MM-dd` text; `null`
+  /// while it is active. A calendar day, like the reading it is dated with.
+  TextColumn get archivedAt =>
+      text().map(const CalendarDateConverter()).nullable()();
+
+  /// Why it was archived, as a stable text code (see
+  /// [ArchiveReasonConverter]); `null` while active.
+  TextColumn get archiveReason =>
+      text().map(const ArchiveReasonConverter()).nullable()();
+
+  /// Free note of the archive; `null` while active or when none was typed.
+  TextColumn get archiveNote => text().nullable()();
+
+  /// Final km recorded at archive time, the snapshot of the reading inserted
+  /// then; `null` while active or when no km was given.
+  ///
+  /// The CHECK is a column constraint, as for [modelYear]: the column was
+  /// added by `ALTER TABLE ... ADD COLUMN` in v8.
+  IntColumn get archivedKm =>
+      integer().nullable().customConstraint('NULL CHECK (archived_km >= 0)')();
+
   // Written as SQL rather than with `Column.check`, whose self-referencing
   // getter trips the `recursive_getters` lint.
   @override

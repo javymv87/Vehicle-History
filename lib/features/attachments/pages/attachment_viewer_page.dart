@@ -128,6 +128,9 @@ class _ViewerState extends ConsumerState<_Viewer> {
     final images = widget.images;
     final current = images[_index.clamp(0, images.length - 1)];
     final busy = ref.watch(attachmentActionsControllerProvider);
+    // An archived vehicle: the picture can be shared and saved, not changed.
+    final readOnly =
+        ref.watch(attachmentTargetReadOnlyProvider(current.target));
     // White on black whatever the theme: a photo reads best on black.
     return Theme(
       data: ThemeData.dark(useMaterial3: true),
@@ -151,19 +154,20 @@ class _ViewerState extends ConsumerState<_Viewer> {
               onPressed:
                   busy ? null : () => saveAttachmentTo(context, ref, current),
             ),
-            IconButton(
-              tooltip: l10n.actionDelete,
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => deleteAttachment(
-                context,
-                ref,
-                current,
-                // The last image gone: nothing left to show.
-                onDeleted: images.length == 1
-                    ? () => context.popOrGo(AppRoutes.vehicles)
-                    : null,
+            if (!readOnly)
+              IconButton(
+                tooltip: l10n.actionDelete,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => deleteAttachment(
+                  context,
+                  ref,
+                  current,
+                  // The last image gone: nothing left to show.
+                  onDeleted: images.length == 1
+                      ? () => context.popOrGo(AppRoutes.vehicles)
+                      : null,
+                ),
               ),
-            ),
           ],
           bottom: busy
               ? const PreferredSize(
@@ -183,7 +187,7 @@ class _ViewerState extends ConsumerState<_Viewer> {
                     _ZoomableImage(attachment: images[index]),
               ),
             ),
-            _Caption(attachment: current),
+            _Caption(attachment: current, readOnly: readOnly),
           ],
         ),
       ),
@@ -216,19 +220,26 @@ class _ZoomableImage extends ConsumerWidget {
 }
 
 /// The caption under the image, or "Add a caption"; tapping it edits it.
+/// When [readOnly], only the caption, if any, with nothing to tap.
 class _Caption extends ConsumerWidget {
-  const _Caption({required this.attachment});
+  const _Caption({required this.attachment, required this.readOnly});
 
   final Attachment attachment;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final caption = attachment.caption;
+    if (readOnly && caption == null) {
+      return const SafeArea(top: false, child: SizedBox.shrink());
+    }
     return SafeArea(
       top: false,
       child: InkWell(
-        onTap: () => editAttachmentCaption(context, ref, attachment),
+        onTap: readOnly
+            ? null
+            : () => editAttachmentCaption(context, ref, attachment),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 56),
           child: Padding(
@@ -243,8 +254,10 @@ class _Caption extends ConsumerWidget {
                         : null,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.edit, semanticLabel: l10n.actionEditCaption),
+                if (!readOnly) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, semanticLabel: l10n.actionEditCaption),
+                ],
               ],
             ),
           ),

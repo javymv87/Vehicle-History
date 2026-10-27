@@ -78,8 +78,13 @@ y una única acción automática: subir al arrancar cuando solo ha cambiado
 este teléfono. El paso 9b añadió la segunda forma de vincular la cuenta:
 iniciar sesión en el navegador (OAuth + PKCE) con una cuenta que no se
 añade al teléfono. El refresh token se guarda solo en el almacén seguro, y
-al desvincular se revoca en Google. Lo siguiente es el paso 10
-(recordatorios).
+al desvincular se revoca en Google. El paso 10 añadió el archivo de
+vehículos (esquema v8): archivar un vehículo vendido, desguazado, robado…
+con motivo, fecha, km finales (que se guardan como una lectura normal del
+cuentakilómetros) y nota; sale de la lista principal a una fila
+"Archivados (n)", se ve entero en solo lectura con un banner y se reactiva
+cuando se quiera; independiente de la papelera. Lo siguiente es el paso 11
+(recordatorios), que se construye sabiendo qué vehículos están archivados.
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -95,9 +100,11 @@ Hoja de ruta hasta la primera versión usable:
 | 8 | ~~Adjuntos (entradas, vehículos, propietarios), paquete de copia con los archivos (esquema v7)~~ — hecho |
 | 9 | ~~Copia de seguridad en Google Drive con control de versión al arrancar~~ — hecho |
 | 9b | ~~Vincular una cuenta manualmente (navegador, OAuth + PKCE, token en el almacén seguro)~~ — hecho |
+| 10 | ~~Archivo de vehículos: motivo, fecha, km finales como lectura, solo lectura, reactivar (esquema v8)~~ — hecho |
+| 11 | Recordatorios y notificaciones (excluyendo los vehículos archivados) |
 
 Después, en el orden que se decida usando la app: mantenimiento, repostajes,
-documentos, recordatorios, informes PDF.
+documentos, informes PDF.
 
 Por qué importa la clave de firma: cada PC tiene su propia clave de debug, así
 que instalar desde otro PC obliga a desinstalar la app, y eso borra los datos.

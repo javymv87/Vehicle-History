@@ -19,6 +19,7 @@ import '../../../shared/widgets/not_found_page.dart';
 import '../../attachments/widgets/attachment_actions.dart';
 import '../../attachments/widgets/attachments_section.dart';
 import '../../attachments/widgets/attachment_selection_app_bar.dart';
+import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
@@ -109,6 +110,8 @@ class _LogEntryDetailView extends ConsumerWidget {
     final km = entry.km;
     final cost = entry.costCents;
     final target = AttachmentTarget.logEntry(entry.id);
+    // An archived vehicle: everything visible, nothing to change.
+    final readOnly = ref.watch(vehicleReadOnlyProvider(entry.vehicleId));
     return Scaffold(
       // U29: the contextual bar while attachments are selected.
       appBar: AttachmentSelectionAppBar(
@@ -116,17 +119,19 @@ class _LogEntryDetailView extends ConsumerWidget {
         appBar: AppBar(
           title: Text(entry.type.label(l10n)),
           actions: [
-            IconButton(
-              tooltip: l10n.actionEdit,
-              icon: const Icon(Icons.edit),
-              onPressed: () =>
-                  context.push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
-            ),
-            IconButton(
-              tooltip: l10n.actionDelete,
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _delete(context, ref),
-            ),
+            if (!readOnly) ...[
+              IconButton(
+                tooltip: l10n.actionEdit,
+                icon: const Icon(Icons.edit),
+                onPressed: () => context
+                    .push(AppRoutes.editEntry(entry.vehicleId, entry.id)),
+              ),
+              IconButton(
+                tooltip: l10n.actionDelete,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _delete(context, ref),
+              ),
+            ],
           ],
         ),
       ),

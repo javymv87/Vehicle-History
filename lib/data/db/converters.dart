@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../models/archive_reason.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
@@ -84,6 +85,38 @@ class VehicleKindConverter extends TypeConverter<VehicleKind, String> {
       };
 }
 
+/// Stores an [ArchiveReason] as a stable text code (schema v8).
+class ArchiveReasonConverter extends TypeConverter<ArchiveReason, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const ArchiveReasonConverter();
+
+  @override
+  ArchiveReason fromSql(String fromDb) => switch (fromDb) {
+        'none' => ArchiveReason.none,
+        'sold' => ArchiveReason.sold,
+        'scrapped' => ArchiveReason.scrapped,
+        'stolen' => ArchiveReason.stolen,
+        'destroyed' => ArchiveReason.destroyed,
+        'given_away' => ArchiveReason.givenAway,
+        'lease_ended' => ArchiveReason.leaseEnded,
+        'other' => ArchiveReason.other,
+        // Only reachable with a corrupted or foreign database file.
+        _ => throw StateError('Unknown archive reason in database: $fromDb'),
+      };
+
+  @override
+  String toSql(ArchiveReason value) => switch (value) {
+        ArchiveReason.none => 'none',
+        ArchiveReason.sold => 'sold',
+        ArchiveReason.scrapped => 'scrapped',
+        ArchiveReason.stolen => 'stolen',
+        ArchiveReason.destroyed => 'destroyed',
+        ArchiveReason.givenAway => 'given_away',
+        ArchiveReason.leaseEnded => 'lease_ended',
+        ArchiveReason.other => 'other',
+      };
+}
+
 /// Stores a [LogEntryType] as a stable text code.
 class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
@@ -152,8 +185,8 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
 /// Stores an [AuditOperation] as a stable text code.
 ///
 /// The column has no CHECK constraint, so a new operation (such as `purge`,
-/// added with schema v5, or `import`, added with v6) needs only a new code
-/// here.
+/// added with schema v5, `import`, added with v6, or `archive` and
+/// `reactivate`, added with v8) needs only a new code here.
 class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditOperationConverter();
@@ -166,6 +199,8 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         'restore' => AuditOperation.restore,
         'purge' => AuditOperation.purge,
         'import' => AuditOperation.import,
+        'archive' => AuditOperation.archive,
+        'reactivate' => AuditOperation.reactivate,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit operation in database: $fromDb'),
       };
@@ -178,6 +213,8 @@ class AuditOperationConverter extends TypeConverter<AuditOperation, String> {
         AuditOperation.restore => 'restore',
         AuditOperation.purge => 'purge',
         AuditOperation.import => 'import',
+        AuditOperation.archive => 'archive',
+        AuditOperation.reactivate => 'reactivate',
       };
 }
 

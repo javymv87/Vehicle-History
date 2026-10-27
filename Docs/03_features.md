@@ -415,6 +415,46 @@ Gradación que se debe respetar:
   mensaje **explícito y lo bastante persistente** para poder leerlo, no un
   destello.
 
+## Archivo
+
+Vehículos vendidos, desguazados, robados… (paso 10 de la hoja de ruta).
+Reglas de datos en `02_data_model.md` ("Archivo de vehículos").
+
+- **Lista de vehículos:** solo los activos. Cuando hay al menos un vehículo
+  archivado (y no en la papelera), una única fila discreta al final,
+  "Archivados (n)", con el icono de archivo, abre la lista de archivados;
+  sin archivados no hay fila. Como los "chats archivados" de una app de
+  mensajería.
+- **Lista de archivados** (ruta `/vehicles/archived`, sin botón de añadir):
+  la misma fila que la lista principal más un chip con el motivo y el mes
+  ("Vendido · mar 2026") y, si lo hay, los km finales. Tocar abre la ficha
+  normal en solo lectura. Los más recientes primero.
+- **Ficha archivada:** un banner gris fijo bajo la barra, con el icono de
+  archivo: "Archivado el 12 mar 2026 · Vendido · 184.300 km" (sin km cuando
+  no los hay; la nota en una segunda línea) y el botón **Reactivar**, sin
+  confirmación. Todo se ve (entradas, lecturas, documentos, detalle), pero
+  no hay ningún botón de añadir, editar ni borrar: ni el FAB, ni el lápiz,
+  ni las acciones de las lecturas, ni la selección o el menú de borrar de
+  los adjuntos (quedan Compartir y Guardar en…), ni editar / borrar en la
+  entrada. El menú ⋮ conserva **Mover a la papelera**. Un enlace directo a
+  un formulario de un vehículo archivado muestra "Este vehículo está
+  archivado…".
+- **Ficha activa:** el menú ⋮ ofrece **Archivar** (y Mover a la papelera,
+  que sale del icono de la barra). El diálogo pide motivo (obligatorio,
+  "Ninguno" por defecto), fecha (hoy por defecto, nunca futura), km finales
+  (opcional, rellenado con la última lectura; vacío si no hay) y nota. Los
+  km se validan como en "Actualizar km", con los mismos mensajes
+  (`validationReadingKmBelowLast`, `validationReadingDateOutOfRange`) y la
+  misma confirmación de salto grande; un rechazo del repositorio se muestra
+  dentro del diálogo, que sigue abierto. Toast "Vehículo archivado" /
+  "Vehículo reactivado".
+- **Ficha del propietario:** sus vehículos activos y, si tiene archivados,
+  una sección plegable "Archivados (n)" al final, cerrada por defecto, con
+  el chip de cada uno. Un propietario con vehículos archivados sigue sin
+  poder borrarse.
+- Color solo para el estado, siempre con icono y texto; todo en los tres
+  idiomas.
+
 ## Adjuntos
 
 Fotos y documentos de las entradas, los vehículos y los propietarios (paso 8

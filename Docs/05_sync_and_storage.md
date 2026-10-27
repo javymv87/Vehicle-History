@@ -481,6 +481,9 @@ Desde el esquema v5 (paso 5b).
   de la papelera). Después de la limpieza, el arranque vacía
   `attachments_tmp/` y borra los archivos de `attachments/` sin fila
   (huérfanos). Ver `02_data_model.md`, "Attachment".
+- **Vehículos archivados** (esquema v8): su paso por la papelera y su
+  borrado físico son los de cualquier vehículo; el estado de archivo viaja
+  con la fila. Ver `02_data_model.md`, "Archivo de vehículos".
 - **La copia lleva la papelera dentro:** el archivo que se exporte o se suba
   a Drive es la base de datos entera, papelera incluida. Restaurar una copia
   devuelve también los vehículos que estaban en la papelera en ese momento,

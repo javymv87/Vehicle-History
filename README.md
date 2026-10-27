@@ -103,8 +103,13 @@ home banner when another phone uploaded a newer copy) and a single automatic
 action: an upload at start when only this phone changed. Step 9b added the
 second way to link the account: signing in in the browser (OAuth + PKCE)
 with an account that is not added to the phone. Its refresh token is kept
-only in the secure storage and revoked at Google on unlink. Next is step 10
-(reminders).
+only in the secure storage and revoked at Google on unlink. Step 10 added
+archived vehicles (schema v8): archive a sold, scrapped or stolen vehicle
+with a reason, a date, final km (recorded as a normal odometer reading) and
+a note; it leaves the main list for an "Archived (n)" row, stays fully
+visible but read-only behind a banner, and can be reactivated at any time,
+independently of the Trash. Next is step 11 (reminders), built knowing
+which vehicles are archived.
 
 Roadmap to the first usable version:
 

@@ -10,13 +10,14 @@ import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../controllers/mileage_history_controller.dart';
 import '../controllers/mileage_reading_deletion_controller.dart';
 
 /// The Mileage tab of a vehicle (`Docs/03_features.md`, U12 and U14): its
 /// odometer readings newest first, each with the km driven since the
 /// previous one, the initial reading at the bottom. Tapping a reading opens
-/// its actions.
+/// its actions; for an archived vehicle the rows have none.
 class MileageHistoryView extends ConsumerWidget {
   /// Creates the readings list of the vehicle with [vehicleId].
   const MileageHistoryView({super.key, required this.vehicleId});
@@ -27,6 +28,7 @@ class MileageHistoryView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final readings = ref.watch(mileageReadingsProvider(vehicleId));
+    final readOnly = ref.watch(vehicleReadOnlyProvider(vehicleId));
     return AsyncValueView(
       value: readings,
       data: (readings) => ListView.builder(
@@ -37,7 +39,9 @@ class MileageHistoryView extends ConsumerWidget {
           reading: readings[index],
           // Newest first: the previous reading is the next element.
           previous: index + 1 < readings.length ? readings[index + 1] : null,
-          onTap: () => _showActions(context, ref, readings, index),
+          onTap: readOnly
+              ? null
+              : () => _showActions(context, ref, readings, index),
         ),
       ),
     );
@@ -155,7 +159,7 @@ class _ReadingTile extends StatelessWidget {
 
   final MileageReading reading;
   final MileageReading? previous;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

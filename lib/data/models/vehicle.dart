@@ -1,3 +1,5 @@
+import 'archive_reason.dart';
+import 'calendar_date.dart';
 import 'copy_with_sentinel.dart';
 import 'fuel_type.dart';
 import 'vehicle_kind.dart';
@@ -5,8 +7,9 @@ import 'vehicle_kind.dart';
 /// A vehicle: the central entity almost everything else links to.
 ///
 /// Immutable snapshot of a live (not deleted) vehicle as stored on the
-/// device. Created and changed only through `VehicleRepository`, which sets
-/// [id], [createdAt] and [updatedAt].
+/// device, active or archived ([isArchived]). Created and changed only
+/// through `VehicleRepository`, which sets [id], [createdAt] and
+/// [updatedAt].
 class Vehicle {
   /// Creates a vehicle snapshot. Normally called by the repository only.
   const Vehicle({
@@ -26,6 +29,10 @@ class Vehicle {
     this.recommendedEngineOil,
     this.manufacturerNotes,
     this.photoPath,
+    this.archivedAt,
+    this.archiveReason,
+    this.archiveNote,
+    this.archivedKm,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -83,11 +90,30 @@ class Vehicle {
   /// Photo file path, relative to the app support directory.
   final String? photoPath;
 
+  /// Day the vehicle was archived; `null` while it is active
+  /// (`Docs/02_data_model.md`, "Archivo"). A calendar day, never shifted
+  /// by timezones.
+  final CalendarDate? archivedAt;
+
+  /// Why it was archived; `null` while active.
+  final ArchiveReason? archiveReason;
+
+  /// Free note of the archive; `null` while active or when none was typed.
+  final String? archiveNote;
+
+  /// Final km recorded when it was archived, the snapshot of the reading
+  /// inserted then; `null` while active or when no km was given.
+  final int? archivedKm;
+
   /// When the vehicle was created, in UTC.
   final DateTime createdAt;
 
   /// When the vehicle was last modified, in UTC.
   final DateTime updatedAt;
+
+  /// Whether the vehicle is archived: out of the current vehicles and
+  /// read-only until reactivated. The Trash is independent of it.
+  bool get isArchived => archivedAt != null;
 
   /// Make and model joined for display, e.g. "Fiat Punto", or `null` when
   /// neither is known (vehicles created at schema v1).
@@ -117,6 +143,10 @@ class Vehicle {
     Object? recommendedEngineOil = unset,
     Object? manufacturerNotes = unset,
     Object? photoPath = unset,
+    Object? archivedAt = unset,
+    Object? archiveReason = unset,
+    Object? archiveNote = unset,
+    Object? archivedKm = unset,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -146,6 +176,17 @@ class Vehicle {
           : manufacturerNotes as String?,
       photoPath:
           identical(photoPath, unset) ? this.photoPath : photoPath as String?,
+      archivedAt: identical(archivedAt, unset)
+          ? this.archivedAt
+          : archivedAt as CalendarDate?,
+      archiveReason: identical(archiveReason, unset)
+          ? this.archiveReason
+          : archiveReason as ArchiveReason?,
+      archiveNote: identical(archiveNote, unset)
+          ? this.archiveNote
+          : archiveNote as String?,
+      archivedKm:
+          identical(archivedKm, unset) ? this.archivedKm : archivedKm as int?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -170,6 +211,10 @@ class Vehicle {
       other.recommendedEngineOil == recommendedEngineOil &&
       other.manufacturerNotes == manufacturerNotes &&
       other.photoPath == photoPath &&
+      other.archivedAt == archivedAt &&
+      other.archiveReason == archiveReason &&
+      other.archiveNote == archiveNote &&
+      other.archivedKm == archivedKm &&
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt;
 
@@ -191,6 +236,10 @@ class Vehicle {
         recommendedEngineOil,
         manufacturerNotes,
         photoPath,
+        archivedAt,
+        archiveReason,
+        archiveNote,
+        archivedKm,
         createdAt,
         updatedAt,
       ]);
@@ -198,5 +247,6 @@ class Vehicle {
   @override
   String toString() => 'Vehicle(id: $id, plate: $plate, kind: ${kind.name}, '
       'make: $make, model: $model, ownerId: $ownerId, '
-      'currentOdometerKm: $currentOdometerKm, fuelType: ${fuelType.name})';
+      'currentOdometerKm: $currentOdometerKm, fuelType: ${fuelType.name}, '
+      'archivedAt: $archivedAt)';
 }

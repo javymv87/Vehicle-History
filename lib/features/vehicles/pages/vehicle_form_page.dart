@@ -51,9 +51,20 @@ class VehicleFormPage extends ConsumerWidget {
         appBar: AppBar(title: Text(title)),
         body: MessageView(icon: Icons.error_outline, message: l10n.loadError),
       ),
-      data: (vehicle) => vehicleId != null && vehicle == null
-          ? NotFoundPage(message: l10n.vehicleNotFound)
-          : _VehicleForm(vehicleId: vehicleId, initial: vehicle, title: title),
+      data: (vehicle) {
+        if (vehicleId != null && vehicle == null) {
+          return NotFoundPage(message: l10n.vehicleNotFound);
+        }
+        // An archived vehicle is read-only (reachable only by deep link).
+        if (vehicle != null && vehicle.isArchived) {
+          return NotFoundPage(message: l10n.errorVehicleArchived);
+        }
+        return _VehicleForm(
+          vehicleId: vehicleId,
+          initial: vehicle,
+          title: title,
+        );
+      },
     );
   }
 }

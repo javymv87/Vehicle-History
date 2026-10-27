@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/data_providers.dart';
 import '../../../data/models/attachment.dart';
+import '../../entries/controllers/log_entry_history_controller.dart';
+import '../../vehicles/controllers/vehicle_archive_controller.dart';
 
 /// The live attachments of an entry, a vehicle or an owner, in display
 /// order. Refreshes after every change.
@@ -39,3 +41,21 @@ final attachmentFileExistsProvider =
   (ref, attachment) =>
       ref.watch(attachmentRepositoryProvider).fileExists(attachment),
 );
+
+/// Whether the attachments of a target are read-only: those of an archived
+/// vehicle and of its entries (`Docs/03_features.md`, "Archivo"). The
+/// section, the file menus and the viewer then hide add, caption and
+/// delete; "Share" and "Save to…" stay. An owner's attachments never are.
+final attachmentTargetReadOnlyProvider =
+    Provider.autoDispose.family<bool, AttachmentTarget>((ref, target) {
+  switch (target.entityType) {
+    case AttachmentEntityType.owner:
+      return false;
+    case AttachmentEntityType.vehicle:
+      return ref.watch(vehicleReadOnlyProvider(target.entityId));
+    case AttachmentEntityType.logEntry:
+      final entry = ref.watch(logEntryDetailProvider(target.entityId)).value;
+      return entry != null &&
+          ref.watch(vehicleReadOnlyProvider(entry.vehicleId));
+  }
+});

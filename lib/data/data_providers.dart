@@ -168,6 +168,7 @@ final vehicleRepositoryProvider = Provider<VehicleRepository>((ref) {
     db.mileageReadingsDao,
     db.trashDao,
     db.auditLogDao,
+    readingRepository: ref.watch(mileageReadingRepositoryProvider),
     attachmentFiles: ref.watch(attachmentStoreProvider),
   );
 });

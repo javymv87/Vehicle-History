@@ -3,12 +3,15 @@ import '../db/daos/audit_log_dao.dart';
 import '../db/daos/mileage_readings_dao.dart';
 import '../db/daos/trash_dao.dart';
 import '../db/daos/vehicles_dao.dart';
+import '../models/archive_reason.dart';
 import '../models/audit_entry.dart';
+import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/mileage_reading.dart';
 import '../models/trashed_vehicle.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_kind.dart';
+import 'mileage_reading_repository.dart';
 import 'repository_exceptions.dart';
 import 'repository_support.dart';
 import 'vehicle_repository.dart';
@@ -16,7 +19,8 @@ import 'vehicle_repository.dart';
 /// [VehicleRepository] backed by the local Drift database.
 class DriftVehicleRepository implements VehicleRepository {
   /// Creates the repository on [_vehicles], writing the initial odometer
-  /// reading through [_readings], reading and emptying the Trash through
+  /// reading through [_readings] and the final reading of an archive
+  /// through [readingRepository], reading and emptying the Trash through
   /// [_trash] and auditing through [_audit]. A purge deletes the files of
   /// the vehicle's attachments from [attachmentFiles] once committed.
   ///
@@ -26,9 +30,11 @@ class DriftVehicleRepository implements VehicleRepository {
     this._readings,
     this._trash,
     this._audit, {
+    required MileageReadingRepository readingRepository,
     required AttachmentStore attachmentFiles,
     UtcClock clock = systemUtcClock,
-  })  : _files = attachmentFiles,
+  })  : _readingRepository = readingRepository,
+        _files = attachmentFiles,
         _clock = clock;
 
   /// Vehicle queries.
@@ -36,6 +42,10 @@ class DriftVehicleRepository implements VehicleRepository {
 
   /// Odometer readings, for the initial reading of a new vehicle.
   final MileageReadingsDao _readings;
+
+  /// The reading rules, for the final reading of an archive: the same code
+  /// path as a reading added by hand, nested in the archive transaction.
+  final MileageReadingRepository _readingRepository;
 
   /// Soft-deleted vehicles and the physical deletes.
   final TrashDao _trash;
@@ -50,10 +60,13 @@ class DriftVehicleRepository implements VehicleRepository {
   final UtcClock _clock;
 
   @override
-  Stream<List<Vehicle>> watchAll() => _vehicles.watchLive();
+  Stream<List<Vehicle>> watchActive() => _vehicles.watchActive();
 
   @override
-  Future<List<Vehicle>> getAll() => _vehicles.getLive();
+  Future<List<Vehicle>> getActive() => _vehicles.getActive();
+
+  @override
+  Stream<List<Vehicle>> watchArchived() => _vehicles.watchArchived();
 
   @override
   Stream<List<Vehicle>> watchByOwner(String ownerId) =>
@@ -65,6 +78,9 @@ class DriftVehicleRepository implements VehicleRepository {
 
   @override
   Future<Vehicle?> getById(String id) => _vehicles.getLiveById(id);
+
+  @override
+  Stream<Vehicle?> watchById(String id) => _vehicles.watchLiveById(id);
 
   @override
   Future<Vehicle> create({
@@ -176,7 +192,7 @@ class DriftVehicleRepository implements VehicleRepository {
     );
     final now = utcNow(_clock);
     return _vehicles.transaction(() async {
-      final current = await _requireLive(id);
+      final current = await _requireActive(id);
       final updated = current.copyWith(
         plate: cleanPlate,
         kind: kind,
@@ -198,6 +214,68 @@ class DriftVehicleRepository implements VehicleRepository {
       await _vehicles.updateLive(updated);
       await _record(id, AuditOperation.update, now);
       return updated;
+    });
+  }
+
+  @override
+  Future<Vehicle> archive(
+    String id, {
+    required ArchiveReason reason,
+    required CalendarDate date,
+    int? km,
+    String? note,
+  }) async {
+    final now = utcNow(_clock);
+    // Without a reading nothing else checks the day, so it is checked here;
+    // with one, the reading rules refuse it the same way.
+    if (date.isAfter(localToday(_clock))) {
+      throw const InvalidFieldException('date', InvalidFieldException.inFuture);
+    }
+    return _vehicles.transaction(() async {
+      final current = await _requireActive(id);
+      // The final reading, under the reading rules, while the vehicle is
+      // still active: a nested transaction, so a refusal writes nothing.
+      if (km != null) {
+        await _readingRepository.create(vehicleId: id, date: date, km: km);
+      }
+      final cleanNote = trimToNull(note);
+      await _vehicles.archiveLive(
+        id,
+        archivedAt: date,
+        reason: reason,
+        note: cleanNote,
+        km: km,
+        at: now,
+      );
+      await _record(id, AuditOperation.archive, now);
+      return current.copyWith(
+        archivedAt: date,
+        archiveReason: reason,
+        archiveNote: cleanNote,
+        archivedKm: km,
+        currentOdometerKm: km ?? current.currentOdometerKm,
+        updatedAt: now,
+      );
+    });
+  }
+
+  @override
+  Future<Vehicle> reactivate(String id) async {
+    final now = utcNow(_clock);
+    return _vehicles.transaction(() async {
+      final current = await _requireLive(id);
+      if (!current.isArchived) {
+        throw const InvalidFieldException('archivedAt', 'is not archived');
+      }
+      await _vehicles.reactivateArchived(id, now);
+      await _record(id, AuditOperation.reactivate, now);
+      return current.copyWith(
+        archivedAt: null,
+        archiveReason: null,
+        archiveNote: null,
+        archivedKm: null,
+        updatedAt: now,
+      );
     });
   }
 
@@ -286,11 +364,23 @@ class DriftVehicleRepository implements VehicleRepository {
     }
   }
 
-  /// Returns the live vehicle with [id] or throws [EntityNotFoundException].
+  /// Returns the live vehicle with [id], active or archived, or throws
+  /// [EntityNotFoundException].
   Future<Vehicle> _requireLive(String id) async {
     final vehicle = await _vehicles.getLiveById(id);
     if (vehicle == null) {
       throw EntityNotFoundException(AuditEntityType.vehicle, id);
+    }
+    return vehicle;
+  }
+
+  /// Returns the active vehicle with [id], or throws
+  /// [EntityNotFoundException] when it is missing or deleted and
+  /// [VehicleArchivedException] when it is archived.
+  Future<Vehicle> _requireActive(String id) async {
+    final vehicle = await _requireLive(id);
+    if (vehicle.isArchived) {
+      throw VehicleArchivedException(AuditEntityType.vehicle, id);
     }
     return vehicle;
   }

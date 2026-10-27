@@ -21,7 +21,9 @@ import 'attachment_thumbnail.dart';
 /// A long press on any of them starts the selection mode (U29): taps then
 /// select and unselect, the page's [AttachmentSelectionAppBar] offers the
 /// actions on the selection, and Back ends the mode instead of leaving the
-/// page.
+/// page. For an archived vehicle ([attachmentTargetReadOnlyProvider]) there
+/// is no selection mode and the file menus keep only "Share" and "Save
+/// to…".
 ///
 /// Not scrollable itself: it is placed inside the page's list. Shows
 /// [emptyText] when there is nothing, and a progress bar while an
@@ -125,6 +127,8 @@ class _ImageTile extends ConsumerWidget {
     final selection = ref.watch(provider);
     final isSelected = selection.contains(attachment.id);
     final selecting = selection.isNotEmpty;
+    final readOnly =
+        ref.watch(attachmentTargetReadOnlyProvider(attachment.target));
     return Semantics(
       selected: selecting ? isSelected : null,
       child: InkWell(
@@ -132,7 +136,9 @@ class _ImageTile extends ConsumerWidget {
         onTap: selecting
             ? () => ref.read(provider.notifier).toggle(attachment.id)
             : () => context.push(AppRoutes.attachment(attachment.id)),
-        onLongPress: () => ref.read(provider.notifier).toggle(attachment.id),
+        onLongPress: readOnly
+            ? null
+            : () => ref.read(provider.notifier).toggle(attachment.id),
         child: Stack(
           children: [
             AnimatedScale(
@@ -186,6 +192,8 @@ class AttachmentFileTile extends ConsumerWidget {
     final selection = ref.watch(provider);
     final isSelected = selection.contains(attachment.id);
     final selecting = selection.isNotEmpty;
+    final readOnly =
+        ref.watch(attachmentTargetReadOnlyProvider(attachment.target));
     final details = l10n.attachmentSizeAndDate(
       formatFileSize(attachment.sizeBytes, l10n),
       attachment.createdAt.toLocal(),
@@ -207,24 +215,28 @@ class AttachmentFileTile extends ConsumerWidget {
       onTap: selecting
           ? () => ref.read(provider.notifier).toggle(attachment.id)
           : () => openAttachment(context, ref, attachment),
-      onLongPress: () => ref.read(provider.notifier).toggle(attachment.id),
+      onLongPress: readOnly
+          ? null
+          : () => ref.read(provider.notifier).toggle(attachment.id),
       trailing: selecting
           ? Checkbox(
               value: isSelected,
               onChanged: (_) =>
                   ref.read(provider.notifier).toggle(attachment.id),
             )
-          : _menu(context, ref, theme, l10n),
+          : _menu(context, ref, theme, l10n, readOnly: readOnly),
     );
   }
 
-  /// The menu of actions on this one file.
+  /// The menu of actions on this one file; without "Edit caption" and
+  /// "Delete" when [readOnly].
   Widget _menu(
     BuildContext context,
     WidgetRef ref,
     ThemeData theme,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    required bool readOnly,
+  }) {
     return PopupMenuButton<_FileAction>(
       onSelected: (action) => switch (action) {
         _FileAction.share => shareAttachments(context, ref, [attachment]),
@@ -242,17 +254,19 @@ class AttachmentFileTile extends ConsumerWidget {
           value: _FileAction.saveTo,
           child: Text(l10n.actionSaveTo),
         ),
-        PopupMenuItem(
-          value: _FileAction.editCaption,
-          child: Text(l10n.actionEditCaption),
-        ),
-        PopupMenuItem(
-          value: _FileAction.delete,
-          child: Text(
-            l10n.actionDelete,
-            style: TextStyle(color: theme.colorScheme.error),
+        if (!readOnly) ...[
+          PopupMenuItem(
+            value: _FileAction.editCaption,
+            child: Text(l10n.actionEditCaption),
           ),
-        ),
+          PopupMenuItem(
+            value: _FileAction.delete,
+            child: Text(
+              l10n.actionDelete,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
+        ],
       ],
     );
   }

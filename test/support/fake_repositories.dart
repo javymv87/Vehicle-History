@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:vehicle_history/data/models/archive_reason.dart';
 import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
@@ -76,11 +77,33 @@ class FakeStore {
           if (!deletedOwners.contains(o.id)) o,
       ]..sort((a, b) => a.fullName.compareTo(b.fullName));
 
-  /// Live vehicles ordered by plate, like the real DAO.
+  /// Live vehicles (active and archived) ordered by plate, like the real
+  /// DAO.
   List<Vehicle> get liveVehicles => [
         for (final v in vehicles.values)
           if (!deletedVehicles.contains(v.id)) v,
       ]..sort((a, b) => a.plate.compareTo(b.plate));
+
+  /// Active vehicles (live and not archived) ordered by plate.
+  List<Vehicle> get activeVehicles =>
+      liveVehicles.where((v) => !v.isArchived).toList();
+
+  /// Archived vehicles not in the Trash, most recently archived first,
+  /// then by plate, like the real DAO.
+  List<Vehicle> get archivedVehicles =>
+      liveVehicles.where((v) => v.isArchived).toList()
+        ..sort((a, b) {
+          final byDate = b.archivedAt!.compareTo(a.archivedAt!);
+          return byDate != 0 ? byDate : a.plate.compareTo(b.plate);
+        });
+
+  /// Throws `VehicleArchivedException` when the vehicle [vehicleId] is
+  /// archived: its entries, readings and attachments are read-only.
+  void requireActiveVehicle(String vehicleId) {
+    if (vehicles[vehicleId]?.isArchived ?? false) {
+      throw VehicleArchivedException(AuditEntityType.vehicle, vehicleId);
+    }
+  }
 
   /// Live entries of the live vehicle [vehicleId], newest first, like the
   /// real DAO.
@@ -434,10 +457,15 @@ class FakeVehicleRepository implements VehicleRepository {
   final FakeStore store;
 
   @override
-  Stream<List<Vehicle>> watchAll() => store.watch(() => store.liveVehicles);
+  Stream<List<Vehicle>> watchActive() =>
+      store.watch(() => store.activeVehicles);
 
   @override
-  Future<List<Vehicle>> getAll() async => store.liveVehicles;
+  Future<List<Vehicle>> getActive() async => store.activeVehicles;
+
+  @override
+  Stream<List<Vehicle>> watchArchived() =>
+      store.watch(() => store.archivedVehicles);
 
   @override
   Stream<List<Vehicle>> watchByOwner(String ownerId) => store.watch(
@@ -451,6 +479,11 @@ class FakeVehicleRepository implements VehicleRepository {
   @override
   Future<Vehicle?> getById(String id) async =>
       store.deletedVehicles.contains(id) ? null : store.vehicles[id];
+
+  @override
+  Stream<Vehicle?> watchById(String id) => store.watch(
+        () => store.deletedVehicles.contains(id) ? null : store.vehicles[id],
+      );
 
   @override
   Future<Vehicle> create({
@@ -520,6 +553,7 @@ class FakeVehicleRepository implements VehicleRepository {
         if (current == null || store.deletedVehicles.contains(id)) {
           throw EntityNotFoundException(AuditEntityType.vehicle, id);
         }
+        store.requireActiveVehicle(id);
         final updated = current.copyWith(
           plate: plate.trim().toUpperCase(),
           kind: kind,
@@ -539,6 +573,60 @@ class FakeVehicleRepository implements VehicleRepository {
         _check(updated);
         store.vehicles[id] = updated;
         return updated;
+      });
+
+  @override
+  Future<Vehicle> archive(
+    String id, {
+    required ArchiveReason reason,
+    required CalendarDate date,
+    int? km,
+    String? note,
+  }) async {
+    final current = store.vehicles[id];
+    if (current == null || store.deletedVehicles.contains(id)) {
+      throw EntityNotFoundException(AuditEntityType.vehicle, id);
+    }
+    store.requireActiveVehicle(id);
+    if (date.isAfter(_today())) {
+      throw const InvalidFieldException('date', InvalidFieldException.inFuture);
+    }
+    // The final reading, under the reading rules, as the real repository.
+    if (km != null) {
+      await FakeMileageReadingRepository(store)
+          .create(vehicleId: id, date: date, km: km);
+    }
+    return store.write(() {
+      final archived = store.vehicles[id]!.copyWith(
+        archivedAt: date,
+        archiveReason: reason,
+        archiveNote: _clean(note),
+        archivedKm: km,
+        updatedAt: store.now,
+      );
+      store.vehicles[id] = archived;
+      return archived;
+    });
+  }
+
+  @override
+  Future<Vehicle> reactivate(String id) => store.write(() {
+        final current = store.vehicles[id];
+        if (current == null || store.deletedVehicles.contains(id)) {
+          throw EntityNotFoundException(AuditEntityType.vehicle, id);
+        }
+        if (!current.isArchived) {
+          throw const InvalidFieldException('archivedAt', 'is not archived');
+        }
+        final active = current.copyWith(
+          archivedAt: null,
+          archiveReason: null,
+          archiveNote: null,
+          archivedKm: null,
+          updatedAt: store.now,
+        );
+        store.vehicles[id] = active;
+        return active;
       });
 
   @override
@@ -770,6 +858,7 @@ class FakeMileageReadingRepository implements MileageReadingRepository {
   }) =>
       store.write(() {
         _requireLiveVehicle(vehicleId);
+        store.requireActiveVehicle(vehicleId);
         final last = store.liveReadingsOf(vehicleId).firstOrNull;
         if (date.isAfter(_today())) {
           throw const InvalidFieldException(

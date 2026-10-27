@@ -1849,5 +1849,170 @@
   "driveRestoreReplacesEmpty": "This phone has no data yet.",
   "@driveRestoreReplacesEmpty": {
     "description": "Restore confirmation: this phone has no data, so nothing of its own is replaced."
+  },
+  "errorVehicleArchived": "This vehicle is archived and read-only. Nothing was saved.",
+  "@errorVehicleArchived": {
+    "description": "Error when a write targeted an archived vehicle or something that belongs to it."
+  },
+  "archivedVehiclesRow": "Archived ({count})",
+  "@archivedVehiclesRow": {
+    "description": "Row at the bottom of the vehicle list, and section header on the owner page, leading to or holding the archived vehicles; shown only when there is at least one.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "archivedVehiclesTitle": "Archived vehicles",
+  "@archivedVehiclesTitle": {
+    "description": "App bar title of the archived vehicles list."
+  },
+  "archivedListEmpty": "No archived vehicles.",
+  "@archivedListEmpty": {
+    "description": "Empty state of the archived vehicles list."
+  },
+  "archiveAction": "Archive",
+  "@archiveAction": {
+    "description": "Overflow menu item of an active vehicle that opens the archive dialog, and the dialog's confirm button."
+  },
+  "reactivateAction": "Reactivate",
+  "@reactivateAction": {
+    "description": "Button on the archive banner and menu item that reactivates an archived vehicle."
+  },
+  "moveToTrashAction": "Move to Trash",
+  "@moveToTrashAction": {
+    "description": "Overflow menu item of the vehicle page that deletes the vehicle (soft delete, to the Trash)."
+  },
+  "archiveDialogTitle": "Archive vehicle",
+  "@archiveDialogTitle": {
+    "description": "Title of the archive dialog."
+  },
+  "archiveDialogIntro": "It leaves the vehicle list and becomes read-only, with its whole history. You can reactivate it at any time.",
+  "@archiveDialogIntro": {
+    "description": "Explanation at the top of the archive dialog."
+  },
+  "fieldArchiveReason": "Reason",
+  "@fieldArchiveReason": {
+    "description": "Label of the archive reason field."
+  },
+  "fieldArchiveDate": "Date",
+  "@fieldArchiveDate": {
+    "description": "Label of the archive date field."
+  },
+  "fieldArchivedKm": "Final km",
+  "@fieldArchivedKm": {
+    "description": "Label of the optional final odometer field of the archive dialog."
+  },
+  "archivedKmHelp": "Saved as an odometer reading on that date. Leave empty to add none.",
+  "@archivedKmHelp": {
+    "description": "Helper text under the final km field of the archive dialog."
+  },
+  "fieldArchiveNote": "Note",
+  "@fieldArchiveNote": {
+    "description": "Label of the optional note field of the archive dialog."
+  },
+  "archiveReasonNone": "None",
+  "@archiveReasonNone": {
+    "description": "Archive reason: none given."
+  },
+  "archiveReasonSold": "Sold",
+  "@archiveReasonSold": {
+    "description": "Archive reason: the vehicle was sold."
+  },
+  "archiveReasonScrapped": "Scrapped",
+  "@archiveReasonScrapped": {
+    "description": "Archive reason: the vehicle was scrapped."
+  },
+  "archiveReasonStolen": "Stolen",
+  "@archiveReasonStolen": {
+    "description": "Archive reason: the vehicle was stolen."
+  },
+  "archiveReasonDestroyed": "Destroyed (accident)",
+  "@archiveReasonDestroyed": {
+    "description": "Archive reason: the vehicle was destroyed, e.g. in an accident."
+  },
+  "archiveReasonGivenAway": "Given away",
+  "@archiveReasonGivenAway": {
+    "description": "Archive reason: the vehicle was given away."
+  },
+  "archiveReasonLeaseEnded": "Rental / lease ended",
+  "@archiveReasonLeaseEnded": {
+    "description": "Archive reason: a rental or lease ended."
+  },
+  "archiveReasonOther": "Other",
+  "@archiveReasonOther": {
+    "description": "Archive reason: any other, explained in the note."
+  },
+  "vehicleArchivedToast": "Vehicle archived",
+  "@vehicleArchivedToast": {
+    "description": "Snackbar after archiving a vehicle."
+  },
+  "vehicleReactivatedToast": "Vehicle reactivated",
+  "@vehicleReactivatedToast": {
+    "description": "Snackbar after reactivating a vehicle."
+  },
+  "archiveBanner": "Archived on {date} · {reason}",
+  "@archiveBanner": {
+    "description": "Banner on the page of an archived vehicle, without final km: the archive day and the reason label.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveBannerWithKm": "Archived on {date} · {reason} · {km} km",
+  "@archiveBannerWithKm": {
+    "description": "Banner on the page of an archived vehicle with its final km.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "reason": {
+        "type": "String"
+      },
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "archiveChip": "{reason} · {month}",
+  "@archiveChip": {
+    "description": "Chip on an archived vehicle row: the reason label and the month of the archive.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "month": {
+        "type": "DateTime",
+        "format": "yMMM"
+      }
+    }
+  },
+  "archiveChipWithKm": "{reason} · {month} · {km} km",
+  "@archiveChipWithKm": {
+    "description": "Chip on an archived vehicle row with its final km.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "month": {
+        "type": "DateTime",
+        "format": "yMMM"
+      },
+      "km": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "archivedVehicleSemantics": "Archived vehicle",
+  "@archivedVehicleSemantics": {
+    "description": "Accessibility label of the archive icon on the banner and the archived rows."
   }
 }

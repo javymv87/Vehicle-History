@@ -1,5 +1,6 @@
 import '../db/daos/audit_log_dao.dart';
 import '../db/daos/mileage_readings_dao.dart';
+import '../db/vehicle_state.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/mileage_reading.dart';
@@ -57,7 +58,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
       updatedAt: now,
     );
     return _readings.transaction(() async {
-      await _requireLiveVehicle(vehicleId);
+      await _requireActiveVehicle(vehicleId);
       final last = await _readings.getLastLive(vehicleId);
       if (last != null) {
         if (date.isBefore(last.date)) {
@@ -90,6 +91,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
     _checkKmAndDate(km: km, date: date, today: localToday(_clock));
     return _readings.transaction(() async {
       final current = await _requireLive(id);
+      await _requireActiveVehicle(current.vehicleId);
       if (await _readings.countLive(current.vehicleId) != 1) {
         throw MileageReadingRuleException(
           id,
@@ -109,6 +111,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
     final now = utcNow(_clock);
     return _readings.transaction(() async {
       final reading = await _requireLive(id);
+      await _requireActiveVehicle(reading.vehicleId);
       final all = await _readings.getLiveByVehicle(reading.vehicleId);
       // Newest first: the first is the last reading, the final one the
       // initial reading.
@@ -132,9 +135,9 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
       if (deleted == null) {
         throw EntityNotFoundException(AuditEntityType.mileageReading, id);
       }
-      // The vehicle may have been deleted since: the reading would come
-      // back invisible, so the undo is refused instead.
-      await _requireLiveVehicle(deleted.vehicleId);
+      // The vehicle may have been deleted or archived since: the reading
+      // would come back invisible or read-only, so the undo is refused.
+      await _requireActiveVehicle(deleted.vehicleId);
       final last = await _readings.getLastLive(deleted.vehicleId);
       if (last != null && !deleted.isAfter(last)) {
         throw MileageReadingRuleException(
@@ -167,10 +170,17 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
   }
 
   /// Throws [EntityNotFoundException] unless the vehicle with [vehicleId] is
-  /// live.
-  Future<void> _requireLiveVehicle(String vehicleId) async {
-    if (!await _readings.isVehicleLive(vehicleId)) {
-      throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
+  /// live, and [VehicleArchivedException] when it is archived: its readings
+  /// are read-only then. The reading the archive itself inserts goes through
+  /// `create` while the vehicle is still active, in the same transaction.
+  Future<void> _requireActiveVehicle(String vehicleId) async {
+    switch (await _readings.vehicleStateOf(vehicleId)) {
+      case VehicleState.active:
+        return;
+      case VehicleState.archived:
+        throw VehicleArchivedException(AuditEntityType.vehicle, vehicleId);
+      case VehicleState.absent:
+        throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
     }
   }
 

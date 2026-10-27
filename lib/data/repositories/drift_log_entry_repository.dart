@@ -1,5 +1,6 @@
 import '../db/daos/audit_log_dao.dart';
 import '../db/daos/log_entries_dao.dart';
+import '../db/vehicle_state.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
@@ -98,7 +99,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     );
     return _attachments.runWithMovedFiles(
       (moved) => _entries.transaction(() async {
-        await _requireLiveVehicle(vehicleId);
+        await _requireActiveVehicle(vehicleId);
         await _entries.insertEntry(entry);
         await _record(entry.id, AuditOperation.create, now);
         await _attachments.addStaged(
@@ -136,6 +137,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     return _attachments.runWithMovedFiles(
       (moved) => _entries.transaction(() async {
         final current = await _requireLive(id);
+        await _requireActiveVehicle(current.vehicleId);
         final updated = current.copyWith(
           date: date,
           km: km,
@@ -159,7 +161,8 @@ class DriftLogEntryRepository implements LogEntryRepository {
   Future<void> delete(String id) async {
     final now = utcNow(_clock);
     return _entries.transaction(() async {
-      await _requireLive(id);
+      final current = await _requireLive(id);
+      await _requireActiveVehicle(current.vehicleId);
       await _entries.softDeleteLive(id, now);
       await _record(id, AuditOperation.delete, now);
     });
@@ -173,9 +176,9 @@ class DriftLogEntryRepository implements LogEntryRepository {
       if (deleted == null) {
         throw EntityNotFoundException(AuditEntityType.logEntry, id);
       }
-      // The vehicle may have been deleted since: the entry would come back
-      // invisible, so the undo is refused instead.
-      await _requireLiveVehicle(deleted.vehicleId);
+      // The vehicle may have been deleted or archived since: the entry would
+      // come back invisible or read-only, so the undo is refused instead.
+      await _requireActiveVehicle(deleted.vehicleId);
       await _entries.restoreDeleted(id, now);
       await _record(id, AuditOperation.restore, now);
       return deleted.copyWith(updatedAt: now);
@@ -210,10 +213,16 @@ class DriftLogEntryRepository implements LogEntryRepository {
   }
 
   /// Throws [EntityNotFoundException] unless the vehicle with [vehicleId] is
-  /// live.
-  Future<void> _requireLiveVehicle(String vehicleId) async {
-    if (!await _entries.isVehicleLive(vehicleId)) {
-      throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
+  /// live, and [VehicleArchivedException] when it is archived: its entries
+  /// are read-only then.
+  Future<void> _requireActiveVehicle(String vehicleId) async {
+    switch (await _entries.vehicleStateOf(vehicleId)) {
+      case VehicleState.active:
+        return;
+      case VehicleState.archived:
+        throw VehicleArchivedException(AuditEntityType.vehicle, vehicleId);
+      case VehicleState.absent:
+        throw EntityNotFoundException(AuditEntityType.vehicle, vehicleId);
     }
   }
 

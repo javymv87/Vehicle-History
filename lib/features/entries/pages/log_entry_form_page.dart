@@ -64,6 +64,10 @@ class LogEntryFormPage extends ConsumerWidget {
         if (vehicle == null) {
           return NotFoundPage(message: l10n.vehicleNotFound);
         }
+        // An archived vehicle is read-only (reachable only by deep link).
+        if (vehicle.isArchived) {
+          return NotFoundPage(message: l10n.errorVehicleArchived);
+        }
         if (entryId != null && data.entry == null) {
           return NotFoundPage(message: l10n.entryNotFound);
         }
