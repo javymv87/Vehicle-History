@@ -547,6 +547,88 @@ void main() {
       expect(await settings.readSyncPoint(), isNull);
     });
   });
+
+  group('link modes', () {
+    const manual = DriveAccount('me@example.com', mode: DriveAuthMode.manual);
+    late FakeDriveAuthService manualAuth;
+
+    setUp(() {
+      manualAuth = FakeDriveAuthService()..nextAccount = manual;
+      service = DriveSyncService(
+        backup: backup,
+        settings: settings,
+        auth: auth,
+        manualAuth: manualAuth,
+        client: drive,
+        schemaVersion: 7,
+        appVersion: '0.9.0+10',
+        clock: () => DateTime.utc(2026, 10, 23, 8),
+      );
+    });
+
+    test('the mode is a phone setting, absent means system', () async {
+      expect(SettingKey.driveAuthMode.scope, SettingScope.device);
+      await settings.write(SettingKey.driveAccount, me.email);
+      expect(await settings.readDriveAccount(), me, reason: '0.9.0 link');
+    });
+
+    test('a manual link stores the mode with the account', () async {
+      expect(await service.link(mode: DriveAuthMode.manual), manual);
+      expect(await settings.read(SettingKey.driveAuthMode), 'manual');
+      expect(await settings.readDriveAccount(), manual);
+    });
+
+    test('the copies belong to the email, whatever the mode', () async {
+      await service.link(mode: DriveAuthMode.manual);
+      await service.upload(expectedUploadId: null);
+      expect(drive.of(me.email), hasLength(1));
+      expect((await service.check()).state, SyncState.aligned);
+    });
+
+    test('linking in the other mode needs an unlink first', () async {
+      await service.link();
+      await expectLater(
+        service.link(mode: DriveAuthMode.manual),
+        throwsA(isA<DriveAuthException>()),
+      );
+      expect(await settings.readDriveAccount(), me);
+      await service.unlink();
+      expect(await service.link(mode: DriveAuthMode.manual), manual);
+    });
+
+    test('unlink goes to the service of the linked mode', () async {
+      await service.link(mode: DriveAuthMode.manual);
+      expect(await service.unlink(), isTrue);
+      expect(manualAuth.unlinks, 1);
+      expect(auth.unlinks, 0);
+      expect(await settings.read(SettingKey.driveAuthMode), isNull);
+    });
+
+    test('a failed revocation unlinks anyway and says so', () async {
+      await service.link(mode: DriveAuthMode.manual);
+      manualAuth.unlinkFailure = const DriveRevocationFailedException('x');
+      expect(await service.unlink(), isFalse);
+      expect(await settings.readDriveAccount(), isNull);
+      expect(await settings.readSyncPoint(), isNull);
+    });
+
+    test('the router asks the service of the account mode', () async {
+      final router = DriveAuthRouter({
+        DriveAuthMode.system: auth,
+        DriveAuthMode.manual: manualAuth,
+      });
+      await router.accessToken(manual);
+      await router.invalidate('token-1');
+      expect(manualAuth.invalidated, ['token-1']);
+      expect(auth.invalidated, isEmpty);
+      manualAuth.tokenFailure = const DriveAuthorizationRequiredException();
+      await expectLater(
+        router.accessToken(manual),
+        throwsA(isA<DriveAuthorizationRequiredException>()),
+      );
+      expect(await router.accessToken(me), 'token-1', reason: 'mode 1');
+    });
+  });
 }
 
 /// A client whose deletes fail.

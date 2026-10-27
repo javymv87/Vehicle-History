@@ -1525,9 +1525,50 @@
   "@driveNotLinked": {
     "description": "Backup page: no Google account is linked."
   },
-  "driveLinkAction": "Link account",
-  "@driveLinkAction": {
-    "description": "Backup page: button that links a Google account."
+  "driveLinkSystemAction": "Link a phone account",
+  "@driveLinkSystemAction": {
+    "description": "Drive section button: links one of the phone's Google accounts through the system picker (mode 1)."
+  },
+  "driveLinkSystemHint": "Choose one of the Google accounts already on this phone.",
+  "@driveLinkSystemHint": {
+    "description": "One-line explanation under the mode 1 link button."
+  },
+  "driveLinkManualAction": "Link an account manually",
+  "@driveLinkManualAction": {
+    "description": "Drive section button: signs in to a Google account in the browser, without adding it to the phone (mode 2)."
+  },
+  "driveLinkManualHint": "Sign in in the browser with an account that is not on this phone. Only this app uses it; it is not added to the phone.",
+  "@driveLinkManualHint": {
+    "description": "One-line explanation under the mode 2 link button."
+  },
+  "driveModeSystem": "Phone account",
+  "@driveModeSystem": {
+    "description": "Drive section, under the linked email: the account was linked through the phone's account picker (mode 1)."
+  },
+  "driveModeManual": "Linked manually (only in this app)",
+  "@driveModeManual": {
+    "description": "Drive section, under the linked email: the account was linked in the browser and lives only in the app (mode 2)."
+  },
+  "driveUnlinkManualMessage": "The automatic copy stops and Google withdraws this app's access. The copies stay in the Drive of {email}.",
+  "@driveUnlinkManualMessage": {
+    "description": "Unlink dialog for an account linked manually (mode 2): what unlinking does.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "driveUnlinkedRevokeFailed": "Account unlinked on this phone, but Google could not be told (no connection). Remove “Vehicle History” from your Google Account → Security → Third-party connections.",
+  "@driveUnlinkedRevokeFailed": {
+    "description": "Long message after unlinking a manual (mode 2) account when the revocation at Google failed."
+  },
+  "driveBrowserSessionTitle": "Browser session",
+  "@driveBrowserSessionTitle": {
+    "description": "Title of the notice shown once after linking an account manually (mode 2)."
+  },
+  "driveBrowserSessionMessage": "The Google session may stay open in the phone's browser; sign out of Google there if you do not want it kept.",
+  "@driveBrowserSessionMessage": {
+    "description": "Notice shown once after linking an account manually (mode 2): the browser may keep the Google session (no private tab on Android)."
   },
   "driveLinkedTo": "Copy linked to: {email}",
   "@driveLinkedTo": {

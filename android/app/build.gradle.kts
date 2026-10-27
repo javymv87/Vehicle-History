@@ -37,6 +37,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Mode 2 of the Drive link (flutter_appauth): the browser comes back
+        // to the app through this scheme, the reversed id of the Android
+        // OAuth client (Google's convention; "Enable custom URI scheme" is on
+        // in that client's advanced settings). Must match driveRedirectUrl.
+        manifestPlaceholders["appAuthRedirectScheme"] =
+            "com.googleusercontent.apps.724262826629-83b26p1jk89l4bgjtpb0dqk41h77ebfd"
     }
 
     signingConfigs {

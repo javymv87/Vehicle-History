@@ -35,8 +35,14 @@ enum SettingKey {
   theme('theme'),
 
   /// The email of the Google account the Drive copy is linked to; absent
-  /// when no account is linked. Not a secret: no token is ever stored.
+  /// when no account is linked. Not a secret: tokens never go into this
+  /// table.
   driveAccount('drive_account', SettingScope.device),
+
+  /// How [driveAccount] was linked: a `DriveAuthMode` code (`system`,
+  /// `manual`); absent means `system`. Mode 2's refresh token is in the
+  /// secure storage, never here.
+  driveAuthMode('drive_auth_mode', SettingScope.device),
 
   /// A random UUID naming this phone in the Drive copies it uploads, made
   /// on first use.

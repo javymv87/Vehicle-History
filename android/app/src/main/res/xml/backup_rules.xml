@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android's Auto Backup up to Android 11 (android:fullBackupContent).
+     With no <include>, everything is backed up as before except these two
+     flutter_secure_storage files: mode 2's encrypted refresh token and the
+     wrapped key that decrypts it. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+</full-backup-content>

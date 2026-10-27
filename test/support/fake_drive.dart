@@ -19,6 +19,9 @@ class FakeDriveAuthService implements DriveAuthService {
   /// How many times [unlink] ran.
   int unlinks = 0;
 
+  /// When set, [unlink] throws it (after counting).
+  Exception? unlinkFailure;
+
   /// The tokens invalidated.
   final List<String> invalidated = [];
 
@@ -44,7 +47,11 @@ class FakeDriveAuthService implements DriveAuthService {
   Future<void> invalidate(String token) async => invalidated.add(token);
 
   @override
-  Future<void> unlink() async => unlinks++;
+  Future<void> unlink() async {
+    unlinks++;
+    final failure = unlinkFailure;
+    if (failure != null) throw failure;
+  }
 }
 
 /// In-memory Drive: the packages of each account, newest first.

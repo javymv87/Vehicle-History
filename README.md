@@ -100,7 +100,10 @@ added the Google Drive copy: link the phone's account, Upload to Drive and
 Restore from Drive (through the same import and its safety net), the last 3
 copies in a visible folder, the version guard with its status line (and a
 home banner when another phone uploaded a newer copy) and a single automatic
-action: an upload at start when only this phone changed. Next is step 10
+action: an upload at start when only this phone changed. Step 9b added the
+second way to link the account: signing in in the browser (OAuth + PKCE)
+with an account that is not added to the phone. Its refresh token is kept
+only in the secure storage and revoked at Google on unlink. Next is step 10
 (reminders).
 
 Roadmap to the first usable version:
@@ -116,6 +119,7 @@ Roadmap to the first usable version:
 | 7 | ~~Settings screen: in-app language and theme~~ — done |
 | 8 | ~~Attachments (entries, vehicles, owners), backup package with the files (schema v7)~~ — done |
 | 9 | ~~Google Drive backup with the startup version guard~~ — done |
+| 9b | ~~Link an account manually (browser, OAuth + PKCE, token in the secure storage)~~ — done |
 
 Then, in an order decided while using the app: maintenance, refuelling,
 documents, reminders, PDF reports.

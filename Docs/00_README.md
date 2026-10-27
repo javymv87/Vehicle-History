@@ -75,7 +75,11 @@ la misma importación con su red de seguridad), las 3 últimas copias en una
 carpeta visible, el control de versión con su línea de estado (y un banner
 en la pantalla principal cuando otro teléfono subió una copia más reciente)
 y una única acción automática: subir al arrancar cuando solo ha cambiado
-este teléfono. Lo siguiente es el paso 10 (recordatorios).
+este teléfono. El paso 9b añadió la segunda forma de vincular la cuenta:
+iniciar sesión en el navegador (OAuth + PKCE) con una cuenta que no se
+añade al teléfono. El refresh token se guarda solo en el almacén seguro, y
+al desvincular se revoca en Google. Lo siguiente es el paso 10
+(recordatorios).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -90,6 +94,7 @@ Hoja de ruta hasta la primera versión usable:
 | 7 | ~~Pantalla de ajustes: idioma y tema dentro de la app~~ — hecho |
 | 8 | ~~Adjuntos (entradas, vehículos, propietarios), paquete de copia con los archivos (esquema v7)~~ — hecho |
 | 9 | ~~Copia de seguridad en Google Drive con control de versión al arrancar~~ — hecho |
+| 9b | ~~Vincular una cuenta manualmente (navegador, OAuth + PKCE, token en el almacén seguro)~~ — hecho |
 
 Después, en el orden que se decida usando la app: mantenimiento, repostajes,
 documentos, recordatorios, informes PDF.

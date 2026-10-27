@@ -59,8 +59,8 @@ package to import, but **no longer for saving**: saving goes through the
 native channel below. No image, thumbnail, share or permission library:
 thumbnails are `Image.file` with `cacheWidth`.
 
-Added in step 9 for the Google Drive copy (mode 1 only; mode 2 with
-`flutter_appauth` and `flutter_secure_storage` is step 9b):
+Added in step 9 for the Google Drive copy (mode 1; mode 2 came in step
+9b, below):
 `googleapis` 17.0.0 (Drive v3: metadata queries, resumable upload,
 streamed download), `google_sign_in` 7.2.0 (Credential Manager account
 picker + Identity `AuthorizationClient` for the scope), its implementations
@@ -71,6 +71,21 @@ every start) and `http` 1.6.0 (the bearer-token client). No
 `googleapis_auth` / extension package, no `connectivity_plus`, no
 WorkManager. The manifest declares `INTERNET` (Flutter's template has it
 only in the debug / profile manifests) and `ACCESS_NETWORK_STATE`.
+
+Added in step 9b for mode 2 of the Drive link: `flutter_appauth` 12.1.0
+(AppAuth-Android 0.11.1: Authorization Code + PKCE S256 in a Custom Tab,
+token refresh; `appAuthRedirectScheme` in `android/app/build.gradle.kts`
+is the reversed Android client id) and `flutter_secure_storage` 11.2.0
+(the refresh token only, AES-GCM with an Android Keystore-wrapped key).
+`res/xml/backup_rules.xml` and `data_extraction_rules.xml` keep its two
+`shared_prefs` files (`FlutterSecureStorage.xml`,
+`FlutterSecureKeyStorage.xml`) out of Android's own backup and device
+transfer; everything else is backed up as before. Android has no
+ephemeral Custom Tab through these plugins, so the browser may keep the
+Google session (the UI says so once after linking). `MainActivity` has
+**no** `android:taskAffinity=""` (Flutter's template adds it): with it,
+Google's redirect lands in a new task where AppAuth has no pending request
+and the sign-in never returns to the app.
 
 **Native channel** (`MainActivity.kt`, Android only, wrapped by
 `NativeFiles` in `lib/data/platform/native_files.dart`, faked in tests):
@@ -260,8 +275,9 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   (`last_export_at`, `language`, `theme`, and since step 9 the `drive_…`
   keys of `Docs/06_settings_and_i18n.md`). Each key has a `SettingScope`
   that decides what **every import** does with it: `shared` comes from the
-  package, `device` (`drive_account`, `drive_device_id`,
-  `drive_mobile_data`) keeps the phone's value, `syncPoint`
+  package, `device` (`drive_account`, `drive_auth_mode`,
+  `drive_device_id`, `drive_mobile_data`) keeps the phone's value,
+  `syncPoint`
   (`drive_sync_*`) is cleared (`BackupService._openImported`); `SettingsRepository` has `read`,
   `write`, `watch`, plus typed accessors (`watchLastExportAt`,
   `writeLastExportAt`, `watchLanguage` / `writeLanguage`,
@@ -342,9 +358,19 @@ v4 added `mileage_readings` with one initial reading per vehicle; v5 added
   captures its messenger and `GoRouter` before the import starts.
 
 - **Google Drive copy (step 9)** (`lib/data/drive/`,
-  `Docs/05_sync_and_storage.md`). `DriveAuthService` (google_sign_in mode
-  1) links the account and hands out access tokens on demand: **no token is
-  ever stored or logged**; `DriveHttpClient` adds the bearer token and on a
+  `Docs/05_sync_and_storage.md`). `DriveAuthService` links the account
+  in one mode and hands out access tokens (`DriveTokenProvider`):
+  `GoogleDriveAuthService` is mode 1 (google_sign_in, **no token stored**),
+  `ManualDriveAuthService` mode 2 (flutter_appauth, the refresh token in
+  `RefreshTokenStore` / `SecureRefreshTokenStore`, access token in memory,
+  `invalid_grant` → token deleted + `DriveAuthorizationRequiredException`,
+  unlink revokes at Google then deletes in any case, a failed revocation is
+  `DriveRevocationFailedException`). The mode is `DriveAccount.mode`, stored
+  as `drive_auth_mode` (absent = `system`); `DriveSyncService.link(mode:)`
+  refuses another mode while one is linked, `unlink` returns `false` when
+  the revocation failed; `DriveAuthRouter` gives the Drive client the
+  tokens of the linked account's mode. Tokens are never logged (event names
+  and error codes only); `DriveHttpClient` adds the bearer token and on a
   401 gets a fresh one and resends once (bodies up to 16 MB are buffered for
   that, so a 4 MB chunk of a resumable upload survives an expiry).
   `DriveBackupClient` finds packages by `appProperties` (`vh_role=backup`,
@@ -702,10 +728,15 @@ decision, not a refactor.
   data changed or there is no cloud copy; download is never automatic.
 - Two account-linking modes: the system account picker (step 9), and manual
   OAuth 2.0 + PKCE through the system browser for an app-only account
-  (step 9b).
-- Mode 1 stores no token at all. Mode 2 will store tokens via
-  `flutter_secure_storage` (Android Keystore). Never in plain preferences,
-  never in the database, never logged.
+  (step 9b, public Android client, no client secret ever). One mode linked
+  at a time; changing mode needs an unlink.
+- **Tokens only in secure storage.** Mode 1 stores no token at all. Mode 2
+  stores its refresh token, and nothing else, through
+  `flutter_secure_storage` (Android Keystore). Never in the `settings`
+  table, never in the database, never in a file or plain preferences,
+  never logged (nor authorisation codes or token responses).
+- Unlinking mode 2 revokes the token at Google and wipes the secure storage
+  even when the revocation fails (then the user is told).
 
 ---
 

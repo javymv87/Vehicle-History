@@ -25,15 +25,35 @@
     <uses-permission
         android:name="android.permission.READ_MEDIA_AUDIO"
         tools:node="remove" />
+    <!-- flutter_secure_storage declares these for its optional biometric
+         mode. The app stores mode 2's refresh token without biometrics:
+         removed so they never show in the app's permissions. -->
+    <uses-permission
+        android:name="android.permission.USE_BIOMETRIC"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT"
+        tools:node="remove" />
+    <!-- The backup rules keep flutter_secure_storage's files (mode 2's
+         refresh token and its wrapped key) out of Android's own backup and
+         device transfer: the token must never leave the phone, and its
+         Keystore key does not travel anyway. Everything else is unchanged. -->
     <application
         android:label="Vehicle History"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- No android:taskAffinity="" (Flutter's template sets it): with an
+             empty affinity, Google's redirect to AppAuth's
+             RedirectUriReceiverActivity opens in a new task, where AppAuth's
+             AuthorizationManagementActivity has no pending request, and mode
+             2's sign-in never returns to the app (flutter_appauth README,
+             "No Redirect to app after login"). -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

@@ -6,6 +6,7 @@ import 'package:vehicle_history/app/app.dart';
 import 'package:vehicle_history/app/router/app_router.dart';
 import 'package:vehicle_history/data/attachments/attachment_staging.dart';
 import 'package:vehicle_history/data/data_providers.dart';
+import 'package:vehicle_history/data/drive/drive_models.dart';
 import 'package:vehicle_history/data/drive/drive_sync_service.dart';
 
 import 'catalog_fixtures.dart';
@@ -38,8 +39,13 @@ class BackupFakes {
   /// Where staged attachment files go.
   final MemoryAttachmentStore attachmentStore = MemoryAttachmentStore();
 
-  /// The Google account link.
+  /// The Google account link, mode 1 (phone accounts).
   final FakeDriveAuthService driveAuth = FakeDriveAuthService();
+
+  /// The Google account link, mode 2 (signed in through the browser).
+  final FakeDriveAuthService driveManualAuth = FakeDriveAuthService()
+    ..nextAccount =
+        const DriveAccount('me@example.com', mode: DriveAuthMode.manual);
 
   /// The in-memory Drive.
   final FakeDriveBackupClient driveClient = FakeDriveBackupClient();
@@ -52,6 +58,7 @@ class BackupFakes {
     backup: service,
     settings: settings,
     auth: driveAuth,
+    manualAuth: driveManualAuth,
     client: driveClient,
     schemaVersion: 7,
     appVersion: '0.9.0+10',

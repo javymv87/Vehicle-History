@@ -154,16 +154,20 @@ class DriveController extends Notifier<DriveViewState> {
     }
   }
 
-  /// Links an account (also used by Change account, after its warning).
+  /// Links an account in [mode] (also used by Change account, after its
+  /// warning, with the linked account's mode).
   ///
-  /// Succeeds with the account, or `null` if the user backed out. The last
-  /// common point is reset; if the account holds no copy yet the first one
-  /// is uploaded at once (nothing can be lost); an existing copy is never
-  /// touched until the user chooses.
-  Future<ActionResult<DriveAccount?>> link() async {
+  /// Succeeds with the account, or `null` if the user backed out (closed
+  /// the picker or the browser). The last common point is reset; if the
+  /// account holds no copy yet the first one is uploaded at once (nothing
+  /// can be lost); an existing copy is never touched until the user
+  /// chooses.
+  Future<ActionResult<DriveAccount?>> link({
+    DriveAuthMode mode = DriveAuthMode.system,
+  }) async {
     state = state.withTask(DriveTask.linking);
     try {
-      final account = await ref.read(driveSyncServiceProvider).link();
+      final account = await ref.read(driveSyncServiceProvider).link(mode: mode);
       state = const DriveViewState(task: DriveTask.checking);
       final status = await ref.read(driveSyncServiceProvider).check();
       state = DriveViewState(status: status);
@@ -184,11 +188,14 @@ class DriveController extends Notifier<DriveViewState> {
   }
 
   /// Unlinks the account; the copies stay in its Drive.
-  Future<ActionResult<void>> unlink() async {
+  ///
+  /// Succeeds with `false` when the link is gone but Google could not be
+  /// told to revoke the access (mode 2 offline), for the long message.
+  Future<ActionResult<bool>> unlink() async {
     try {
-      await ref.read(driveSyncServiceProvider).unlink();
+      final revoked = await ref.read(driveSyncServiceProvider).unlink();
       state = DriveViewState(status: await _checkQuietly());
-      return const ActionSuccess(null);
+      return ActionSuccess(revoked);
     } on Exception catch (error, stackTrace) {
       return ActionFailure(actionErrorOf(error, stackTrace));
     }
