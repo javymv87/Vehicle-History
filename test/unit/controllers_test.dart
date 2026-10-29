@@ -153,7 +153,7 @@ void main() {
 
     VehicleDraft draft(
       String plate, {
-      int? km = 1000,
+      double? km = 1000,
       VehicleIdentity identity = const VehicleIdentity(
         kind: VehicleKind.car,
         make: 'Fiat',

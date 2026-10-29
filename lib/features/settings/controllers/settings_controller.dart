@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/data_providers.dart';
 import '../../../data/models/app_preferences.dart';
+import '../../../data/models/units.dart';
 import '../../../data/repositories/settings_repository.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
+import '../../../shared/utils/unit_formatter.dart';
 
 /// The interface language stored in Settings.
 ///
@@ -39,6 +42,43 @@ final themeSettingProvider = StreamProvider<AppThemeMode>((ref) {
       .watchThemeMode()
       .handleError(_logReadFailure);
 });
+
+/// The five units of measurement stored in Settings, read like
+/// [languageSettingProvider] and with the same fallback to the SI defaults
+/// ([UnitPreferences.defaults]). Every screen that shows or parses a
+/// quantity watches it through [unitFormatterOf], so changing a unit
+/// re-renders them all at once.
+final unitPreferencesProvider = StreamProvider<UnitPreferences>((ref) {
+  if (ref.watch(databaseReadyProvider) is! AsyncData) {
+    return const Stream.empty();
+  }
+  return ref
+      .watch(settingsRepositoryProvider)
+      .watchUnitPreferences()
+      .handleError(_logReadFailure);
+});
+
+/// The [UnitFormatter] for the current units and interface language: the
+/// one way a widget formats or parses a distance, volume, temperature,
+/// pressure or consumption. Watches [unitPreferencesProvider], so the
+/// widget rebuilds when a unit changes; until the setting is read it
+/// formats in the SI units.
+UnitFormatter unitFormatterOf(BuildContext context, WidgetRef ref) =>
+    UnitFormatter(
+      preferences:
+          ref.watch(unitPreferencesProvider).value ?? UnitPreferences.defaults,
+      l10n: AppLocalizations.of(context),
+    );
+
+/// The [UnitFormatter] of the moment, read once without watching: for
+/// callbacks and initialisers outside `build`, where [unitFormatterOf]
+/// must not be called.
+UnitFormatter readUnitFormatter(BuildContext context, WidgetRef ref) =>
+    UnitFormatter(
+      preferences:
+          ref.read(unitPreferencesProvider).value ?? UnitPreferences.defaults,
+      l10n: AppLocalizations.of(context),
+    );
 
 /// The `MaterialApp.locale`: `null` (the device language) for
 /// [AppLanguage.system] and until the setting is read.
@@ -77,6 +117,42 @@ class SettingsController extends Notifier<void> {
   /// Stores [mode] as the light / dark mode.
   Future<ActionResult<void>> setThemeMode(AppThemeMode mode) => runAction(
         () => ref.read(settingsRepositoryProvider).writeThemeMode(mode),
+      );
+
+  /// Stores the five units of [preset] at once; [UnitPreset.custom] cannot
+  /// be chosen.
+  Future<ActionResult<void>> setUnitPreset(UnitPreset preset) => runAction(
+        () => ref
+            .read(settingsRepositoryProvider)
+            .writeUnitPreferences(UnitPreferences.ofPreset(preset)),
+      );
+
+  /// Stores [unit] as the unit of distance, leaving the other four alone.
+  Future<ActionResult<void>> setDistanceUnit(DistanceUnit unit) => runAction(
+        () => ref.read(settingsRepositoryProvider).writeDistanceUnit(unit),
+      );
+
+  /// Stores [unit] as the unit of volume; the consumption unit does not
+  /// follow it (the page only hints when they disagree).
+  Future<ActionResult<void>> setVolumeUnit(VolumeUnit unit) => runAction(
+        () => ref.read(settingsRepositoryProvider).writeVolumeUnit(unit),
+      );
+
+  /// Stores [unit] as the unit of temperature.
+  Future<ActionResult<void>> setTemperatureUnit(TemperatureUnit unit) =>
+      runAction(
+        () => ref.read(settingsRepositoryProvider).writeTemperatureUnit(unit),
+      );
+
+  /// Stores [unit] as the unit of pressure.
+  Future<ActionResult<void>> setPressureUnit(PressureUnit unit) => runAction(
+        () => ref.read(settingsRepositoryProvider).writePressureUnit(unit),
+      );
+
+  /// Stores [unit] as the unit of fuel consumption.
+  Future<ActionResult<void>> setConsumptionUnit(ConsumptionUnit unit) =>
+      runAction(
+        () => ref.read(settingsRepositoryProvider).writeConsumptionUnit(unit),
       );
 }
 

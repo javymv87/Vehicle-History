@@ -30,11 +30,12 @@ class LogEntry {
   /// Day the event happened. A calendar day, never shifted by timezones.
   final CalendarDate date;
 
-  /// Odometer reading at the time of the event, in whole kilometres.
+  /// Odometer reading at the time of the event, in kilometres (the stored
+  /// unit, whatever the user types in; not necessarily whole).
   ///
   /// Required for the types where [LogEntryType.requiresKm] is true. It stays
   /// inside the entry: it never updates the vehicle's odometer history.
-  final int? km;
+  final double? km;
 
   /// What kind of event this is.
   final LogEntryType type;
@@ -72,7 +73,7 @@ class LogEntry {
       id: id ?? this.id,
       vehicleId: vehicleId ?? this.vehicleId,
       date: date ?? this.date,
-      km: identical(km, unset) ? this.km : km as int?,
+      km: identical(km, unset) ? this.km : km as double?,
       type: type ?? this.type,
       description: identical(description, unset)
           ? this.description

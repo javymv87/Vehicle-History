@@ -135,5 +135,12 @@ class _FailingSettings implements SettingsRepository {
   Stream<String?> watch(SettingKey key) => Stream.error(Exception('disk'));
 
   @override
+  Stream<Map<SettingKey, String?>> watchMany(Iterable<SettingKey> keys) =>
+      Stream.error(Exception('disk'));
+
+  @override
   Future<void> write(SettingKey key, String? value) async {}
+
+  @override
+  Future<void> writeMany(Map<SettingKey, String?> values) async {}
 }

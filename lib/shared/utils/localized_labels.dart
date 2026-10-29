@@ -2,11 +2,13 @@ import '../../data/models/app_preferences.dart';
 import '../../data/models/archive_reason.dart';
 import '../../data/models/fuel_type.dart';
 import '../../data/models/log_entry_type.dart';
+import '../../data/models/units.dart';
 import '../../data/models/vehicle.dart';
 import '../../data/models/vehicle_kind.dart';
 import '../../l10n/app_localizations.dart';
 import 'action_result.dart';
 import 'calendar_date_conversion.dart';
+import 'unit_formatter.dart';
 
 /// Localised label of a [FuelType].
 extension FuelTypeLabel on FuelType {
@@ -48,14 +50,16 @@ extension VehicleDisplayName on Vehicle {
       };
 
   /// The archive chip of an archived vehicle, e.g. "Sold · Mar 2026" or
-  /// "Sold · Mar 2026 · 184,300 km"; `null` for an active one.
-  String? archiveChipLabel(AppLocalizations l10n) {
+  /// "Sold · Mar 2026 · 184,300 km" (the final reading in the unit of
+  /// [units]); `null` for an active one.
+  String? archiveChipLabel(AppLocalizations l10n, UnitFormatter units) {
     final day = archivedAt;
     if (day == null) return null;
     final reason = (archiveReason ?? ArchiveReason.none).label(l10n);
     final month = day.toLocalDateTime();
     return switch (archivedKm) {
-      final km? => l10n.archiveChipWithKm(reason, month, km),
+      final km? =>
+        l10n.archiveChipWithKm(reason, month, units.distance.format(km)),
       null => l10n.archiveChip(reason, month),
     };
   }
@@ -107,6 +111,50 @@ extension AppThemeModeLabel on AppThemeMode {
         AppThemeMode.light => l10n.themeLight,
         AppThemeMode.dark => l10n.themeDark,
       };
+}
+
+/// Label of a [UnitPreset] on the Settings page.
+extension UnitPresetLabel on UnitPreset {
+  /// The name of this preset in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        UnitPreset.international => l10n.unitPresetInternational,
+        UnitPreset.imperial => l10n.unitPresetImperial,
+        UnitPreset.custom => l10n.unitPresetCustom,
+      };
+}
+
+/// Label of a unit in the Settings dialogs and tiles: its name and symbol,
+/// e.g. "Kilometres (km)".
+extension UnitLabel on UnitConversion {
+  /// The name and symbol of this unit in the language of [l10n].
+  String label(AppLocalizations l10n) {
+    final unit = this;
+    final name = switch (unit) {
+      DistanceUnit.kilometre => l10n.unitNameKilometre,
+      DistanceUnit.mile => l10n.unitNameMile,
+      VolumeUnit.litre => l10n.unitNameLitre,
+      VolumeUnit.gallonUs => l10n.unitNameGallonUs,
+      VolumeUnit.gallonUk => l10n.unitNameGallonUk,
+      TemperatureUnit.celsius => l10n.unitNameCelsius,
+      TemperatureUnit.fahrenheit => l10n.unitNameFahrenheit,
+      PressureUnit.bar => l10n.unitNameBar,
+      PressureUnit.psi => l10n.unitNamePsi,
+      ConsumptionUnit.litresPer100Km => l10n.unitNameLitresPer100Km,
+      ConsumptionUnit.kmPerLitre => l10n.unitNameKmPerLitre,
+      ConsumptionUnit.mpgUs => l10n.unitNameMpgUs,
+      ConsumptionUnit.mpgUk => l10n.unitNameMpgUk,
+      _ => throw ArgumentError.value(unit, 'unit', 'has no name'),
+    };
+    final symbol = switch (unit) {
+      DistanceUnit() => unit.symbol(l10n),
+      VolumeUnit() => unit.symbol(l10n),
+      TemperatureUnit() => unit.symbol(l10n),
+      PressureUnit() => unit.symbol(l10n),
+      ConsumptionUnit() => unit.symbol(l10n),
+      _ => throw ArgumentError.value(unit, 'unit', 'has no symbol'),
+    };
+    return l10n.unitOptionLabel(name, symbol);
+  }
 }
 
 /// Localised message of an [ActionError].

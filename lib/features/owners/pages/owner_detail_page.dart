@@ -13,13 +13,14 @@ import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
-import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../attachments/widgets/attachment_actions.dart';
-import '../../attachments/widgets/attachments_section.dart';
 import '../../attachments/widgets/attachment_selection_app_bar.dart';
+import '../../attachments/widgets/attachments_section.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/owner_deletion_controller.dart';
 import '../controllers/owner_detail_controller.dart';
 
@@ -219,15 +220,16 @@ class _OwnerDetailView extends ConsumerWidget {
 
 /// One vehicle of the owner: kind icon, name, plate, and the archive chip
 /// text as a third line for an archived one. Opens the vehicle page.
-class _OwnerVehicleTile extends StatelessWidget {
+class _OwnerVehicleTile extends ConsumerWidget {
   const _OwnerVehicleTile({required this.vehicle});
 
   final Vehicle vehicle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final archiveChip = vehicle.archiveChipLabel(l10n);
+    final archiveChip =
+        vehicle.archiveChipLabel(l10n, unitFormatterOf(context, ref));
     return ListTile(
       leading: Icon(vehicle.kind.icon),
       title: Text(vehicle.makeAndModel ?? vehicle.plate),

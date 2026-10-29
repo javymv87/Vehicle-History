@@ -76,7 +76,7 @@ class Vehicle {
   ///
   /// Set when the vehicle is created. Changing it belongs to the mileage
   /// feature, not to the vehicle form (see `Docs/04_maintenance_logic.md`).
-  final int currentOdometerKm;
+  final double currentOdometerKm;
 
   /// Fuel the vehicle runs on.
   final FuelType fuelType;
@@ -103,7 +103,7 @@ class Vehicle {
 
   /// Final km recorded when it was archived, the snapshot of the reading
   /// inserted then; `null` while active or when no km was given.
-  final int? archivedKm;
+  final double? archivedKm;
 
   /// When the vehicle was created, in UTC.
   final DateTime createdAt;
@@ -138,7 +138,7 @@ class Vehicle {
     Object? version = unset,
     Object? nickname = unset,
     String? ownerId,
-    int? currentOdometerKm,
+    double? currentOdometerKm,
     FuelType? fuelType,
     Object? recommendedEngineOil = unset,
     Object? manufacturerNotes = unset,
@@ -185,8 +185,9 @@ class Vehicle {
       archiveNote: identical(archiveNote, unset)
           ? this.archiveNote
           : archiveNote as String?,
-      archivedKm:
-          identical(archivedKm, unset) ? this.archivedKm : archivedKm as int?,
+      archivedKm: identical(archivedKm, unset)
+          ? this.archivedKm
+          : archivedKm as double?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

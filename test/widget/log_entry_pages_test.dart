@@ -133,7 +133,7 @@ void main() {
       await tester.pumpAndSettle();
       // The km is never prefilled: only the chip fills it.
       expect(find.widgetWithText(TextFormField, '12345'), findsNothing);
-      await tapVisible(tester, find.text('Use current km (12,345)'));
+      await tapVisible(tester, find.text('Use current reading (12,345 km)'));
       expect(find.widgetWithText(TextFormField, '12345'), findsOneWidget);
       await tester.enterText(
         find.byKey(const ValueKey('entry-cost-field')),
@@ -178,7 +178,10 @@ void main() {
       );
       await save(tester);
       expect(find.text('Choose the type'), findsNothing);
-      expect(find.text('Enter the km for this type of entry'), findsOneWidget);
+      expect(
+        find.text('Enter the odometer reading for this type of entry'),
+        findsOneWidget,
+      );
       expect(
         find.text('Enter an amount of 0 or more, with at most 2 decimals'),
         findsOneWidget,
@@ -188,7 +191,7 @@ void main() {
       // A legal deadline needs no km.
       await tester.tap(find.text('Legal deadline'));
       await tester.pumpAndSettle();
-      expect(find.text('Km (optional)'), findsOneWidget);
+      expect(find.text('Odometer (optional)'), findsOneWidget);
       await tester.enterText(
         find.byKey(const ValueKey('entry-cost-field')),
         '99,9',

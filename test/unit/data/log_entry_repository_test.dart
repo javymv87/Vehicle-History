@@ -77,7 +77,7 @@ void main() {
   Future<LogEntry> add({
     Vehicle? vehicle,
     CalendarDate date = const CalendarDate(2026, 10, 1),
-    int? km = 85000,
+    double? km = 85000,
     LogEntryType type = LogEntryType.maintenance,
     String? description,
     int? costCents,

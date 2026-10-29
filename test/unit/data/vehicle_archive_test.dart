@@ -75,7 +75,7 @@ void main() {
   CalendarDate today() => CalendarDate.localDayOf(clock());
 
   /// Creates a vehicle of Mario with [km] as its initial reading.
-  Future<Vehicle> createVehicle(String plate, {int km = 1000}) =>
+  Future<Vehicle> createVehicle(String plate, {double km = 1000}) =>
       vehicles.create(
         plate: plate,
         kind: VehicleKind.car,
@@ -87,7 +87,7 @@ void main() {
       );
 
   /// Archives [vehicle] today as sold, with [km] when given.
-  Future<Vehicle> archive(Vehicle vehicle, {int? km, String? note}) =>
+  Future<Vehicle> archive(Vehicle vehicle, {double? km, String? note}) =>
       vehicles.archive(
         vehicle.id,
         reason: ArchiveReason.sold,
@@ -211,7 +211,7 @@ void main() {
       final tomorrow = CalendarDate.localDayOf(
         clock().add(const Duration(days: 1)),
       );
-      for (final km in [null, 2000]) {
+      for (final km in <double?>[null, 2000]) {
         await expectLater(
           vehicles.archive(
             punto.id,

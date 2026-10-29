@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/log_entry.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
+import '../../settings/controllers/settings_controller.dart';
 import 'log_entry_type_icon.dart';
 
 /// One row of a vehicle's history (`Docs/03_features.md`, U6, U24): type
@@ -14,7 +16,7 @@ import 'log_entry_type_icon.dart';
 ///
 /// Built as a plain row rather than a `ListTile` so that, with very large
 /// text, the cost wraps under the type instead of squeezing it.
-class LogEntryTile extends StatelessWidget {
+class LogEntryTile extends ConsumerWidget {
   /// Creates the row for [entry], calling [onTap] when tapped.
   const LogEntryTile({
     super.key,
@@ -43,8 +45,9 @@ class LogEntryTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final date = entry.date.toLocalDateTime();
@@ -95,7 +98,10 @@ class LogEntryTile extends StatelessWidget {
                         Text(
                           km == null
                               ? l10n.dateValue(date)
-                              : l10n.entryDateAndKm(date, km),
+                              : l10n.entryDateAndKm(
+                                  date,
+                                  units.distance.format(km),
+                                ),
                           style: theme.textTheme.bodyMedium
                               ?.copyWith(color: muted),
                         ),

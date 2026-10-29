@@ -46,7 +46,7 @@ void main() {
   Future<Vehicle> createVehicle({
     String plate = 'AB123CD',
     String? ownerId,
-    int km = 85000,
+    double km = 85000,
   }) {
     return vehicles.create(
       plate: plate,

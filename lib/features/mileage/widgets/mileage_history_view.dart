@@ -10,6 +10,7 @@ import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../controllers/mileage_history_controller.dart';
 import '../controllers/mileage_reading_deletion_controller.dart';
@@ -57,6 +58,7 @@ class MileageHistoryView extends ConsumerWidget {
     int index,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final units = readUnitFormatter(context, ref);
     final reading = readings[index];
     final isSole = readings.length == 1;
     final isLast = index == 0;
@@ -71,7 +73,7 @@ class MileageHistoryView extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.speed),
-                title: Text(l10n.kmValue(reading.km)),
+                title: Text(units.distance.format(reading.km)),
                 subtitle: Text(l10n.dateValue(reading.date.toLocalDateTime())),
               ),
               const Divider(),
@@ -119,7 +121,9 @@ class MileageHistoryView extends ConsumerWidget {
     final confirmed = await confirmDelete(
       context,
       title: l10n.deleteReadingTitle,
-      message: l10n.deleteReadingMessage(reading.km),
+      message: l10n.deleteReadingMessage(
+        readUnitFormatter(context, ref).distance.format(reading.km),
+      ),
     );
     if (!confirmed || !context.mounted) return;
     // The controller outlives this tab; the snackbar holds it, not `ref`.
@@ -150,7 +154,7 @@ enum _ReadingAction { edit, delete }
 
 /// One reading row: km, day, and the difference with the [previous]
 /// reading ("Initial reading" for the oldest).
-class _ReadingTile extends StatelessWidget {
+class _ReadingTile extends ConsumerWidget {
   const _ReadingTile({
     required this.reading,
     required this.previous,
@@ -162,16 +166,19 @@ class _ReadingTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final previous = this.previous;
     final difference = previous == null
         ? l10n.initialReading
-        : l10n.readingDifference(reading.km - previous.km);
+        : l10n.readingDifference(
+            units.distance.format(reading.km - previous.km),
+          );
     return ListTile(
       leading: const Icon(Icons.speed),
       title: Text(
-        l10n.kmValue(reading.km),
+        units.distance.format(reading.km),
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(

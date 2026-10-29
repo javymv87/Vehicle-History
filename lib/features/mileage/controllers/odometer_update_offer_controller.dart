@@ -24,7 +24,7 @@ class OdometerUpdateOfferController extends Notifier<void> {
   Future<ActionResult<MileageReading>> accept({
     required String vehicleId,
     required CalendarDate date,
-    required int km,
+    required double km,
   }) async {
     final result = await runAction(
       () => ref

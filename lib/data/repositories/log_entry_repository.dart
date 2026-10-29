@@ -49,7 +49,7 @@ abstract interface class LogEntryRepository {
   Future<LogEntry> create({
     required String vehicleId,
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,
@@ -71,7 +71,7 @@ abstract interface class LogEntryRepository {
   Future<LogEntry> update(
     String id, {
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,

@@ -41,7 +41,7 @@ void main() {
   }
 
   /// Km of the vehicle's live readings, newest first.
-  List<int> readingKms() =>
+  List<double> readingKms() =>
       [for (final r in store.liveReadingsOf(vehicleId)) r.km];
 
   group('Mileage tab', () {
@@ -53,7 +53,7 @@ void main() {
       expect(find.text('12,345 km'), findsOneWidget);
       expect(find.text('AB123CD · 12,345 km'), findsOneWidget);
       expect(
-        find.widgetWithText(FloatingActionButton, 'Update km'),
+        find.widgetWithText(FloatingActionButton, 'Update odometer'),
         findsOneWidget,
       );
     });
@@ -72,11 +72,11 @@ void main() {
     });
   });
 
-  group('Update km', () {
+  group('Update odometer', () {
     testWidgets('a new reading appears and the header km changes',
         (tester) async {
       await openMileage(tester);
-      await tester.tap(find.text('Update km'));
+      await tester.tap(find.text('Update odometer'));
       await tester.pumpAndSettle();
       expect(find.byType(MileageReadingFormPage), findsOneWidget);
       expect(find.textContaining('Last: 12,345 km'), findsOneWidget);
@@ -120,7 +120,12 @@ void main() {
       );
       await save(tester);
       expect(find.text('Are you sure?'), findsOneWidget);
-      expect(find.textContaining('60,001 km more'), findsOneWidget);
+      expect(
+        find.textContaining(
+          '60,001 km more than the last reading, above the 50,000 km check',
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(find.byType(MileageReadingFormPage), findsOneWidget);
@@ -276,7 +281,7 @@ void main() {
         '25000',
       );
       await save(tester);
-      expect(find.text('Check the km'), findsOneWidget);
+      expect(find.text('Check the reading'), findsOneWidget);
       expect(
         find.textContaining('reading of Jun 1, 2025 (20,000 km)'),
         findsOneWidget,
@@ -308,7 +313,7 @@ void main() {
         '19000',
       );
       await save(tester);
-      expect(find.text('Check the km'), findsNothing);
+      expect(find.text('Check the reading'), findsNothing);
       expect(store.entries[entry.id]!.km, 19000);
     });
 

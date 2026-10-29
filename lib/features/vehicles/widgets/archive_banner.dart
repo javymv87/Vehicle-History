@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/archive_reason.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../settings/controllers/settings_controller.dart';
 
 /// The fixed grey banner under the app bar of an archived vehicle
 /// (`Docs/03_features.md`, "Archivo"): the archive icon, "Archived on
@@ -13,7 +15,7 @@ import '../../../shared/utils/localized_labels.dart';
 ///
 /// Grey, never a status colour: archived is a state, not a warning. The
 /// icon and the text carry the meaning, the colour only groups them.
-class ArchiveBanner extends StatelessWidget {
+class ArchiveBanner extends ConsumerWidget {
   /// Creates the banner of the archived [vehicle]; [onReactivate] runs the
   /// reactivation, with no confirmation.
   const ArchiveBanner({
@@ -29,8 +31,9 @@ class ArchiveBanner extends StatelessWidget {
   final VoidCallback onReactivate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final day = vehicle.archivedAt!.toLocalDateTime();
@@ -38,7 +41,7 @@ class ArchiveBanner extends StatelessWidget {
     final km = vehicle.archivedKm;
     final summary = km == null
         ? l10n.archiveBanner(day, reason)
-        : l10n.archiveBannerWithKm(day, reason, km);
+        : l10n.archiveBannerWithKm(day, reason, units.distance.format(km));
     return Material(
       color: scheme.surfaceContainerHighest,
       child: Padding(

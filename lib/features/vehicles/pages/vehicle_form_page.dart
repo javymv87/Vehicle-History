@@ -14,6 +14,7 @@ import '../../../data/repositories/vehicle_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
@@ -22,6 +23,7 @@ import '../../../shared/widgets/searchable_picker.dart';
 import '../../../shared/widgets/text_input_dialog.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../owners/controllers/owner_list_controller.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_form_controller.dart';
 import '../widgets/owner_picker_field.dart';
 
@@ -93,6 +95,9 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
   late final _version = TextEditingController(text: widget.initial?.version);
   late final _nickname = TextEditingController(text: widget.initial?.nickname);
   final _km = TextEditingController();
+
+  /// The formatter of the last build, for the validator and the save.
+  late UnitFormatter _units;
   late final _oil =
       TextEditingController(text: widget.initial?.recommendedEngineOil);
   late final _notes =
@@ -252,7 +257,8 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
             nickname: _nickname.text,
             ownerId: _ownerId!,
             fuelType: _fuelType!,
-            currentOdometerKm: _creating ? int.parse(_km.text) : null,
+            currentOdometerKm:
+                _creating ? _units.distance.parse(_km.text.trim()) : null,
             recommendedEngineOil: _oil.text,
             manufacturerNotes: _notes.text,
           ),
@@ -270,11 +276,12 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
     }
   }
 
-  /// Checks the current km: required, a whole number, never negative.
+  /// Checks the current odometer: required, a whole number in the chosen
+  /// unit, never negative.
   String? _validateKm(String? value, AppLocalizations l10n) {
     final text = (value ?? '').trim();
     if (text.isEmpty) return l10n.validationKmRequired;
-    final km = int.tryParse(text);
+    final km = _units.distance.parse(text);
     if (km == null || km < 0) return l10n.validationKmInvalid;
     return null;
   }
@@ -294,6 +301,7 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    _units = unitFormatterOf(context, ref);
     final owners = ref.watch(ownerListProvider);
     // Starts loading the catalogue while the user looks at the form.
     ref.watch(vehicleCatalogProvider);
@@ -422,7 +430,9 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
                   gap,
                   TextFormField(
                     controller: _km,
-                    decoration: _decoration(l10n.fieldCurrentKm),
+                    decoration: _decoration(l10n.fieldCurrentKm).copyWith(
+                      suffixText: _units.distance.symbol,
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     textInputAction: TextInputAction.next,

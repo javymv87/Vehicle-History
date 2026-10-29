@@ -30,8 +30,23 @@ class FakeSettingsRepository implements SettingsRepository {
   }
 
   @override
+  Stream<Map<SettingKey, String?>> watchMany(Iterable<SettingKey> keys) async* {
+    final wanted = keys.toList();
+    yield {for (final key in wanted) key: values[key]};
+    await for (final _ in _changes.stream) {
+      yield {for (final key in wanted) key: values[key]};
+    }
+  }
+
+  @override
   Future<void> write(SettingKey key, String? value) async {
     values[key] = value;
+    _changes.add(null);
+  }
+
+  @override
+  Future<void> writeMany(Map<SettingKey, String?> values) async {
+    this.values.addAll(values);
     _changes.add(null);
   }
 }

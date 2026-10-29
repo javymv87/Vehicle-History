@@ -94,7 +94,7 @@ class DriftVehicleRepository implements VehicleRepository {
     String? version,
     String? nickname,
     required String ownerId,
-    required int currentOdometerKm,
+    required double currentOdometerKm,
     required FuelType fuelType,
     String? recommendedEngineOil,
     String? manufacturerNotes,
@@ -222,7 +222,7 @@ class DriftVehicleRepository implements VehicleRepository {
     String id, {
     required ArchiveReason reason,
     required CalendarDate date,
-    int? km,
+    double? km,
     String? note,
   }) async {
     final now = utcNow(_clock);

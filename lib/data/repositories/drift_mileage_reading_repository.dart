@@ -45,7 +45,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
   Future<MileageReading> create({
     required String vehicleId,
     required CalendarDate date,
-    required int km,
+    required double km,
   }) async {
     final now = utcNow(_clock);
     _checkKmAndDate(km: km, date: date, today: localToday(_clock));
@@ -85,7 +85,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
   Future<MileageReading> updateInitial(
     String id, {
     required CalendarDate date,
-    required int km,
+    required double km,
   }) async {
     final now = utcNow(_clock);
     _checkKmAndDate(km: km, date: date, today: localToday(_clock));
@@ -157,7 +157,7 @@ class DriftMileageReadingRepository implements MileageReadingRepository {
   /// Throws [InvalidFieldException]. The rules against the last reading
   /// need the database and are checked inside the transaction.
   static void _checkKmAndDate({
-    required int km,
+    required double km,
     required CalendarDate date,
     required CalendarDate today,
   }) {

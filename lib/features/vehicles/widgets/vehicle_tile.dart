@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 
 /// One row of the vehicle list: kind icon, make and model, plate, nickname,
@@ -11,7 +13,7 @@ import '../controllers/vehicle_list_controller.dart';
 ///
 /// A vehicle without make and model (created at schema v1) shows its plate
 /// as the main line instead.
-class VehicleTile extends StatelessWidget {
+class VehicleTile extends ConsumerWidget {
   /// Creates the row for [item], calling [onTap] when tapped.
   const VehicleTile({
     super.key,
@@ -30,12 +32,14 @@ class VehicleTile extends StatelessWidget {
   final bool showArchive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     final vehicle = item.vehicle;
     final makeAndModel = vehicle.makeAndModel;
-    final archiveChip = showArchive ? vehicle.archiveChipLabel(l10n) : null;
+    final archiveChip =
+        showArchive ? vehicle.archiveChipLabel(l10n, units) : null;
     return ListTile(
       leading: CircleAvatar(
         child: Icon(vehicle.kind.icon, semanticLabel: vehicle.kind.label(l10n)),
@@ -54,7 +58,7 @@ class VehicleTile extends StatelessWidget {
           if (item.owner case final owner?) Text(owner.fullName),
           Text(
             l10n.vehicleSummary(
-              vehicle.currentOdometerKm,
+              units.distance.format(vehicle.currentOdometerKm),
               vehicle.fuelType.label(l10n),
             ),
           ),

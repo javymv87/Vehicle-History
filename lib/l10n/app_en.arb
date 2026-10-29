@@ -56,16 +56,6 @@
   "@editOwnerTitle": {
     "description": "App bar title of the owner form when editing."
   },
-  "kmValue": "{km} km",
-  "@kmValue": {
-    "description": "An odometer value in kilometres, formatted for the locale.",
-    "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
-  },
   "dateValue": "{date}",
   "@dateValue": {
     "description": "A calendar date formatted for the locale, e.g. a birth date.",
@@ -76,13 +66,12 @@
       }
     }
   },
-  "vehicleSummary": "{km} km · {fuel}",
+  "vehicleSummary": "{distance} · {fuel}",
   "@vehicleSummary": {
-    "description": "Vehicle list row: current odometer and fuel type.",
+    "description": "Vehicle list row: current odometer (formatted with its unit) and fuel type.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       },
       "fuel": {
         "type": "String"
@@ -137,9 +126,9 @@
   "@fieldFuelType": {
     "description": "Vehicle field: fuel type."
   },
-  "fieldCurrentKm": "Current km",
+  "fieldCurrentKm": "Current odometer",
   "@fieldCurrentKm": {
-    "description": "Vehicle field: current odometer reading, entered only when creating."
+    "description": "Label of the current odometer field of the vehicle form; the unit symbol is the field suffix."
   },
   "fieldRecommendedOil": "Recommended engine oil",
   "@fieldRecommendedOil": {
@@ -189,13 +178,13 @@
   "@validationPlateRequired": {
     "description": "Error under the plate field when it is empty."
   },
-  "validationKmRequired": "Enter the current km",
+  "validationKmRequired": "Enter the current odometer reading",
   "@validationKmRequired": {
-    "description": "Error under the current km field when it is empty."
+    "description": "Error under the current odometer field when it is empty."
   },
   "validationKmInvalid": "Enter a whole number, 0 or more",
   "@validationKmInvalid": {
-    "description": "Error under the current km field when the value is not a whole number of at least 0."
+    "description": "Error under an odometer field when the value is not a whole number of at least 0 (in the chosen unit)."
   },
   "validationFirstNameRequired": "Enter the first name",
   "@validationFirstNameRequired": {
@@ -488,16 +477,15 @@
   "@tabDetails": {
     "description": "Vehicle page tab with the vehicle's own data."
   },
-  "vehicleHeaderSummary": "{plate} · {km} km",
+  "vehicleHeaderSummary": "{plate} · {distance}",
   "@vehicleHeaderSummary": {
-    "description": "Compact vehicle header: plate and current odometer.",
+    "description": "Compact vehicle header: plate and current odometer with its unit.",
     "placeholders": {
       "plate": {
         "type": "String"
       },
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -553,13 +541,13 @@
   "@fieldEntryDate": {
     "description": "Entry field: the day of the event."
   },
-  "fieldEntryKm": "Km",
+  "fieldEntryKm": "Odometer",
   "@fieldEntryKm": {
-    "description": "Entry field: odometer reading at the event, required for this type."
+    "description": "Label of the odometer field of the entry form when the type requires it; the unit symbol is the field suffix."
   },
-  "fieldEntryKmOptional": "Km (optional)",
+  "fieldEntryKmOptional": "Odometer (optional)",
   "@fieldEntryKmOptional": {
-    "description": "Entry field: odometer reading at the event, optional for this type."
+    "description": "Label of the odometer field of the entry form when the type does not require it."
   },
   "fieldEntryCost": "Cost",
   "@fieldEntryCost": {
@@ -569,27 +557,26 @@
   "@fieldEntryDescription": {
     "description": "Entry field: free text describing the event."
   },
-  "useCurrentKm": "Use current km ({km})",
+  "useCurrentKm": "Use current reading ({distance})",
   "@useCurrentKm": {
-    "description": "Chip under the km field that copies the vehicle's current odometer into it.",
+    "description": "Chip under the odometer field that copies the vehicle's current odometer (formatted with its unit) into it.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
-  "entryKmNote": "Recorded on this entry only: it does not change the vehicle's km.",
+  "entryKmNote": "Recorded on this entry only: it does not change the vehicle's odometer.",
   "@entryKmNote": {
-    "description": "Note under the km on the entry detail: entry km never updates the odometer."
+    "description": "Note under the odometer reading on the entry detail: entry readings never update the odometer."
   },
   "validationEntryTypeRequired": "Choose the type",
   "@validationEntryTypeRequired": {
     "description": "Error under the entry type choice when none is selected."
   },
-  "validationEntryKmRequired": "Enter the km for this type of entry",
+  "validationEntryKmRequired": "Enter the odometer reading for this type of entry",
   "@validationEntryKmRequired": {
-    "description": "Error under the entry km field when the selected type requires it."
+    "description": "Error under the entry odometer field when the selected type requires it."
   },
   "validationCostInvalid": "Enter an amount of 0 or more, with at most 2 decimals",
   "@validationCostInvalid": {
@@ -694,17 +681,16 @@
   "@removeFilter": {
     "description": "Tooltip of the delete button of an active filter chip."
   },
-  "entryDateAndKm": "{date} · {km} km",
+  "entryDateAndKm": "{date} · {distance}",
   "@entryDateAndKm": {
-    "description": "History row: date of the entry and its km.",
+    "description": "History row: date of the entry and its odometer reading with its unit.",
     "placeholders": {
       "date": {
         "type": "DateTime",
         "format": "yMMMd"
       },
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -712,33 +698,32 @@
   "@tabMileage": {
     "description": "Vehicle page tab: the odometer readings."
   },
-  "addMileageReading": "Update km",
+  "addMileageReading": "Update odometer",
   "@addMileageReading": {
-    "description": "Floating button of the Mileage tab: adds an odometer reading."
+    "description": "Extended FAB of the Mileage tab that opens the new reading form (U13)."
   },
-  "newMileageReadingTitle": "Update km",
+  "newMileageReadingTitle": "Update odometer",
   "@newMileageReadingTitle": {
-    "description": "Title of the form that adds an odometer reading."
+    "description": "App bar title of the new reading form."
   },
   "editMileageReadingTitle": "Correct reading",
   "@editMileageReadingTitle": {
     "description": "Title of the form that corrects the sole (initial) reading."
   },
-  "fieldReadingKm": "Odometer km",
+  "fieldReadingKm": "Odometer reading",
   "@fieldReadingKm": {
-    "description": "Reading field: total odometer value."
+    "description": "Label of the reading field of the odometer form; the unit symbol is the field suffix."
   },
   "fieldReadingDate": "Date",
   "@fieldReadingDate": {
     "description": "Reading field: day of the reading."
   },
-  "lastReadingHint": "Last: {km} km on {date}",
+  "lastReadingHint": "Last: {distance} on {date}",
   "@lastReadingHint": {
-    "description": "Helper under the km field: the last reading.",
+    "description": "Helper under the odometer field: the last reading with its unit.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       },
       "date": {
         "type": "DateTime",
@@ -746,13 +731,12 @@
       }
     }
   },
-  "validationReadingKmBelowLast": "At least {km} km: the odometer never goes backwards",
+  "validationReadingKmBelowLast": "At least {distance}: the odometer never goes backwards",
   "@validationReadingKmBelowLast": {
-    "description": "Reading km below the last reading.",
+    "description": "Reading below the last reading, which is shown with its unit.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -764,13 +748,15 @@
   "@bigJumpTitle": {
     "description": "Confirmation title for a reading far above the last one."
   },
-  "bigJumpMessage": "That is {km} km more than the last reading.",
+  "bigJumpMessage": "That is {difference} more than the last reading, above the {threshold} check.",
   "@bigJumpMessage": {
-    "description": "Confirmation for a reading far above the last one: the difference.",
+    "description": "Confirmation for a reading far above the last one: the difference and the friendly threshold, both with their unit (50,000 km or 30,000 mi).",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "difference": {
+        "type": "String"
+      },
+      "threshold": {
+        "type": "String"
       }
     }
   },
@@ -786,13 +772,12 @@
   "@readingDeleted": {
     "description": "Snackbar with Undo after deleting a reading."
   },
-  "readingDifference": "+{km} km",
+  "readingDifference": "+{distance}",
   "@readingDifference": {
-    "description": "Mileage row: km driven since the previous reading.",
+    "description": "Mileage row: distance driven since the previous reading, with its unit.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -812,13 +797,12 @@
   "@deleteReadingTitle": {
     "description": "Confirmation title before deleting a reading."
   },
-  "deleteReadingMessage": "The reading of {km} km will be deleted. You can undo it for a few seconds.",
+  "deleteReadingMessage": "The reading of {distance} will be deleted. You can undo it for a few seconds.",
   "@deleteReadingMessage": {
-    "description": "Confirmation before deleting a reading.",
+    "description": "Confirmation before deleting the last odometer reading, shown with its unit.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -838,17 +822,16 @@
   "@errorReadingNotFound": {
     "description": "The reading involved is missing or deleted."
   },
-  "entryKmAboveOdometerTitle": "Check the km",
+  "entryKmAboveOdometerTitle": "Check the reading",
   "@entryKmAboveOdometerTitle": {
-    "description": "Confirmation title for a past entry with km above the current odometer."
+    "description": "Confirmation title for a past entry with a reading above the current odometer."
   },
-  "entryKmAboveOdometerMessage": "This km is higher than the reading of {date} ({km} km), dated after this entry. Save anyway?",
+  "entryKmAboveOdometerMessage": "This reading is higher than the reading of {date} ({distance}), dated after this entry. Save anyway?",
   "@entryKmAboveOdometerMessage": {
-    "description": "Confirmation for an entry with more km than a reading taken on a later day.",
+    "description": "Confirmation for an entry with a higher odometer reading than a reading taken on a later day.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       },
       "date": {
         "type": "DateTime",
@@ -856,13 +839,12 @@
       }
     }
   },
-  "updateOdometerOffer": "Entry saved. Update the odometer to {km} km?",
+  "updateOdometerOffer": "Entry saved. Update the odometer to {distance}?",
   "@updateOdometerOffer": {
-    "description": "Snackbar after saving an entry with km above the odometer.",
+    "description": "Snackbar after saving an entry with a reading above the odometer.",
     "placeholders": {
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -1899,9 +1881,9 @@
   "@fieldArchiveDate": {
     "description": "Label of the archive date field."
   },
-  "fieldArchivedKm": "Final km",
+  "fieldArchivedKm": "Final odometer",
   "@fieldArchivedKm": {
-    "description": "Label of the optional final odometer field of the archive dialog."
+    "description": "Label of the final odometer field of the archive dialog; the unit symbol is the field suffix."
   },
   "archivedKmHelp": "Saved as an odometer reading on that date. Leave empty to add none.",
   "@archivedKmHelp": {
@@ -1964,9 +1946,9 @@
       }
     }
   },
-  "archiveBannerWithKm": "Archived on {date} · {reason} · {km} km",
+  "archiveBannerWithKm": "Archived on {date} · {reason} · {distance}",
   "@archiveBannerWithKm": {
-    "description": "Banner on the page of an archived vehicle with its final km.",
+    "description": "Banner on the page of an archived vehicle with its final odometer reading (formatted with its unit).",
     "placeholders": {
       "date": {
         "type": "DateTime",
@@ -1975,9 +1957,8 @@
       "reason": {
         "type": "String"
       },
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
@@ -1994,9 +1975,9 @@
       }
     }
   },
-  "archiveChipWithKm": "{reason} · {month} · {km} km",
+  "archiveChipWithKm": "{reason} · {month} · {distance}",
   "@archiveChipWithKm": {
-    "description": "Chip on an archived vehicle row with its final km.",
+    "description": "Chip on an archived vehicle row with its final odometer reading.",
     "placeholders": {
       "reason": {
         "type": "String"
@@ -2005,14 +1986,181 @@
         "type": "DateTime",
         "format": "yMMM"
       },
-      "km": {
-        "type": "int",
-        "format": "decimalPattern"
+      "distance": {
+        "type": "String"
       }
     }
   },
   "archivedVehicleSemantics": "Archived vehicle",
   "@archivedVehicleSemantics": {
     "description": "Accessibility label of the archive icon on the banner and the archived rows."
+  },
+  "unitValueWithSymbol": "{value} {symbol}",
+  "@unitValueWithSymbol": {
+    "description": "A measured value followed by its unit symbol, e.g. \"1,234 km\". Only the unit formatter uses it.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "unitSymbolKilometre": "km",
+  "@unitSymbolKilometre": {
+    "description": "Symbol of kilometres."
+  },
+  "unitSymbolMile": "mi",
+  "@unitSymbolMile": {
+    "description": "Symbol of statute miles."
+  },
+  "unitSymbolLitre": "L",
+  "@unitSymbolLitre": {
+    "description": "Symbol of litres."
+  },
+  "unitSymbolGallonUs": "gal",
+  "@unitSymbolGallonUs": {
+    "description": "Symbol of US gallons."
+  },
+  "unitSymbolGallonUk": "imp gal",
+  "@unitSymbolGallonUk": {
+    "description": "Symbol of imperial (UK) gallons."
+  },
+  "unitSymbolCelsius": "°C",
+  "@unitSymbolCelsius": {
+    "description": "Symbol of degrees Celsius."
+  },
+  "unitSymbolFahrenheit": "°F",
+  "@unitSymbolFahrenheit": {
+    "description": "Symbol of degrees Fahrenheit."
+  },
+  "unitSymbolBar": "bar",
+  "@unitSymbolBar": {
+    "description": "Symbol of bar (pressure)."
+  },
+  "unitSymbolPsi": "psi",
+  "@unitSymbolPsi": {
+    "description": "Symbol of pounds per square inch."
+  },
+  "unitSymbolLitresPer100Km": "L/100 km",
+  "@unitSymbolLitresPer100Km": {
+    "description": "Symbol of litres per 100 km."
+  },
+  "unitSymbolKmPerLitre": "km/L",
+  "@unitSymbolKmPerLitre": {
+    "description": "Symbol of kilometres per litre."
+  },
+  "unitSymbolMpgUs": "mpg",
+  "@unitSymbolMpgUs": {
+    "description": "Symbol of miles per US gallon."
+  },
+  "unitSymbolMpgUk": "mpg (imp)",
+  "@unitSymbolMpgUk": {
+    "description": "Symbol of miles per imperial gallon."
+  },
+  "settingsUnits": "Units",
+  "@settingsUnits": {
+    "description": "Heading of the units section of the Settings page."
+  },
+  "unitPresetInternational": "International",
+  "@unitPresetInternational": {
+    "description": "Units preset: km, litres, °C, bar, L/100 km."
+  },
+  "unitPresetImperial": "Imperial",
+  "@unitPresetImperial": {
+    "description": "Units preset: miles, US gallons, °F, psi, mpg."
+  },
+  "unitPresetCustom": "Custom",
+  "@unitPresetCustom": {
+    "description": "Units preset shown when the five units match neither preset; it cannot be chosen."
+  },
+  "settingsUnitDistance": "Distance",
+  "@settingsUnitDistance": {
+    "description": "Settings tile and dialog title for the unit of distance."
+  },
+  "settingsUnitVolume": "Volume",
+  "@settingsUnitVolume": {
+    "description": "Settings tile and dialog title for the unit of volume."
+  },
+  "settingsUnitTemperature": "Temperature",
+  "@settingsUnitTemperature": {
+    "description": "Settings tile and dialog title for the unit of temperature."
+  },
+  "settingsUnitPressure": "Pressure",
+  "@settingsUnitPressure": {
+    "description": "Settings tile and dialog title for the unit of pressure."
+  },
+  "settingsUnitConsumption": "Fuel consumption",
+  "@settingsUnitConsumption": {
+    "description": "Settings tile and dialog title for the unit of fuel consumption."
+  },
+  "unitOptionLabel": "{name} ({symbol})",
+  "@unitOptionLabel": {
+    "description": "A unit in the settings dialogs: its name and its symbol, e.g. \"Kilometres (km)\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "unitNameKilometre": "Kilometres",
+  "@unitNameKilometre": {
+    "description": "Name of the kilometre unit."
+  },
+  "unitNameMile": "Miles",
+  "@unitNameMile": {
+    "description": "Name of the statute mile unit."
+  },
+  "unitNameLitre": "Litres",
+  "@unitNameLitre": {
+    "description": "Name of the litre unit."
+  },
+  "unitNameGallonUs": "US gallons",
+  "@unitNameGallonUs": {
+    "description": "Name of the US liquid gallon unit."
+  },
+  "unitNameGallonUk": "Imperial gallons",
+  "@unitNameGallonUk": {
+    "description": "Name of the imperial (UK) gallon unit."
+  },
+  "unitNameCelsius": "Celsius",
+  "@unitNameCelsius": {
+    "description": "Name of the degree Celsius unit."
+  },
+  "unitNameFahrenheit": "Fahrenheit",
+  "@unitNameFahrenheit": {
+    "description": "Name of the degree Fahrenheit unit."
+  },
+  "unitNameBar": "Bar",
+  "@unitNameBar": {
+    "description": "Name of the bar pressure unit."
+  },
+  "unitNamePsi": "Pounds per square inch",
+  "@unitNamePsi": {
+    "description": "Name of the psi pressure unit."
+  },
+  "unitNameLitresPer100Km": "Litres per 100 km",
+  "@unitNameLitresPer100Km": {
+    "description": "Name of the litres per 100 km consumption unit."
+  },
+  "unitNameKmPerLitre": "Kilometres per litre",
+  "@unitNameKmPerLitre": {
+    "description": "Name of the kilometres per litre consumption unit."
+  },
+  "unitNameMpgUs": "Miles per US gallon",
+  "@unitNameMpgUs": {
+    "description": "Name of the miles per US gallon consumption unit."
+  },
+  "unitNameMpgUk": "Miles per imperial gallon",
+  "@unitNameMpgUk": {
+    "description": "Name of the miles per imperial gallon consumption unit."
+  },
+  "unitConsumptionMismatchHint": "This unit counts with a different volume than the one chosen above.",
+  "@unitConsumptionMismatchHint": {
+    "description": "Soft hint under the consumption tile when its volume differs from the chosen volume unit (e.g. gallons with L/100 km). Never blocks."
   }
 }

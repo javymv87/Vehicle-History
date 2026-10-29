@@ -32,7 +32,7 @@ import 'generated/schema.dart';
 /// 4. extend the existing expectations with any new column's default.
 ///
 /// The tests must never be weakened to make an upgrade pass.
-const int latestVersion = 8;
+const int latestVersion = 9;
 
 /// Timestamp written into every old row.
 const String _ts = '2024-03-04T10:30:00.000Z';
@@ -1115,6 +1115,130 @@ Future<void> _expectV8ArchiveUsable(AppDatabase db) async {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Rows written at v8.
+// ---------------------------------------------------------------------------
+
+/// Writes the v7 rows and then uses the v8 archive columns: `v1` archived
+/// with a final km. No new rows, so every count of the older checks holds;
+/// every km is an INTEGER, as every version up to v8 stored them.
+Future<void> _insertV8Rows(GeneratedDatabase oldDb) async {
+  await _insertV7Rows(oldDb);
+  await oldDb.customStatement(
+    "UPDATE vehicles SET archived_at = '2026-03-12', archive_reason = 'sold', "
+    "archive_note = 'A Luca', archived_km = 184300 WHERE id = 'v1'",
+  );
+}
+
+/// Checks every row written by [_insertV8Rows] after an upgrade to v9 or
+/// later: the v7 rows and the archived vehicle, with every km now a REAL
+/// holding the same value, plus the indexes and the foreign keys of the
+/// recreated tables.
+Future<void> _expectV8RowsIntact(AppDatabase db) async {
+  await _expectV7RowsIntact(db);
+
+  final vehicle = (await db.vehiclesDao.getLiveById('v1'))!;
+  expect(vehicle.isArchived, isTrue);
+  expect(vehicle.archivedAt, const CalendarDate(2026, 3, 12));
+  expect(vehicle.archiveReason, ArchiveReason.sold);
+  expect(vehicle.archiveNote, 'A Luca');
+  expect(vehicle.archivedKm, 184300);
+  expect(vehicle.currentOdometerKm, 124500);
+
+  // The values were copied as they were, into REAL columns: no km of any
+  // row is still an integer on disk.
+  for (final sql in [
+    "SELECT COUNT(*) AS c FROM vehicles WHERE typeof(current_odometer_km) "
+        "<> 'real'",
+    "SELECT COUNT(*) AS c FROM vehicles WHERE archived_km IS NOT NULL AND "
+        "typeof(archived_km) <> 'real'",
+    "SELECT COUNT(*) AS c FROM mileage_readings WHERE typeof(km) <> 'real'",
+    "SELECT COUNT(*) AS c FROM log_entries WHERE km IS NOT NULL AND "
+        "typeof(km) <> 'real'",
+  ]) {
+    expect(await _count(db, sql), 0, reason: sql);
+  }
+  expect(
+    await _count(db, 'SELECT COUNT(*) AS c FROM mileage_readings'),
+    greaterThan(0),
+  );
+  for (final (table, column) in [
+    ('vehicles', 'current_odometer_km'),
+    ('vehicles', 'archived_km'),
+    ('mileage_readings', 'km'),
+    ('log_entries', 'km'),
+  ]) {
+    final columns = await db.customSelect('PRAGMA table_info($table)').get();
+    expect(
+      {
+        for (final c in columns) c.read<String>('name'): c.read<String>('type'),
+      },
+      containsPair(column, 'REAL'),
+      reason: '$table.$column',
+    );
+  }
+
+  // The indexes of the three recreated tables are back.
+  for (final (table, indexes) in [
+    ('vehicles', ['vehicles_owner_id', 'vehicles_plate_live_unique']),
+    ('log_entries', ['log_entries_vehicle_date', 'log_entries_vehicle_type']),
+    ('mileage_readings', ['mileage_readings_vehicle_date']),
+  ]) {
+    final list = await db.customSelect('PRAGMA index_list($table)').get();
+    expect(
+      [for (final i in list) i.read<String>('name')],
+      containsAll(indexes),
+      reason: table,
+    );
+  }
+  await _expectForeignKeysValid(db);
+}
+
+/// Checks the REAL km columns on an upgraded database: a reading typed in
+/// miles (100 mi = 160.9344 km) is stored and read back exactly, the CHECK
+/// constraints still refuse a negative km and the foreign keys still hold.
+Future<void> _expectV9RealKmUsable(AppDatabase db) async {
+  final reading = MileageReading(
+    id: 'r-miles',
+    vehicleId: 'v1',
+    date: const CalendarDate(2026, 10, 28),
+    km: 160.9344,
+    createdAt: _tsUtc,
+    updatedAt: _tsUtc,
+  );
+  await db.mileageReadingsDao.insertReading(reading);
+  expect(await db.mileageReadingsDao.getLiveById('r-miles'), reading);
+  final raw = await db
+      .customSelect("SELECT km FROM mileage_readings WHERE id = 'r-miles'")
+      .getSingle();
+  expect(raw.read<double>('km'), 160.9344);
+  await db.customStatement(
+    "UPDATE vehicles SET current_odometer_km = 160.9344 WHERE id = 'v1'",
+  );
+  expect(
+    (await db.vehiclesDao.getLiveById('v1'))!.currentOdometerKm,
+    160.9344,
+  );
+
+  for (final sql in [
+    "UPDATE mileage_readings SET km = -1 WHERE id = 'r-miles'",
+    "UPDATE vehicles SET current_odometer_km = -0.5 WHERE id = 'v1'",
+    "UPDATE vehicles SET archived_km = -1 WHERE id = 'v1'",
+    'INSERT INTO log_entries (id, created_at, updated_at, vehicle_id, '
+        "entry_date, km, type) VALUES ('e-bad', '$_ts', '$_ts', 'v1', "
+        "'2026-10-28', -1, 'note')",
+    'INSERT INTO mileage_readings (id, created_at, updated_at, vehicle_id, '
+        "reading_date, km) VALUES ('r-bad', '$_ts', '$_ts', 'no-such-vehicle', "
+        "'2026-10-28', 1.5)",
+  ]) {
+    await expectLater(
+      db.customStatement(sql),
+      throwsA(anything),
+      reason: 'should be refused: $sql',
+    );
+  }
+}
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late SchemaVerifier verifier;
@@ -1171,6 +1295,7 @@ void main() {
     await _expectV6SettingsUsable(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v2 are intact at v3', () async {
@@ -1190,6 +1315,7 @@ void main() {
     await _expectV6SettingsUsable(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v3 are intact at v4, each vehicle with one reading',
@@ -1222,6 +1348,7 @@ void main() {
     await _expectV6SettingsUsable(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v4 are intact at v5, with deleted_at backfilled',
@@ -1238,6 +1365,7 @@ void main() {
     await _expectV6SettingsUsable(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v5 are intact at v6, with an empty settings table',
@@ -1253,6 +1381,7 @@ void main() {
     await _expectV6SettingsUsable(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v6 are intact at v7, with an empty attachments table',
@@ -1267,12 +1396,20 @@ void main() {
     await _expectV6RowsIntact(db);
     await _expectV7AttachmentsUsable(db);
     await _expectV8ArchiveUsable(db);
+    await _expectV9RealKmUsable(db);
   });
 
   test('rows written at v7 are intact at v8, every vehicle active', () async {
     final db = await upgrade(7, 8, _insertV7Rows);
     await _expectV7RowsIntact(db);
     await _expectV8ArchiveUsable(db);
+  });
+
+  test('rows written at v8 are intact at v9, every km copied as REAL',
+      () async {
+    final db = await upgrade(8, 9, _insertV8Rows);
+    await _expectV8RowsIntact(db);
+    await _expectV9RealKmUsable(db);
   });
 
   /// Writes [insert]'s rows into a real file at [fromVersion], opens it with
@@ -1318,13 +1455,15 @@ void main() {
     final copyVersion =
         await copy.customSelect('PRAGMA user_version').getSingle();
     expect(copyVersion.read<int>('user_version'), fromVersion);
-    // The columns added by the latest version are in the copy of no older
-    // file.
+    // The REAL km columns of the latest version are in the copy of no older
+    // file: `current_odometer_km` is still INTEGER there.
     final columns =
         await copy.customSelect('PRAGMA table_info(vehicles)').get();
     expect(
-      [for (final c in columns) c.read<String>('name')],
-      isNot(contains('archived_at')),
+      {
+        for (final c in columns) c.read<String>('name'): c.read<String>('type'),
+      },
+      containsPair('current_odometer_km', 'INTEGER'),
     );
     expect(
       await _count(copy, 'SELECT COUNT(*) AS c FROM vehicles'),
@@ -1385,6 +1524,7 @@ void main() {
         await _expectV6RowsIntact(db);
         await _expectV7AttachmentsUsable(db);
         await _expectV8ArchiveUsable(db);
+        await _expectV9RealKmUsable(db);
       },
       vehicleRows: 2,
     );
@@ -1397,6 +1537,19 @@ void main() {
       (db) async {
         await _expectV7RowsIntact(db);
         await _expectV8ArchiveUsable(db);
+        await _expectV9RealKmUsable(db);
+      },
+      vehicleRows: 2,
+    );
+  });
+
+  test('a real upgrade of a v8 file first copies it', () async {
+    await realUpgrade(
+      8,
+      _insertV8Rows,
+      (db) async {
+        await _expectV8RowsIntact(db);
+        await _expectV9RealKmUsable(db);
       },
       vehicleRows: 2,
     );

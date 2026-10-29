@@ -139,12 +139,13 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v8: `owners`, `vehicles`, `audit_log`,
+Settled for the database (schema v9: `owners`, `vehicles`, `audit_log`,
 `log_entries`, `mileage_readings`, `settings`, `attachments`; v2 added the
 vehicle kind, make / model, model year and version; v3 added `log_entries`;
 v4 added `mileage_readings` with one initial reading per vehicle; v5 added
 `deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`;
-v8 added the archive columns of `vehicles`):
+v8 added the archive columns of `vehicles`; v9 made the four distance
+columns `REAL`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -298,16 +299,21 @@ v8 added the archive columns of `vehicles`):
 - **Settings (v6)** are the key / value table `settings` (`key` text PK,
   `value` nullable text, `updated_at` UTC), with no `deleted` flag and no
   audit rows. Keys are `SettingKey` values with explicit codes
-  (`last_export_at`, `language`, `theme`, and since step 9 the `drive_…`
-  keys of `Docs/06_settings_and_i18n.md`). Each key has a `SettingScope`
+  (`last_export_at`, `language`, `theme`, since step 9 the `drive_…` keys
+  and since step 11 the five `unit_…` keys of
+  `Docs/06_settings_and_i18n.md`). Each key has a `SettingScope`
   that decides what **every import** does with it: `shared` comes from the
   package, `device` (`drive_account`, `drive_auth_mode`,
   `drive_device_id`, `drive_mobile_data`) keeps the phone's value,
   `syncPoint`
-  (`drive_sync_*`) is cleared (`BackupService._openImported`); `SettingsRepository` has `read`,
-  `write`, `watch`, plus typed accessors (`watchLastExportAt`,
-  `writeLastExportAt`, `watchLanguage` / `writeLanguage`,
-  `watchThemeMode` / `writeThemeMode`). `language` and `theme` hold the
+  (`drive_sync_*`) is cleared (`BackupService._openImported`); the
+  `unit_…` keys are `shared` like `language` and `theme`, so an import
+  brings the package's units. `SettingsRepository` has `read`, `write`,
+  `watch`, `watchMany`, `writeMany` (one transaction), plus typed accessors
+  (`watchLastExportAt`, `writeLastExportAt`, `watchLanguage` /
+  `writeLanguage`, `watchThemeMode` / `writeThemeMode`,
+  `watchUnitPreferences` / `writeUnitPreferences` and one `write…Unit` per
+  quantity). `language` and `theme` hold the
   stable codes of `AppLanguage` (`system`, `it`, `es`, `en`) and
   `AppThemeMode` (`system`, `light`, `dark`, named so because `AppTheme`
   holds the themes), `lib/data/models/app_preferences.dart`; absent or
@@ -326,6 +332,32 @@ v8 added the archive columns of `vehicles`):
   `themeMode`; `SettingsController` writes. Formatting follows the chosen
   locale because it goes through `Localizations.localeOf` /
   `l10n.localeName`, never `Intl.defaultLocale`.
+- **Units of measurement (step 11, schema v9)**
+  (`Docs/06_settings_and_i18n.md`, "Unidades de medida"; the rule is in
+  §11, "Physical quantities"). The four distance columns
+  (`mileage_readings.km`, `log_entries.km`, `vehicles.current_odometer_km`,
+  `vehicles.archived_km`) are `REAL` / `double` since v9, so a value typed
+  in miles is stored as its exact km; the v8 → v9 step recreates the three
+  tables with `TableMigration` and copies every row as it is. The five
+  units are `UnitPreferences` (`lib/data/models/units.dart`: the unit enums
+  with their codes and conversion factors, the derived `UnitPreset`, and
+  the friendly display thresholds such as `friendlyBigOdometerJump`, the
+  only place such thresholds live). `UnitFormatter`
+  (`lib/shared/utils/unit_formatter.dart`) builds one `QuantityFormatter`
+  per quantity (`format` with symbol, `formatValue`, `symbol`, `parse` to
+  SI with either decimal separator, `inputText` for an edit field,
+  `toDisplay` / `toSI`); symbols are ARB strings. Widgets get it through
+  `unitFormatterOf(context, ref)` in `build` (it watches the kept
+  `unitPreferencesProvider`, next to the language and theme providers) and
+  `readUnitFormatter` in callbacks and `didChangeDependencies`. Distance
+  fields accept whole numbers in the chosen unit, show the symbol as
+  `suffixText` and parse with `sameAs:` the reading they are compared
+  against, so re-typing a shown value never falls below it by rounding.
+  Domain rules compare in km; dialogs show converted values and the
+  friendly threshold (`bigOdometerJumpThreshold`). Settings: the
+  `UnitsSection` of the Settings page (preset segments, one radio-dialog
+  tile per quantity, the volume / consumption mismatch hint).
+
 - **`last_modified_at`** of the manifest (`BackupDao.lastModifiedAt`, the
   version stamp of the step-9 guard) is the latest `updated_at` of owners,
   vehicles, entries, readings and attachments (deleted rows included) and
@@ -941,6 +973,19 @@ derive one from the other by truncation without an explicit conversion.
 
 All date and number formatting goes through `intl`. Never assemble a date
 string by hand.
+
+### Physical quantities
+
+All physical quantities are stored in SI: distances in **km**, volumes in
+**litres**, temperatures in **°C**, pressures in **bar**, fuel consumption
+in **L/100 km**. The database, the repositories, the domain rules and the
+backup package never see any other unit. Units are a UI concern handled
+exclusively by the unit formatter (`UnitFormatter`, §2 "Units of
+measurement"): user input is parsed through it and every displayed value
+is formatted through it, in the units chosen in Settings. **Never
+concatenate a unit symbol by hand** in a screen, widget, dialog, ARB string
+or report: symbols come from the formatter, and a grep for stray `km`,
+`L`, `°C`, `bar`, `mpg` in `lib/` is part of reviewing any UI change.
 
 ### Identifiers
 

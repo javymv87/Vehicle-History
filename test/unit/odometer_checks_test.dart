@@ -9,7 +9,7 @@ void main() {
 
   group('shouldOfferOdometerUpdate (E3)', () {
     bool offer({
-      int? km = 90000,
+      double? km = 90000,
       CalendarDate date = const CalendarDate(2026, 10, 10),
       CalendarDate? last = lastReading,
     }) =>
@@ -43,7 +43,7 @@ void main() {
   });
 
   group('laterReadingBelowEntryKm (E2)', () {
-    MileageReading reading(String id, CalendarDate date, int km) =>
+    MileageReading reading(String id, CalendarDate date, double km) =>
         MileageReading(
           id: id,
           vehicleId: 'v',
@@ -61,7 +61,7 @@ void main() {
       reading('r1', const CalendarDate(2026, 10, 1), 100000),
     ];
 
-    String? warn(int? km, CalendarDate date) => laterReadingBelowEntryKm(
+    String? warn(double? km, CalendarDate date) => laterReadingBelowEntryKm(
           entryKm: km,
           entryDate: date,
           readings: series,

@@ -81,8 +81,9 @@ hasta que se reactiva. Los dos estados son independientes.
   de las lecturas: el día que se eligió, nunca un instante), `archive_reason`
   (código fijo: `none`, `sold`, `scrapped`, `stolen`, `destroyed`,
   `given_away`, `lease_ended`, `other`; nunca texto libre, "otro" + nota es
-  la salida), `archive_note` (texto opcional) y `archived_km` (entero
-  opcional, ≥ 0). La migración v7 → v8 solo añade las columnas.
+  la salida), `archive_note` (texto opcional) y `archived_km` (número en
+  km, opcional, ≥ 0; `REAL` desde la v9). La migración v7 → v8 solo añade
+  las columnas.
 - **Km finales = lectura del cuentakilómetros.** Si al archivar se indica un
   km (el diálogo lo rellena con la última lectura), el archivo inserta una
   lectura normal con ese valor y la fecha de archivo, **por el mismo camino
@@ -197,8 +198,10 @@ Reglas:
 - **Matrícula**: se guarda sin espacios al principio ni al final y en
   mayúsculas. Es **única entre los vehículos no borrados**: la matrícula de un
   vehículo borrado se puede volver a usar.
-- **Km actual**: obligatorio al crear el vehículo, número entero, nunca
-  negativo. **No se modifica desde el formulario del vehículo**: cambia solo
+- **Km actual**: obligatorio al crear el vehículo, número entero en la
+  unidad elegida (ver `06_settings_and_i18n.md`, "Unidades de medida"),
+  guardado en km, nunca negativo. **No se modifica desde el formulario del
+  vehículo**: cambia solo
   con las lecturas del cuentakilómetros (`MileageReading`, ver abajo y
   `04_maintenance_logic.md`). Es una copia de trabajo: siempre igual a los km
   de la última lectura válida. Al crear el vehículo, el km escrito se guarda
@@ -262,7 +265,8 @@ Tipos de entrada previstos:
 técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la referencia
 al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON DELETE
 RESTRICT`), la **fecha** (fecha de calendario, texto `yyyy-MM-dd`, sin hora ni
-zona horaria), los **km** (entero, opcional, nunca negativo), el **tipo**
+zona horaria), los **km** (número en km, opcional, nunca negativo; `REAL`
+desde la v9), el **tipo**
 (texto con código estable), la **descripción** (texto, opcional) y el
 **coste** (entero en **céntimos de euro**, opcional, nunca negativo). Un coste
 vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
@@ -454,8 +458,17 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 campos técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la
 referencia al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON
 DELETE RESTRICT`), la **fecha** (`reading_date`, fecha de calendario, texto
-`yyyy-MM-dd`) y los **km** (entero, nunca negativo). No hay campo de nota.
-Índice: `(vehicle_id, reading_date)`.
+`yyyy-MM-dd`) y los **km** (número en km, nunca negativo). No hay campo de
+nota. Índice: `(vehicle_id, reading_date)`.
+
+**Esquema v9: distancias con decimales.** Las cuatro columnas de distancia
+(`mileage_readings.km`, `log_entries.km`, `vehicles.current_odometer_km` y
+`vehicles.archived_km`) pasaron de `INTEGER` a `REAL` en el paso 11
+(unidades de medida), para guardar como km exactos un valor escrito en
+millas (100 mi = 160,9344 km) y devolverlo tal cual. La migración v8 → v9
+recrea las tres tablas copiando cada fila como está: 85000 pasa a 85000.0 y
+sigue siendo km; ningún valor cambia. La base de datos sigue sin conocer
+unidades: siempre km (ver `06_settings_and_i18n.md`).
 
 - **Lectura inicial:** todo vehículo tiene siempre al menos una lectura
   válida. Al crear un vehículo se guarda en la misma transacción (hoy, con el
