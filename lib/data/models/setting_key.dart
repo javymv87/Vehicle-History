@@ -34,6 +34,27 @@ enum SettingKey {
   /// `dark`); absent means `system`.
   theme('theme'),
 
+  /// The unit of distance: a `DistanceUnit` code (`km`, `mi`); absent means
+  /// `km`. Like [language] and [theme], a preference that travels with the
+  /// data (`Docs/06_settings_and_i18n.md`, "Unidades").
+  unitDistance('unit_distance'),
+
+  /// The unit of volume: a `VolumeUnit` code (`l`, `gal_us`, `gal_uk`);
+  /// absent means `l`.
+  unitVolume('unit_volume'),
+
+  /// The unit of temperature: a `TemperatureUnit` code (`c`, `f`); absent
+  /// means `c`.
+  unitTemperature('unit_temperature'),
+
+  /// The unit of pressure: a `PressureUnit` code (`bar`, `psi`); absent
+  /// means `bar`.
+  unitPressure('unit_pressure'),
+
+  /// The unit of fuel consumption: a `ConsumptionUnit` code (`l_100km`,
+  /// `km_l`, `mpg_us`, `mpg_uk`); absent means `l_100km`.
+  unitConsumption('unit_consumption'),
+
   /// The email of the Google account the Drive copy is linked to; absent
   /// when no account is linked. Not a secret: tokens never go into this
   /// table.
@@ -77,4 +98,13 @@ enum SettingKey {
 
   /// What an import does with this key.
   final SettingScope scope;
+
+  /// The five unit keys, in the order of `UnitPreferences`.
+  static const List<SettingKey> unitKeys = [
+    unitDistance,
+    unitVolume,
+    unitTemperature,
+    unitPressure,
+    unitConsumption,
+  ];
 }

@@ -41,7 +41,7 @@ class VehicleArchiveController extends Notifier<void> {
     String id, {
     required ArchiveReason reason,
     required CalendarDate date,
-    int? km,
+    double? km,
     String? note,
   }) =>
       runAction(

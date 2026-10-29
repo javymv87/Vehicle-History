@@ -21,8 +21,9 @@ class LogEntries extends Table with TechnicalColumns {
   /// Day of the event as `yyyy-MM-dd` text, never a timestamp.
   TextColumn get entryDate => text().map(const CalendarDateConverter())();
 
-  /// Odometer reading at the event, in whole kilometres. Never negative.
-  IntColumn get km => integer().nullable()();
+  /// Odometer reading at the event, in kilometres. Never negative. `REAL`
+  /// since schema v9, like `mileage_readings.km`.
+  RealColumn get km => real().nullable()();
 
   /// Entry type as a stable text code (see [LogEntryTypeConverter]).
   TextColumn get type => text().map(const LogEntryTypeConverter())();

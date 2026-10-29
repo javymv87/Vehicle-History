@@ -174,7 +174,10 @@ del tiempo, para el informe "km recorridos frente a tiempo". Reglas:
   aplica el formulario y también el repositorio.
 - **Umbral de confirmación: 50.000 km.** Si la nueva lectura supera la
   última en más de 50.000 km, la app pregunta "¿Seguro? Son X km más que la
-  última lectura" antes de guardar. Nunca se prohíbe.
+  última lectura, por encima del control de 50.000 km" antes de guardar.
+  Nunca se prohíbe. La comparación es siempre en km; con la unidad en
+  millas el diálogo enseña la cifra amigable "30.000 mi"
+  (`06_settings_and_i18n.md`, "Unidades de medida").
 - **Borrar:** solo la última, y nunca la inicial. El km actual vuelve a la
   lectura anterior. Se puede **deshacer** durante unos segundos, siempre que
   la lectura borrada vuelva a ser la última (si mientras tanto se ha añadido

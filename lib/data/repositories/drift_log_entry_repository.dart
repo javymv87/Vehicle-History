@@ -71,7 +71,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
   Future<LogEntry> create({
     required String vehicleId,
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,
@@ -117,7 +117,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
   Future<LogEntry> update(
     String id, {
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,
@@ -195,7 +195,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     required CalendarDate date,
     required CalendarDate today,
-    required int? km,
+    required double? km,
     required int? costCents,
   }) {
     if (!type.allowsFutureDate && date.isAfter(today)) {

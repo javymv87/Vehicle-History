@@ -13,12 +13,13 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/detail_field.dart';
-import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../attachments/widgets/attachment_actions.dart';
-import '../../attachments/widgets/attachments_section.dart';
 import '../../attachments/widgets/attachment_selection_app_bar.dart';
+import '../../attachments/widgets/attachments_section.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
@@ -150,7 +151,7 @@ class _LogEntryDetailView extends ConsumerWidget {
           if (km != null)
             DetailField(
               label: l10n.fieldEntryKm,
-              value: l10n.kmValue(km),
+              value: unitFormatterOf(context, ref).distance.format(km),
               note: l10n.entryKmNote,
             ),
           if (cost != null)

@@ -37,7 +37,8 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   ficha.
 - **Validación** en línea bajo cada campo y traducida: matrícula
   obligatoria; matrícula duplicada (otro vehículo no borrado ya la usa)
-  señalada en el propio campo; km obligatorio, número entero ≥ 0; nombre del
+  señalada en el propio campo; km actual obligatorio, número entero ≥ 0 en
+  la unidad elegida (el campo lleva su símbolo); nombre del
   propietario obligatorio. También son obligatorios la marca, el modelo, el
   propietario y el tipo de combustible del vehículo. El año, si se escribe,
   va de 1886 al año siguiente al actual.
@@ -113,10 +114,12 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
 - **U3 — Formulario rápido, pocos toques.** Orden: tipo (chips con icono, un
   toque), fecha (**hoy por defecto**, selector de fecha de Material), km,
   coste y descripción. El botón Guardar está siempre en la barra superior.
-- **U4 — Ayuda para el km:** bajo el campo, un chip de un toque "Usar km
-  actual (123.456)" copia el km actual del vehículo. El campo **nunca** se
-  rellena solo. La etiqueta indica si el km es obligatorio para el tipo
-  elegido o opcional.
+- **U4 — Ayuda para el km:** bajo el campo, un chip de un toque "Usar
+  lectura actual (123.456 km)" copia el km actual del vehículo, en la
+  unidad elegida. El campo **nunca** se rellena solo. La etiqueta indica si
+  el km es obligatorio para el tipo elegido o opcional; el sufijo del campo
+  es el símbolo de la unidad (`06_settings_and_i18n.md`, "Unidades de
+  medida").
 - **U5 — Coste en euros** con el separador decimal del idioma (`,` en
   italiano y español, `.` en inglés), con 2 decimales como máximo; se guarda
   en céntimos y se muestra con el formato de moneda del idioma. Como algunos
@@ -133,8 +136,9 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
   en la entrada y no cambian el km del vehículo.
 - **U9 — Historial vacío:** un texto breve; para añadir, el botón flotante.
 - **U10 — Validación** en línea y traducida: tipo obligatorio; fecha
-  obligatoria; km entero ≥ 0, obligatorio para los tipos que lo requieren
-  (ver `02_data_model.md`); coste ≥ 0 con 2 decimales como máximo.
+  obligatoria; km entero ≥ 0 en la unidad elegida, obligatorio para los
+  tipos que lo requieren (ver `02_data_model.md`); coste ≥ 0 con 2 decimales
+  como máximo.
 
 Reglas añadidas al formulario de entradas en el paso 5:
 
@@ -146,10 +150,9 @@ Reglas añadidas al formulario de entradas en el paso 5:
   lectura de un día posterior a la fecha de la entrada tiene menos km que la
   entrada, casi seguro es un error tipográfico (el cuentakilómetros no va
   hacia atrás). Se compara con la primera lectura posterior a esa fecha, no
-  solo con la última. Un diálogo avisa ("Este km es mayor que la lectura del
-  10 oct 2026 (111.000 km), fecha posterior a esta entrada. ¿Guardar
-  igualmente?"). No
-  bloquea.
+  solo con la última. Un diálogo avisa ("Esta lectura es mayor que la
+  lectura del 10 oct 2026 (111.000 km), fecha posterior a esta entrada.
+  ¿Guardar igualmente?"). No bloquea.
 - **E3 — Oferta de actualizar el cuentakilómetros.** Después de guardar una
   entrada (nueva o editada) cuando se cumplen las tres condiciones — km
   mayor que el km actual, fecha hoy o anterior, fecha no anterior a la
@@ -172,12 +175,14 @@ El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
   antigua; cada fila muestra la fecha, los km (con el formato del idioma) y
   la diferencia con la lectura anterior ("+1.250 km"); la más antigua
   muestra "Lectura inicial" en lugar de la diferencia.
-- **U13 — Botón flotante "Actualizar km"** en la pestaña Kilometraje (en
-  Historial y en Ficha sigue "Nueva entrada"). Formulario: km (obligatorio,
-  entero, con la ayuda "Última: 123.456 km el 3 oct 2026") y fecha (hoy por
-  defecto; el selector solo permite días entre la última lectura y hoy).
-  Mensajes para km inferior a la última lectura y fecha fuera de rango;
-  diálogo de confirmación si se superan en más de 50.000 km.
+- **U13 — Botón flotante "Actualizar cuentakilómetros"** en la pestaña
+  Kilometraje (en Historial y en Ficha sigue "Nueva entrada"). Formulario:
+  lectura (obligatoria, número entero en la unidad elegida, con su símbolo
+  como sufijo y la ayuda "Última: 123.456 km el 3 oct 2026") y fecha (hoy
+  por defecto; el selector solo permite días entre la última lectura y hoy).
+  Mensajes para lectura inferior a la última y fecha fuera de rango; diálogo
+  de confirmación si se superan en más de 50.000 km ("30.000 mi" cuando la
+  unidad es la milla; ver `04_maintenance_logic.md`).
 - **U14 — Acciones de una fila** (al tocarla, una pequeña hoja inferior): la
   última lectura, si no es la inicial, ofrece **"Eliminar"** (confirmación +
   toast con Deshacer); la única lectura (la inicial) ofrece **"Corregir"**

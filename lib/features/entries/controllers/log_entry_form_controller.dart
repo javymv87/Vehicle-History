@@ -63,7 +63,7 @@ class LogEntryDraft {
   final LogEntryType type;
 
   /// Odometer reading, if typed.
-  final int? km;
+  final double? km;
 
   /// Description as typed; the repository trims it.
   final String? description;

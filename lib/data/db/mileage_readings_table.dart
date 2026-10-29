@@ -26,8 +26,10 @@ class MileageReadings extends Table with TechnicalColumns {
   /// Day of the reading as `yyyy-MM-dd` text, never a timestamp.
   TextColumn get readingDate => text().map(const CalendarDateConverter())();
 
-  /// Total odometer value, in whole kilometres. Never negative.
-  IntColumn get km => integer()();
+  /// Total odometer value, in kilometres. Never negative. `REAL` since
+  /// schema v9: a value typed in another unit (100 mi = 160.9344 km) is
+  /// stored exactly, so it reads back as what was typed.
+  RealColumn get km => real()();
 
   // Written as SQL rather than with `Column.check`, whose self-referencing
   // getter trips the `recursive_getters` lint.

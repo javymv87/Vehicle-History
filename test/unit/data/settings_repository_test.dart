@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
 import 'package:vehicle_history/data/models/app_preferences.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
+import 'package:vehicle_history/data/models/units.dart';
 import 'package:vehicle_history/data/repositories/settings_repository.dart';
 
 import 'test_support.dart';
@@ -123,6 +124,71 @@ void main() {
       await settings.write(SettingKey.theme, 'sepia');
       expect(await settings.watchLanguage().first, AppLanguage.system);
       expect(await settings.watchThemeMode().first, AppThemeMode.system);
+    });
+  });
+
+  group('units', () {
+    test('absent rows read as the SI defaults', () async {
+      expect(
+        await settings.watchUnitPreferences().first,
+        UnitPreferences.defaults,
+      );
+    });
+
+    test('a preset writes the five keys at once, as their codes', () async {
+      await settings.writeUnitPreferences(UnitPreferences.imperial);
+      expect(
+        await rows(),
+        unorderedEquals([
+          'unit_distance=mi@2026-10-20T16:30:00.000Z',
+          'unit_volume=gal_us@2026-10-20T16:30:00.000Z',
+          'unit_temperature=f@2026-10-20T16:30:00.000Z',
+          'unit_pressure=psi@2026-10-20T16:30:00.000Z',
+          'unit_consumption=mpg_us@2026-10-20T16:30:00.000Z',
+        ]),
+      );
+      expect(
+        await settings.watchUnitPreferences().first,
+        UnitPreferences.imperial,
+      );
+    });
+
+    test('one unit writes its key alone and emits the new set', () async {
+      final sets = settings.watchUnitPreferences();
+      expectLater(
+        sets,
+        emitsInOrder([
+          UnitPreferences.defaults,
+          const UnitPreferences(distance: DistanceUnit.mile),
+          const UnitPreferences(
+            distance: DistanceUnit.mile,
+            volume: VolumeUnit.gallonUk,
+          ),
+        ]),
+      );
+      await pumpEventQueue();
+      await settings.writeDistanceUnit(DistanceUnit.mile);
+      await pumpEventQueue();
+      await settings.writeVolumeUnit(VolumeUnit.gallonUk);
+      await pumpEventQueue();
+      expect(await rows(), hasLength(2));
+      // The consumption unit never follows the volume.
+      expect(await settings.read(SettingKey.unitConsumption), isNull);
+    });
+
+    test('unknown stored values read as the SI unit', () async {
+      await settings.write(SettingKey.unitDistance, 'furlong');
+      await settings.write(SettingKey.unitPressure, 'psi');
+      expect(
+        await settings.watchUnitPreferences().first,
+        const UnitPreferences(pressure: PressureUnit.psi),
+      );
+    });
+
+    test('the unit keys travel with the data, like language and theme', () {
+      for (final key in SettingKey.unitKeys) {
+        expect(key.scope, SettingScope.shared, reason: key.code);
+      }
     });
   });
 }

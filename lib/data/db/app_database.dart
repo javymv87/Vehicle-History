@@ -177,6 +177,21 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(vehicles, column);
       }
     },
+    // v9: the four distance columns (`mileage_readings.km`,
+    // `log_entries.km`, `vehicles.current_odometer_km` and
+    // `vehicles.archived_km`) become REAL, so a value typed in miles is
+    // stored exactly in km. SQLite cannot change a column's type in place:
+    // each table is recreated with the new definition and its rows copied
+    // across as they are (an INTEGER 85000 becomes the REAL 85000.0, still
+    // km), then the old table is dropped and the copy renamed. Drift
+    // recreates the indexes; the foreign keys to `vehicles` reference it by
+    // name and survive the swap, which `runSafeUpgrade` does with foreign
+    // keys off and checks afterwards. No value is changed.
+    from8To9: (m, schema) async {
+      await m.alterTable(TableMigration(schema.vehicles));
+      await m.alterTable(TableMigration(schema.logEntries));
+      await m.alterTable(TableMigration(schema.mileageReadings));
+    },
   );
 
   /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
@@ -250,7 +265,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   /// Opens the connection now, running any pending migration.
   ///

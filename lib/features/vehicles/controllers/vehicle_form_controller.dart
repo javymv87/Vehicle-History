@@ -149,7 +149,7 @@ class VehicleDraft {
 
   /// Current odometer reading. Required when creating, ignored when editing:
   /// after creation it changes only through the odometer feature.
-  final int? currentOdometerKm;
+  final double? currentOdometerKm;
 
   /// Engine oil recommended by the manufacturer.
   final String? recommendedEngineOil;

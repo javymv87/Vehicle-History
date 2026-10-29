@@ -183,7 +183,7 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
     required CalendarDate archivedAt,
     required ArchiveReason reason,
     required String? note,
-    required int? km,
+    required double? km,
     required DateTime at,
   }) =>
       (_whereLive(id)..where((v) => v.archivedAt.isNull())).write(

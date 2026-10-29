@@ -70,12 +70,12 @@ void main() {
       readings.watchByVehicle(punto.id).first;
 
   /// The Punto's cached odometer.
-  Future<int> odometer() async =>
+  Future<double> odometer() async =>
       (await vehicles.getById(punto.id))!.currentOdometerKm;
 
   /// Adds a reading to the Punto, advancing the clock first so readings of
   /// the same day keep their order.
-  Future<MileageReading> add(int km, {CalendarDate date = _today}) {
+  Future<MileageReading> add(double km, {CalendarDate date = _today}) {
     clock.advance();
     return readings.create(vehicleId: punto.id, date: date, km: km);
   }

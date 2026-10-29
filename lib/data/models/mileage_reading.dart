@@ -26,8 +26,10 @@ class MileageReading {
   /// Day of the reading. A calendar day, never shifted by timezones.
   final CalendarDate date;
 
-  /// Total odometer value, in whole kilometres.
-  final int km;
+  /// Total odometer value, in kilometres: the stored (SI) unit, whatever the
+  /// user types in. Not necessarily whole, since a value typed in miles is
+  /// stored as its exact km.
+  final double km;
 
   /// When the reading was created, in UTC. Breaks ties between readings of
   /// the same day: the one created later is the more recent.
@@ -51,7 +53,7 @@ class MileageReading {
     String? id,
     String? vehicleId,
     CalendarDate? date,
-    int? km,
+    double? km,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {

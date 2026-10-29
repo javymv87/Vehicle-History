@@ -7,12 +7,13 @@ import 'mileage_reading.dart';
 
 /// Difference in km above the last reading from which a new reading is
 /// probably a typo: the form asks for confirmation, the repository still
-/// accepts it.
+/// accepts it. Compared in km whatever the display unit; the dialog names
+/// the friendly figure of the chosen unit (`friendlyBigOdometerJump`).
 const int bigOdometerJumpKm = 50000;
 
 /// Whether a reading of [km] is far enough above [lastKm] to ask "are you
 /// sure?" before saving it.
-bool isBigOdometerJump({required int km, required int lastKm}) =>
+bool isBigOdometerJump({required double km, required double lastKm}) =>
     km > lastKm + bigOdometerJumpKm;
 
 /// The reading that makes an entry dated [entryDate] with [entryKm] look
@@ -24,7 +25,7 @@ bool isBigOdometerJump({required int km, required int lastKm}) =>
 /// returned when its km is below [entryKm]. [readings] is the vehicle's
 /// series in any order. The form asks before saving; it never blocks.
 MileageReading? laterReadingBelowEntryKm({
-  required int? entryKm,
+  required double? entryKm,
   required CalendarDate entryDate,
   required List<MileageReading> readings,
 }) {
@@ -46,9 +47,9 @@ MileageReading? laterReadingBelowEntryKm({
 /// earlier, and not before the last reading. Exactly the conditions under
 /// which a reading with the entry's day and km would be accepted.
 bool shouldOfferOdometerUpdate({
-  required int? entryKm,
+  required double? entryKm,
   required CalendarDate entryDate,
-  required int currentOdometerKm,
+  required double currentOdometerKm,
   required CalendarDate? lastReadingDate,
   required CalendarDate today,
 }) =>

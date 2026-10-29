@@ -75,7 +75,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Plate'), plate);
     await pick(tester, find.text('Fuel type'), 'Petrol');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Current km'),
+      find.widgetWithText(TextFormField, 'Current odometer'),
       '1000',
     );
   }
@@ -191,7 +191,7 @@ void main() {
 
       expect(find.byType(VehicleFormPage), findsOneWidget);
       expect(find.text('Edit vehicle'), findsOneWidget);
-      expect(find.text('Current km'), findsNothing);
+      expect(find.text('Current odometer'), findsNothing);
     });
   });
 
@@ -206,7 +206,7 @@ void main() {
     expect(find.text('Enter the plate'), findsOneWidget);
     expect(find.text('Choose an owner'), findsOneWidget);
     expect(find.text('Choose the fuel type'), findsOneWidget);
-    expect(find.text('Enter the current km'), findsOneWidget);
+    expect(find.text('Enter the current odometer reading'), findsOneWidget);
     expect(store.liveVehicles, isEmpty);
   });
 
@@ -405,7 +405,7 @@ void main() {
     );
     await pick(tester, find.text('Fuel type'), 'Diesel');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Current km'),
+      find.widgetWithText(TextFormField, 'Current odometer'),
       '12345',
     );
     await save(tester);
@@ -558,7 +558,7 @@ void main() {
         archivedAt:
             CalendarDate(store.now.year, store.now.month, store.now.day),
         archiveReason: ArchiveReason.sold,
-        archivedKm: 1500,
+        archivedKm: 1500.0,
         archiveNote: 'To Luca',
       );
       store.vehicles[vehicle.id] = archived;
@@ -708,7 +708,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Final km'),
+        find.widgetWithText(TextFormField, 'Final odometer'),
         '900',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
@@ -725,7 +725,7 @@ void main() {
 
       // Empty: no reading, archived all the same.
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Final km'),
+        find.widgetWithText(TextFormField, 'Final odometer'),
         '',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Archive'));

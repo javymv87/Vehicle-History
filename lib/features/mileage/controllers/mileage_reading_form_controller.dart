@@ -77,7 +77,7 @@ class MileageReadingFormController
   /// Returns the saved reading, or the reason it was not saved.
   Future<ActionResult<MileageReading>> save({
     required CalendarDate date,
-    required int km,
+    required double km,
   }) {
     final repository = ref.read(mileageReadingRepositoryProvider);
     final readingId = key.readingId;

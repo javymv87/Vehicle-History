@@ -10,7 +10,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../../shared/utils/unit_formatter.dart';
 import '../../mileage/widgets/big_jump_confirmation.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_archive_controller.dart';
 
 /// Opens the archive dialog of [vehicle] (`Docs/03_features.md`, "Archivo"):
@@ -54,11 +56,14 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
   /// The archive day, today by default.
   CalendarDate _date = calendarDateOf(DateTime.now());
 
-  /// Prefilled with the last reading: archiving then records it again on
-  /// the archive day, which marks the closing of the odometer history.
-  late final _km = TextEditingController(
-    text: widget.lastReading?.km.toString(),
-  );
+  /// Prefilled in [didChangeDependencies] with the last reading, in the
+  /// unit of the moment: archiving then records it again on the archive
+  /// day, which marks the closing of the odometer history.
+  final _km = TextEditingController();
+  bool _kmFilled = false;
+
+  /// The formatter of the last build, for the validators and the save.
+  late UnitFormatter _units;
 
   final _note = TextEditingController();
 
@@ -81,10 +86,23 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
   /// Today's calendar day on the phone.
   CalendarDate get _today => calendarDateOf(DateTime.now());
 
-  /// The typed km, or `null` when the field is empty (no reading then).
-  int? get _typedKm {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final last = widget.lastReading;
+    if (!_kmFilled && last != null) {
+      _km.text = readUnitFormatter(context, ref).distance.inputText(last.km);
+    }
+    _kmFilled = true;
+  }
+
+  /// The typed reading in km, or `null` when the field is empty (no reading
+  /// then); the untouched prefill gives the last reading itself.
+  double? get _typedKm {
     final text = _km.text.trim();
-    return text.isEmpty ? null : int.tryParse(text);
+    return text.isEmpty
+        ? null
+        : _units.distance.parse(text, sameAs: widget.lastReading?.km);
   }
 
   /// Opens the Material date picker, limited to today at the latest.
@@ -111,11 +129,13 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
   String? _validateKm(String? value, AppLocalizations l10n) {
     final text = (value ?? '').trim();
     if (text.isEmpty) return null;
-    final km = int.tryParse(text);
+    final km = _units.distance.parse(text, sameAs: widget.lastReading?.km);
     if (km == null || km < 0) return l10n.validationKmInvalid;
     final last = widget.lastReading;
     if (last != null && km < last.km) {
-      return l10n.validationReadingKmBelowLast(last.km);
+      return l10n.validationReadingKmBelowLast(
+        _units.distance.format(last.km),
+      );
     }
     return null;
   }
@@ -144,8 +164,12 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
     final km = _typedKm;
     final last = widget.lastReading;
     if (km != null && last != null) {
-      final confirmed =
-          await confirmBigOdometerJump(context, km: km, lastKm: last.km);
+      final confirmed = await confirmBigOdometerJump(
+        context,
+        units: _units,
+        km: km,
+        lastKm: last.km,
+      );
       if (!confirmed || !mounted) return;
     }
 
@@ -171,6 +195,7 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    _units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     final error = _error;
     return AlertDialog(
@@ -219,7 +244,7 @@ class _ArchiveDialogState extends ConsumerState<_ArchiveDialog> {
                 labelText: l10n.fieldArchivedKm,
                 helperText: l10n.archivedKmHelp,
                 helperMaxLines: 3,
-                suffixText: 'km',
+                suffixText: _units.distance.symbol,
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],

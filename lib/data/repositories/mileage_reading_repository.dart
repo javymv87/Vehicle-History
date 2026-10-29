@@ -36,7 +36,7 @@ abstract interface class MileageReadingRepository {
   Future<MileageReading> create({
     required String vehicleId,
     required CalendarDate date,
-    required int km,
+    required double km,
   });
 
   /// Corrects the km and the day of the reading with [id], which must be the
@@ -49,7 +49,7 @@ abstract interface class MileageReadingRepository {
   Future<MileageReading> updateInitial(
     String id, {
     required CalendarDate date,
-    required int km,
+    required double km,
   });
 
   /// Soft-deletes the reading with [id], which must be the last one and not

@@ -93,7 +93,7 @@ void main() {
           .id;
 
   /// Adds a reading dated today with [km] to the vehicle [vehicleId].
-  Future<String> addReading(String vehicleId, int km) async =>
+  Future<String> addReading(String vehicleId, double km) async =>
       (await readings.create(
         vehicleId: vehicleId,
         date: CalendarDate.localDayOf(clock()),

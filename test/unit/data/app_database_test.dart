@@ -16,7 +16,7 @@ Future<void> _rawInsertVehicle(
   required String id,
   required String ownerId,
   String plate = 'AB123CD',
-  int km = 0,
+  double km = 0,
   int deleted = 0,
 }) {
   return db.customStatement(

@@ -208,7 +208,7 @@ class FakeStore {
   MileageReading insertReading(
     String vehicleId,
     CalendarDate date,
-    int km,
+    double km,
   ) {
     final created = _now.add(Duration(minutes: readings.length));
     final reading = MileageReading(
@@ -225,7 +225,7 @@ class FakeStore {
   }
 
   /// Writes the odometer cache of the vehicle [vehicleId].
-  void setOdometer(String vehicleId, int km) {
+  void setOdometer(String vehicleId, double km) {
     vehicles[vehicleId] = vehicles[vehicleId]!.copyWith(currentOdometerKm: km);
   }
 
@@ -233,7 +233,7 @@ class FakeStore {
   MileageReading addReading(
     String vehicleId, {
     required CalendarDate date,
-    required int km,
+    required double km,
   }) {
     final reading = insertReading(vehicleId, date, km);
     _changes.add(null);
@@ -283,7 +283,7 @@ class FakeStore {
     String vehicleId, {
     required CalendarDate date,
     LogEntryType type = LogEntryType.maintenance,
-    int? km = 1000,
+    double? km = 1000,
     String? description,
     int? costCents,
   }) {
@@ -308,7 +308,7 @@ class FakeStore {
   Vehicle addVehicle(
     String plate, {
     required String ownerId,
-    int km = 1000,
+    double km = 1000,
     FuelType fuelType = FuelType.petrol,
     String? nickname,
     VehicleKind kind = VehicleKind.car,
@@ -497,7 +497,7 @@ class FakeVehicleRepository implements VehicleRepository {
     String? version,
     String? nickname,
     required String ownerId,
-    required int currentOdometerKm,
+    required double currentOdometerKm,
     required FuelType fuelType,
     String? recommendedEngineOil,
     String? manufacturerNotes,
@@ -580,7 +580,7 @@ class FakeVehicleRepository implements VehicleRepository {
     String id, {
     required ArchiveReason reason,
     required CalendarDate date,
-    int? km,
+    double? km,
     String? note,
   }) async {
     final current = store.vehicles[id];
@@ -731,7 +731,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
   Future<LogEntry> create({
     required String vehicleId,
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,
@@ -765,7 +765,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
   Future<LogEntry> update(
     String id, {
     required CalendarDate date,
-    int? km,
+    double? km,
     required LogEntryType type,
     String? description,
     int? costCents,
@@ -819,7 +819,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
 
   /// Refuses a missing km for a type that requires it, and a future date
   /// for a type that does not allow one.
-  void _check(LogEntryType type, int? km, CalendarDate date) {
+  void _check(LogEntryType type, double? km, CalendarDate date) {
     if (km == null && type.requiresKm) {
       throw const InvalidFieldException('km', 'required');
     }
@@ -854,7 +854,7 @@ class FakeMileageReadingRepository implements MileageReadingRepository {
   Future<MileageReading> create({
     required String vehicleId,
     required CalendarDate date,
-    required int km,
+    required double km,
   }) =>
       store.write(() {
         _requireLiveVehicle(vehicleId);
@@ -885,7 +885,7 @@ class FakeMileageReadingRepository implements MileageReadingRepository {
   Future<MileageReading> updateInitial(
     String id, {
     required CalendarDate date,
-    required int km,
+    required double km,
   }) =>
       store.write(() {
         final current = _live(id);

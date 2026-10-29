@@ -17,11 +17,13 @@ import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
+import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/log_entry_attachments_controller.dart';
 import '../controllers/log_entry_form_controller.dart';
 import '../widgets/log_entry_attachments_field.dart';
@@ -105,13 +107,17 @@ class _LogEntryForm extends ConsumerStatefulWidget {
 
 class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   final _formKey = GlobalKey<FormState>();
-  late final _km = TextEditingController(text: widget.initial?.km?.toString());
   late final _description =
       TextEditingController(text: widget.initial?.description);
 
-  /// Filled in [didChangeDependencies], where the locale is known.
+  /// Filled in [didChangeDependencies], where the locale and the units are
+  /// known.
+  final _km = TextEditingController();
   final _cost = TextEditingController();
-  bool _costFilled = false;
+  bool _storedValuesFilled = false;
+
+  /// The formatter of the last build, for the validators and the save.
+  late UnitFormatter _units;
 
   late LogEntryType? _type = widget.initial?.type;
 
@@ -129,13 +135,20 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // The stored cents become text with the separator of the app language.
+    // The stored cents become text with the separator of the app language,
+    // and the stored km text in the unit of the moment.
     final cents = widget.initial?.costCents;
-    if (!_costFilled && cents != null) {
-      _cost.text =
-          euroCentsInputText(cents, AppLocalizations.of(context).localeName);
+    final km = widget.initial?.km;
+    if (!_storedValuesFilled) {
+      if (cents != null) {
+        _cost.text =
+            euroCentsInputText(cents, AppLocalizations.of(context).localeName);
+      }
+      if (km != null) {
+        _km.text = readUnitFormatter(context, ref).distance.inputText(km);
+      }
     }
-    _costFilled = true;
+    _storedValuesFilled = true;
   }
 
   @override
@@ -160,10 +173,19 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   /// the field is shown as optional; validation catches the type first.
   bool get _kmRequired => _type?.requiresKm ?? false;
 
-  /// Copies the vehicle's current odometer into the km field (U4).
+  /// Copies the vehicle's current odometer into the km field (U4), in the
+  /// unit of the moment.
   void _useCurrentKm() {
-    setState(() => _km.text = '${widget.vehicle.currentOdometerKm}');
+    setState(
+      () => _km.text =
+          _units.distance.inputText(widget.vehicle.currentOdometerKm),
+    );
   }
+
+  /// The typed reading in km, or the current odometer itself when the text
+  /// is exactly how it shows (the chip), so rounding never changes it.
+  double? _parseKm(String text) =>
+      _units.distance.parse(text, sameAs: widget.vehicle.currentOdometerKm);
 
   /// Opens the Material date picker on the selected day.
   Future<void> _pickDate() async {
@@ -194,13 +216,14 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     return l10n.validationEntryDateFuture;
   }
 
-  /// Checks the km: a whole number ≥ 0, required for some types (U10).
+  /// Checks the reading: a whole number ≥ 0 in the chosen unit, required
+  /// for some types (U10).
   String? _validateKm(String? value, AppLocalizations l10n) {
     final text = (value ?? '').trim();
     if (text.isEmpty) {
       return _kmRequired ? l10n.validationEntryKmRequired : null;
     }
-    final km = int.tryParse(text);
+    final km = _parseKm(text);
     if (km == null || km < 0) return l10n.validationKmInvalid;
     return null;
   }
@@ -222,7 +245,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     if (!fieldsValid || dateError != null) return;
     final kmText = _km.text.trim();
     final costText = _cost.text.trim();
-    final km = kmText.isEmpty ? null : int.parse(kmText);
+    final km = kmText.isEmpty ? null : _parseKm(kmText);
     final currentKm = widget.vehicle.currentOdometerKm;
     final lastReadingDate = widget.readings.firstOrNull?.date;
 
@@ -238,7 +261,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
         context,
         title: l10n.entryKmAboveOdometerTitle,
         message: l10n.entryKmAboveOdometerMessage(
-          conflicting.km,
+          _units.distance.format(conflicting.km),
           conflicting.date.toLocalDateTime(),
         ),
         confirmLabel: l10n.actionSaveAnyway,
@@ -249,6 +272,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     final messenger = ScaffoldMessenger.of(context);
     // Captured now: the offer's "Update" runs after this form is gone.
     final router = GoRouter.of(context);
+    final units = _units;
     final offer = ref.read(odometerUpdateOfferControllerProvider.notifier);
     final attachments =
         ref.read(logEntryAttachmentsControllerProvider(widget.formKey));
@@ -283,6 +307,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
             messenger: messenger,
             router: router,
             l10n: l10n,
+            units: units,
             offer: offer,
             vehicleId: value.vehicleId,
             date: value.date,
@@ -301,6 +326,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    _units = unitFormatterOf(context, ref);
     final currency =
         NumberFormat.simpleCurrency(locale: l10n.localeName, name: 'EUR');
     const gap = SizedBox(height: 16);
@@ -356,6 +382,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                   labelText: _kmRequired
                       ? l10n.fieldEntryKm
                       : l10n.fieldEntryKmOptional,
+                  suffixText: _units.distance.symbol,
                   border: const OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
@@ -369,7 +396,9 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                 child: ActionChip(
                   avatar: const Icon(Icons.speed),
                   label: Text(
-                    l10n.useCurrentKm(widget.vehicle.currentOdometerKm),
+                    l10n.useCurrentKm(
+                      _units.distance.format(widget.vehicle.currentOdometerKm),
+                    ),
                   ),
                   onPressed: _useCurrentKm,
                 ),

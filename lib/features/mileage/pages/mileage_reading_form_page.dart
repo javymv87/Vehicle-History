@@ -11,9 +11,11 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../../vehicles/controllers/vehicle_tab_controller.dart';
 import '../controllers/mileage_reading_form_controller.dart';
 import '../widgets/big_jump_confirmation.dart';
@@ -103,8 +105,14 @@ class _MileageReadingForm extends ConsumerStatefulWidget {
 class _MileageReadingFormState extends ConsumerState<_MileageReadingForm> {
   final _formKey = GlobalKey<FormState>();
 
-  /// Empty when adding: the km is never prefilled with a guess.
-  late final _km = TextEditingController(text: widget.editing?.km.toString());
+  /// Empty when adding: the reading is never prefilled with a guess. When
+  /// correcting, filled in [didChangeDependencies] with the stored km in
+  /// the unit of the moment.
+  final _km = TextEditingController();
+  bool _kmFilled = false;
+
+  /// The formatter of the last build, for the validators and the save.
+  late UnitFormatter _units;
 
   /// Today when adding (U13); the reading's own day when correcting.
   late CalendarDate _date =
@@ -153,15 +161,34 @@ class _MileageReadingFormState extends ConsumerState<_MileageReadingForm> {
     }
   }
 
-  /// Checks the km: a whole number ≥ 0, not below the last reading.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final editing = widget.editing;
+    if (!_kmFilled && editing != null) {
+      _km.text = readUnitFormatter(context, ref).distance.inputText(editing.km);
+    }
+    _kmFilled = true;
+  }
+
+  /// The typed reading in km: what the user typed in the unit of the
+  /// moment, converted, or the last reading itself when the text is exactly
+  /// how that reading shows (so rounding never puts it below).
+  double? _parseKm(String text) =>
+      _units.distance.parse(text, sameAs: _lowerBound?.km);
+
+  /// Checks the reading: a whole number ≥ 0 in the chosen unit, not below
+  /// the last reading.
   String? _validateKm(String? value, AppLocalizations l10n) {
     final text = (value ?? '').trim();
     if (text.isEmpty) return l10n.validationKmRequired;
-    final km = int.tryParse(text);
+    final km = _parseKm(text);
     if (km == null || km < 0) return l10n.validationKmInvalid;
     final bound = _lowerBound;
     if (bound != null && km < bound.km) {
-      return l10n.validationReadingKmBelowLast(bound.km);
+      return l10n.validationReadingKmBelowLast(
+        _units.distance.format(bound.km),
+      );
     }
     return null;
   }
@@ -183,11 +210,15 @@ class _MileageReadingFormState extends ConsumerState<_MileageReadingForm> {
     final fieldsValid = _formKey.currentState!.validate();
     if (!fieldsValid || dateError != null) return;
 
-    final km = int.parse(_km.text.trim());
+    final km = _parseKm(_km.text.trim())!;
     final bound = _lowerBound;
     if (bound != null) {
-      final confirmed =
-          await confirmBigOdometerJump(context, km: km, lastKm: bound.km);
+      final confirmed = await confirmBigOdometerJump(
+        context,
+        units: _units,
+        km: km,
+        lastKm: bound.km,
+      );
       if (!confirmed || !mounted) return;
     }
 
@@ -213,6 +244,7 @@ class _MileageReadingFormState extends ConsumerState<_MileageReadingForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    _units = unitFormatterOf(context, ref);
     final bound = _lowerBound;
     return Scaffold(
       appBar: AppBar(
@@ -237,10 +269,11 @@ class _MileageReadingFormState extends ConsumerState<_MileageReadingForm> {
                 autofocus: !_correcting,
                 decoration: InputDecoration(
                   labelText: l10n.fieldReadingKm,
+                  suffixText: _units.distance.symbol,
                   helperText: bound == null
                       ? null
                       : l10n.lastReadingHint(
-                          bound.km,
+                          _units.distance.format(bound.km),
                           bound.date.toLocalDateTime(),
                         ),
                   helperMaxLines: 2,

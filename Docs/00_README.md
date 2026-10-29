@@ -83,8 +83,16 @@ vehículos (esquema v8): archivar un vehículo vendido, desguazado, robado…
 con motivo, fecha, km finales (que se guardan como una lectura normal del
 cuentakilómetros) y nota; sale de la lista principal a una fila
 "Archivados (n)", se ve entero en solo lectura con un banner y se reactiva
-cuando se quiera; independiente de la papelera. Lo siguiente es el paso 11
-(recordatorios), que se construye sabiendo qué vehículos están archivados.
+cuando se quiera; independiente de la papelera. El paso 11 añadió las
+unidades de medida (esquema v9): en Ajustes, un preajuste Internacional /
+Imperial y las cinco magnitudes (distancia, volumen, temperatura, presión,
+consumo) una a una; todo lo que muestra o pide una distancia se escribe y
+se lee en la unidad elegida, mientras la base de datos guarda siempre km (y
+litros, °C, bar) sin conocer unidades, con las columnas de distancia en
+`REAL` para que 100 mi vuelvan a ser 100 mi. Lo siguiente es el paso 12
+(consumo de combustible por lleno y estadísticas de km entre lecturas) y
+después los recordatorios (13a dentro de la app, 13b notificaciones), que se
+construyen sabiendo qué vehículos están archivados.
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -101,10 +109,13 @@ Hoja de ruta hasta la primera versión usable:
 | 9 | ~~Copia de seguridad en Google Drive con control de versión al arrancar~~ — hecho |
 | 9b | ~~Vincular una cuenta manualmente (navegador, OAuth + PKCE, token en el almacén seguro)~~ — hecho |
 | 10 | ~~Archivo de vehículos: motivo, fecha, km finales como lectura, solo lectura, reactivar (esquema v8)~~ — hecho |
-| 11 | Recordatorios y notificaciones (excluyendo los vehículos archivados) |
+| 11 | ~~Unidades de medida: ajuste, almacenamiento en SI, un único formateador (esquema v9)~~ — hecho |
+| 12 | Consumo de combustible (cadena de llenos) y estadísticas de km entre lecturas |
+| 13a | Recordatorios dentro de la app (tabla, lista, estados, marcar como hecho; excluyendo los vehículos archivados) |
+| 13b | Notificaciones locales (`flutter_local_notifications`, enlaces profundos) |
 
-Después, en el orden que se decida usando la app: mantenimiento, repostajes,
-documentos, informes PDF.
+Después (14+), en el orden que se decida usando la app: mediciones, catálogo
+de mantenimiento, documentos, informes PDF.
 
 Por qué importa la clave de firma: cada PC tiene su propia clave de debug, así
 que instalar desde otro PC obliga a desinstalar la app, y eso borra los datos.

@@ -108,8 +108,15 @@ archived vehicles (schema v8): archive a sold, scrapped or stolen vehicle
 with a reason, a date, final km (recorded as a normal odometer reading) and
 a note; it leaves the main list for an "Archived (n)" row, stays fully
 visible but read-only behind a banner, and can be reactivated at any time,
-independently of the Trash. Next is step 11 (reminders), built knowing
-which vehicles are archived.
+independently of the Trash. Step 11 added units of measurement (schema
+v9): in Settings, an International / Imperial preset and the five
+quantities (distance, volume, temperature, pressure, consumption) one by
+one; everything that shows or asks for a distance is typed and read in the
+chosen unit, while the database always stores km (and litres, °C, bar) and
+knows nothing about units, with the distance columns as `REAL` so that
+100 mi come back as 100 mi. Next is step 12 (fuel consumption per fill-up
+and km statistics between readings), then reminders (13a in the app, 13b
+local notifications), built knowing which vehicles are archived.
 
 Roadmap to the first usable version:
 
@@ -125,9 +132,14 @@ Roadmap to the first usable version:
 | 8 | ~~Attachments (entries, vehicles, owners), backup package with the files (schema v7)~~ — done |
 | 9 | ~~Google Drive backup with the startup version guard~~ — done |
 | 9b | ~~Link an account manually (browser, OAuth + PKCE, token in the secure storage)~~ — done |
+| 10 | ~~Archived vehicles: reason, date, final km as a reading, read-only, reactivate (schema v8)~~ — done |
+| 11 | ~~Units of measurement: setting, SI storage, a single formatter (schema v9)~~ — done |
+| 12 | Fuel consumption (full-tank chain) and km statistics between odometer readings |
+| 13a | Reminders inside the app (table, list, states, mark as done; archived vehicles excluded) |
+| 13b | Local notifications (`flutter_local_notifications`, deep links) |
 
-Then, in an order decided while using the app: maintenance, refuelling,
-documents, reminders, PDF reports.
+Then (14+), in an order decided while using the app: measurements, the
+maintenance catalogue, documents, PDF reports.
 
 Why the signing key matters: each PC has its own debug key, so installing
 from another PC forces an uninstall, which deletes the data.

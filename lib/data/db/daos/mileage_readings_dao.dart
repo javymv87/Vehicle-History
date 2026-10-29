@@ -158,7 +158,7 @@ class MileageReadingsDao extends DatabaseAccessor<AppDatabase>
   /// The column is a cache of the last live reading: call it in the same
   /// transaction as every reading write. `updated_at` of the vehicle is left
   /// alone, since none of its own fields changed.
-  Future<int> setVehicleOdometer(String vehicleId, int km) =>
+  Future<int> setVehicleOdometer(String vehicleId, double km) =>
       (update(vehicles)..where((v) => v.id.equals(vehicleId)))
           .write(VehiclesCompanion(currentOdometerKm: Value(km)));
 

@@ -15,13 +15,14 @@ import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
-import '../../attachments/widgets/attachment_actions.dart';
-import '../../attachments/widgets/attachments_section.dart';
-import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../../attachments/controllers/attachment_selection_controller.dart';
+import '../../attachments/widgets/attachment_actions.dart';
+import '../../attachments/widgets/attachment_selection_app_bar.dart';
+import '../../attachments/widgets/attachments_section.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_archive_controller.dart';
 import '../controllers/vehicle_deletion_controller.dart';
 import '../controllers/vehicle_detail_controller.dart';
@@ -339,14 +340,15 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
 
 /// The compact header always shown above the tabs: kind icon, make and
 /// model (the plate for vehicles without them), plate and current km.
-class _VehicleHeader extends StatelessWidget {
+class _VehicleHeader extends ConsumerWidget {
   const _VehicleHeader({required this.vehicle});
 
   final Vehicle vehicle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     final makeAndModel = vehicle.makeAndModel;
     return Padding(
@@ -376,10 +378,10 @@ class _VehicleHeader extends StatelessWidget {
                 ),
                 Text(
                   makeAndModel == null
-                      ? l10n.kmValue(vehicle.currentOdometerKm)
+                      ? units.distance.format(vehicle.currentOdometerKm)
                       : l10n.vehicleHeaderSummary(
                           vehicle.plate,
-                          vehicle.currentOdometerKm,
+                          units.distance.format(vehicle.currentOdometerKm),
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -397,14 +399,15 @@ class _VehicleHeader extends StatelessWidget {
 }
 
 /// The Details tab: every field of the vehicle, read-only.
-class _VehicleInfo extends StatelessWidget {
+class _VehicleInfo extends ConsumerWidget {
   const _VehicleInfo({required this.item});
 
   final VehicleWithOwner item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final units = unitFormatterOf(context, ref);
     final vehicle = item.vehicle;
     final owner = item.owner;
     return ListView(
@@ -441,7 +444,7 @@ class _VehicleInfo extends StatelessWidget {
         ),
         DetailField(
           label: l10n.fieldCurrentKm,
-          value: l10n.kmValue(vehicle.currentOdometerKm),
+          value: units.distance.format(vehicle.currentOdometerKm),
           note: l10n.vehicleKmNote,
         ),
         if (vehicle.recommendedEngineOil case final oil?)

@@ -5,6 +5,7 @@ import '../../../data/models/calendar_date.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../controllers/odometer_update_offer_controller.dart';
 import 'big_jump_confirmation.dart';
@@ -16,20 +17,22 @@ import 'big_jump_confirmation.dart';
 /// [offer], after the big-jump confirmation against [currentKm] when it
 /// applies. The entry form is gone by then, so every dependency is captured
 /// before it pops: the app-wide [messenger], [router] (whose navigator
-/// shows the confirmation dialog) and the kept-alive [offer] controller.
+/// shows the confirmation dialog), the [units] of the moment and the
+/// kept-alive [offer] controller. [km] and [currentKm] are in km.
 void showOdometerUpdateOffer({
   required ScaffoldMessengerState messenger,
   required GoRouter router,
   required AppLocalizations l10n,
+  required UnitFormatter units,
   required OdometerUpdateOfferController offer,
   required String vehicleId,
   required CalendarDate date,
-  required int km,
-  required int currentKm,
+  required double km,
+  required double currentKm,
 }) {
   showOfferSnackBar(
     messenger,
-    l10n.updateOdometerOffer(km),
+    l10n.updateOdometerOffer(units.distance.format(km)),
     actionLabel: l10n.actionUpdate,
     onAction: () async {
       final dialogContext =
@@ -37,6 +40,7 @@ void showOdometerUpdateOffer({
       if (dialogContext == null || !dialogContext.mounted) return;
       final confirmed = await confirmBigOdometerJump(
         dialogContext,
+        units: units,
         km: km,
         lastKm: currentKm,
       );

@@ -57,8 +57,9 @@ class Vehicles extends Table with TechnicalColumns {
   TextColumn get ownerId =>
       text().references(Owners, #id, onDelete: KeyAction.restrict)();
 
-  /// Last known total odometer reading, in whole kilometres. Never negative.
-  IntColumn get currentOdometerKm => integer()();
+  /// Last known total odometer reading, in kilometres. Never negative.
+  /// `REAL` since schema v9, like `mileage_readings.km`.
+  RealColumn get currentOdometerKm => real()();
 
   /// Fuel type as a stable text code (see [FuelTypeConverter]).
   TextColumn get fuelType => text().map(const FuelTypeConverter())();
@@ -90,8 +91,8 @@ class Vehicles extends Table with TechnicalColumns {
   ///
   /// The CHECK is a column constraint, as for [modelYear]: the column was
   /// added by `ALTER TABLE ... ADD COLUMN` in v8.
-  IntColumn get archivedKm =>
-      integer().nullable().customConstraint('NULL CHECK (archived_km >= 0)')();
+  RealColumn get archivedKm =>
+      real().nullable().customConstraint('NULL CHECK (archived_km >= 0)')();
 
   // Written as SQL rather than with `Column.check`, whose self-referencing
   // getter trips the `recursive_getters` lint.
