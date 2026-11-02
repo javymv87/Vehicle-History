@@ -69,4 +69,21 @@ void main() {
       expect(euroCentsInputText(1250, 'en'), '12.50');
     });
   });
+
+  group('price per unit', () {
+    test('parses up to three decimals with either separator', () {
+      expect(tryParseUnitPrice('1,859'), 1.859);
+      expect(tryParseUnitPrice('1.859'), 1.859);
+      expect(tryParseUnitPrice('2'), 2);
+      expect(tryParseUnitPrice('1,8599'), isNull);
+      expect(tryParseUnitPrice('-1'), isNull);
+      expect(tryParseUnitPrice(''), isNull);
+    });
+
+    test('shows three decimals in the locale', () {
+      expect(unitPriceInputText(1.859, 'es'), '1,859');
+      expect(unitPriceInputText(1.5, 'en'), '1.500');
+      expect(formatEuroRate(1.859, 'it', decimals: 3), '1,859 €');
+    });
+  });
 }

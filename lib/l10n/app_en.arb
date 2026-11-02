@@ -2175,5 +2175,290 @@
         "type": "int"
       }
     }
+  },
+  "unitSymbolKilogram": "kg",
+  "@unitSymbolKilogram": {
+    "description": "Symbol of the kilogram, the unit of CNG refuels."
+  },
+  "unitSymbolKgPer100Km": "kg/100 km",
+  "@unitSymbolKgPer100Km": {
+    "description": "Symbol of CNG consumption in kilograms per 100 km."
+  },
+  "unitSymbolKmPerKg": "km/kg",
+  "@unitSymbolKmPerKg": {
+    "description": "Symbol of CNG consumption in kilometres per kilogram."
+  },
+  "pricePerUnitSymbol": "{currency}/{unit}",
+  "@pricePerUnitSymbol": {
+    "description": "Suffix of the price-per-unit field, e.g. €/L: the currency symbol and the unit symbol come from the code.",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "pricePerUnit": "{price}/{unit}",
+  "@pricePerUnit": {
+    "description": "A price per unit, e.g. 1,859 €/L: price is a formatted euro value, unit the unit symbol.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "costPer100Distance": "{amount}/100 {unit}",
+  "@costPer100Distance": {
+    "description": "A cost per 100 distance units, e.g. 8,90 €/100 km.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "costPerDistance": "{amount}/{unit}",
+  "@costPerDistance": {
+    "description": "A cost per distance unit, e.g. $0.14/mi.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldRefuelFuel": "Fuel",
+  "@fieldRefuelFuel": {
+    "description": "Label of the fuel choice of a refuel on a bi-fuel vehicle."
+  },
+  "refuelFuelPetrol": "Petrol",
+  "@refuelFuelPetrol": {
+    "description": "Fuel put in by a refuel: petrol."
+  },
+  "refuelFuelDiesel": "Diesel",
+  "@refuelFuelDiesel": {
+    "description": "Fuel put in by a refuel: diesel."
+  },
+  "refuelFuelLpg": "LPG",
+  "@refuelFuelLpg": {
+    "description": "Fuel put in by a refuel: LPG."
+  },
+  "refuelFuelCng": "CNG",
+  "@refuelFuelCng": {
+    "description": "Fuel put in by a refuel: CNG (methane), measured in kg."
+  },
+  "refuelFuelOther": "Other",
+  "@refuelFuelOther": {
+    "description": "Fuel put in by a refuel of a vehicle whose fuel type is other."
+  },
+  "fieldRefuelVolume": "Volume",
+  "@fieldRefuelVolume": {
+    "description": "Label of the volume field of a refuel (litres or gallons)."
+  },
+  "fieldRefuelMass": "Quantity",
+  "@fieldRefuelMass": {
+    "description": "Label of the quantity field of a CNG refuel, in kg."
+  },
+  "refuelVolumeHelp": "Optional. Without it the refuel counts only as an expense.",
+  "@refuelVolumeHelp": {
+    "description": "Helper text under the volume or quantity field of a refuel."
+  },
+  "fieldRefuelPrice": "Price per unit",
+  "@fieldRefuelPrice": {
+    "description": "Label of the price-per-unit field of a refuel; computed from amount and volume, never stored."
+  },
+  "fieldRefuelAmount": "Amount",
+  "@fieldRefuelAmount": {
+    "description": "Label of the amount (cost) field of a refuel."
+  },
+  "fieldRefuelFullTank": "Full tank",
+  "@fieldRefuelFullTank": {
+    "description": "Switch of a refuel: the tank was filled up."
+  },
+  "fieldRefuelMissed": "I skipped a refuel before this one",
+  "@fieldRefuelMissed": {
+    "description": "Checkbox of a refuel: a refuel before it was not recorded."
+  },
+  "refuelMissedHelp": "Tick it if you did not record the previous refuel: that segment will not be calculated.",
+  "@refuelMissedHelp": {
+    "description": "One-line helper of the missed-refuel checkbox."
+  },
+  "validationVolumeInvalid": "Enter a quantity of 0 or more",
+  "@validationVolumeInvalid": {
+    "description": "Validation error of the volume or quantity field of a refuel."
+  },
+  "validationPriceInvalid": "Enter a price of 0 or more, with at most 3 decimals",
+  "@validationPriceInvalid": {
+    "description": "Validation error of the price-per-unit field of a refuel."
+  },
+  "refuelCheckTitle": "Save this refuel?",
+  "@refuelCheckTitle": {
+    "description": "Title of the soft warning when a refuel's price or quantity looks unusual."
+  },
+  "refuelCheckPrice": "The price, {price}, is unusual.",
+  "@refuelCheckPrice": {
+    "description": "Soft warning: the price per unit is outside the usual range.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "refuelCheckVolume": "The quantity, {quantity}, is very high.",
+  "@refuelCheckVolume": {
+    "description": "Soft warning: the volume or mass of a refuel is very high.",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "refuelSavedWithSummary": "Refuel saved. {summary}",
+  "@refuelSavedWithSummary": {
+    "description": "Snackbar after saving a refuel, with what it means for the consumption.",
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "updateOdometerOfferAfterRefuel": "Refuel saved. {summary}\nUpdate the odometer to {distance}?",
+  "@updateOdometerOfferAfterRefuel": {
+    "description": "Snackbar after saving a refuel with a reading above the odometer: the consumption line, then the odometer offer.",
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "actionView": "View",
+  "@actionView": {
+    "description": "Snackbar action opening what was just saved."
+  },
+  "segmentDistanceDays": "{distance} in {days, plural, =0{the same day} =1{1 day} other{{days} days}}",
+  "@segmentDistanceDays": {
+    "description": "Distance and days of a consumption segment.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "segmentSummary": "{consumption} · {distanceAndDays}",
+  "@segmentSummary": {
+    "description": "One line describing a consumption segment without a known cost.",
+    "placeholders": {
+      "consumption": {
+        "type": "String"
+      },
+      "distanceAndDays": {
+        "type": "String"
+      }
+    }
+  },
+  "segmentSummaryWithCost": "{consumption} · {distanceAndDays} · {cost}",
+  "@segmentSummaryWithCost": {
+    "description": "One line describing a consumption segment with its cost per distance.",
+    "placeholders": {
+      "consumption": {
+        "type": "String"
+      },
+      "distanceAndDays": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "segmentSuspicious": "Consumption far from the average. Was a refuel missed?",
+  "@segmentSuspicious": {
+    "description": "Amber line of a suspicious consumption segment."
+  },
+  "segmentInvalid": "The consumption cannot be calculated: {reason}.",
+  "@segmentInvalid": {
+    "description": "Line of a consumption segment that cannot be computed.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "segmentProblemMissedRefuel": "a refuel of this segment was not recorded",
+  "@segmentProblemMissedRefuel": {
+    "description": "Reason a segment cannot be computed: a missed refuel."
+  },
+  "segmentProblemMissingVolume": "a refuel of the segment has no quantity",
+  "@segmentProblemMissingVolume": {
+    "description": "Reason a segment cannot be computed: a refuel without volume."
+  },
+  "segmentProblemMissingKm": "a refuel of the segment has no odometer reading",
+  "@segmentProblemMissingKm": {
+    "description": "Reason a segment cannot be computed: a refuel without km."
+  },
+  "segmentProblemNoDistance": "the odometer does not go up in this segment",
+  "@segmentProblemNoDistance": {
+    "description": "Reason a segment cannot be computed: no distance."
+  },
+  "segmentProblemNoVolume": "the quantity of the segment is zero",
+  "@segmentProblemNoVolume": {
+    "description": "Reason a segment cannot be computed: zero volume."
+  },
+  "refuelFirstFullTank": "You will see the consumption from the next full tank.",
+  "@refuelFirstFullTank": {
+    "description": "The refuel is the first full tank of its chain."
+  },
+  "refuelCountsInNext": "It will count in the segment of the next full tank.",
+  "@refuelCountsInNext": {
+    "description": "A partial refuel after the last full tank."
+  },
+  "refuelPartOfSegment": "Counted in the segment of the full tank of {date}.",
+  "@refuelPartOfSegment": {
+    "description": "A partial refuel counted in a closed segment.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "refuelBeforeFirstFullTank": "Before the first full tank: not counted in the consumption.",
+  "@refuelBeforeFirstFullTank": {
+    "description": "A partial refuel before the first full tank."
+  },
+  "refuelWithoutVolume": "No quantity: not counted in the consumption.",
+  "@refuelWithoutVolume": {
+    "description": "A refuel without volume."
+  },
+  "refuelConsumptionTitle": "Consumption",
+  "@refuelConsumptionTitle": {
+    "description": "Section title of the consumption of a refuel in its detail."
+  },
+  "actionEditRefuel": "Edit refuel",
+  "@actionEditRefuel": {
+    "description": "Link from a suspicious segment to the edit form of its closing refuel."
+  },
+  "valueYes": "Yes",
+  "@valueYes": {
+    "description": "Yes, as the value of a switch in a detail page."
+  },
+  "valueNo": "No",
+  "@valueNo": {
+    "description": "No, as the value of a switch in a detail page."
   }
 }

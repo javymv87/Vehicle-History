@@ -1,7 +1,9 @@
 import '../../data/models/app_preferences.dart';
 import '../../data/models/archive_reason.dart';
+import '../../data/models/fuel_consumption.dart';
 import '../../data/models/fuel_type.dart';
 import '../../data/models/log_entry_type.dart';
+import '../../data/models/refuel.dart';
 import '../../data/models/units.dart';
 import '../../data/models/vehicle.dart';
 import '../../data/models/vehicle_kind.dart';
@@ -22,6 +24,31 @@ extension FuelTypeLabel on FuelType {
         FuelType.pluginHybrid => l10n.fuelPluginHybrid,
         FuelType.electric => l10n.fuelElectric,
         FuelType.other => l10n.fuelOther,
+      };
+}
+
+/// Localised label of a [RefuelFuel].
+extension RefuelFuelLabel on RefuelFuel {
+  /// The name of this fuel in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        RefuelFuel.petrol => l10n.refuelFuelPetrol,
+        RefuelFuel.diesel => l10n.refuelFuelDiesel,
+        RefuelFuel.lpg => l10n.refuelFuelLpg,
+        RefuelFuel.cng => l10n.refuelFuelCng,
+        RefuelFuel.other => l10n.refuelFuelOther,
+      };
+}
+
+/// Localised reason of a [SegmentProblem], to complete
+/// `AppLocalizations.segmentInvalid`.
+extension SegmentProblemLabel on SegmentProblem {
+  /// Why the segment cannot be computed, in the language of [l10n].
+  String label(AppLocalizations l10n) => switch (this) {
+        SegmentProblem.missedRefuel => l10n.segmentProblemMissedRefuel,
+        SegmentProblem.missingVolume => l10n.segmentProblemMissingVolume,
+        SegmentProblem.missingKm => l10n.segmentProblemMissingKm,
+        SegmentProblem.noDistance => l10n.segmentProblemNoDistance,
+        SegmentProblem.noVolume => l10n.segmentProblemNoVolume,
       };
 }
 

@@ -64,6 +64,25 @@ class DriftLogEntryRepository implements LogEntryRepository {
   }
 
   @override
+  Future<List<LogEntry>> getByVehicle(
+    String vehicleId, {
+    LogEntryFilter filter = LogEntryFilter.none,
+  }) async {
+    final entries = await _entries.getLiveByVehicle(
+      vehicleId,
+      from: filter.from,
+      to: filter.to,
+      types: filter.types,
+    );
+    return filter.hasText
+        ? [
+            for (final entry in entries)
+              if (filter.matchesText(entry.description)) entry,
+          ]
+        : entries;
+  }
+
+  @override
   Future<LogEntry?> getById(String id) => _entries.getLiveById(id);
 
   @override

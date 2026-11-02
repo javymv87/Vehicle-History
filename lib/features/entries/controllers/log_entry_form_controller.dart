@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/data_providers.dart';
 import '../../../data/models/attachment.dart';
 import '../../../data/models/calendar_date.dart';
+import '../../../data/models/fuel_consumption.dart';
 import '../../../data/models/log_entry.dart';
+import '../../../data/models/log_entry_filter.dart';
 import '../../../data/models/log_entry_type.dart';
 import '../../../data/models/mileage_reading.dart';
+import '../../../data/models/refuel.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../shared/utils/action_result.dart';
+import '../../reports/controllers/fuel_chains_controller.dart';
 
 /// Identifies one entry form: the vehicle, and the entry being edited
 /// (`null` to create one).
@@ -42,8 +46,9 @@ class LogEntryFormData {
 
 /// The values typed into the entry form, before they are saved.
 ///
-/// Amounts are already converted to cents and km to an integer: the form
-/// validates and parses them, the repository checks the rules again.
+/// Amounts are already converted to cents, and km and volumes to SI (km,
+/// litres or kg) whatever unit was typed: the form validates and parses
+/// them, the repository checks the rules again.
 class LogEntryDraft {
   /// Creates a draft from the form fields.
   const LogEntryDraft({
@@ -52,6 +57,7 @@ class LogEntryDraft {
     this.km,
     this.description,
     this.costCents,
+    this.refuel,
     this.addedAttachments = const [],
     this.removedAttachmentIds = const {},
   });
@@ -70,6 +76,9 @@ class LogEntryDraft {
 
   /// Cost in euro cents, if typed.
   final int? costCents;
+
+  /// The refuel fields, for a refuel of a vehicle that is not electric.
+  final RefuelDetails? refuel;
 
   /// Files staged by the form, to become the entry's attachments.
   final List<StagedFile> addedAttachments;
@@ -131,6 +140,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
           type: draft.type,
           description: draft.description,
           costCents: draft.costCents,
+          refuel: draft.refuel,
           addedAttachments: draft.addedAttachments,
           removedAttachmentIds: draft.removedAttachmentIds,
         );
@@ -142,9 +152,23 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
         type: draft.type,
         description: draft.description,
         costCents: draft.costCents,
+        refuel: draft.refuel,
         attachments: draft.addedAttachments,
       );
     });
+  }
+
+  /// What the just saved [entry] is in its full-tank chain, for the
+  /// message after saving (`Docs/03_features.md`, refuel form); `null`
+  /// when it is not a refuel with fuel fields.
+  Future<RefuelRole?> refuelRoleOf(LogEntry entry) async {
+    final vehicle = state.value?.vehicle;
+    if (vehicle == null || entry.refuel == null) return null;
+    final refuels = await ref.read(logEntryRepositoryProvider).getByVehicle(
+          entry.vehicleId,
+          filter: const LogEntryFilter(types: {LogEntryType.refuel}),
+        );
+    return refuelRoleIn(FuelChain.allOf(refuels, vehicle.fuelType), entry.id);
   }
 }
 

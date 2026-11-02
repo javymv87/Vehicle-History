@@ -23,6 +23,12 @@ abstract interface class LogEntryRepository {
     LogEntryFilter filter = LogEntryFilter.none,
   });
 
+  /// Returns what [watchByVehicle] emits, once.
+  Future<List<LogEntry>> getByVehicle(
+    String vehicleId, {
+    LogEntryFilter filter = LogEntryFilter.none,
+  });
+
   /// Returns the live entry with [id], or `null` if it is missing, deleted
   /// or belongs to a deleted vehicle.
   Future<LogEntry?> getById(String id);

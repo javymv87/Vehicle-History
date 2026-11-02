@@ -1,7 +1,9 @@
 import 'package:intl/intl.dart';
 
+import '../../data/models/refuel.dart';
 import '../../data/models/units.dart';
 import '../../l10n/app_localizations.dart';
+import 'money.dart';
 
 // The one place where a physical quantity becomes text or text becomes a
 // quantity (`Docs/06_settings_and_i18n.md`, "Unidades"). Values cross this
@@ -166,6 +168,85 @@ class UnitFormatter {
     preferences.consumption.symbol(_l10n),
     decimals: 1,
   );
+
+  /// Masses (stored in kg): two decimals, always in kg. Only CNG refuels.
+  late final QuantityFormatter mass = _formatter(
+    MassUnit.kilogram,
+    _l10n.unitSymbolKilogram,
+    decimals: 2,
+  );
+
+  /// Consumption of CNG (stored in kg/100 km): one decimal, in kg/100 km or
+  /// km/kg following the shape of the consumption setting
+  /// ([GasConsumptionUnit.matching]).
+  late final QuantityFormatter gasConsumption = _formatter(
+    GasConsumptionUnit.matching(preferences.consumption),
+    switch (GasConsumptionUnit.matching(preferences.consumption)) {
+      GasConsumptionUnit.kgPer100Km => _l10n.unitSymbolKgPer100Km,
+      GasConsumptionUnit.kmPerKg => _l10n.unitSymbolKmPerKg,
+    },
+    decimals: 1,
+  );
+
+  /// The quantity a refuel of [fuel] is typed and shown in: [mass] for
+  /// CNG, [volume] otherwise.
+  QuantityFormatter fuelQuantity(RefuelFuel fuel) =>
+      fuel.quantity == FuelQuantity.mass ? mass : volume;
+
+  /// The consumption of [fuel]: [gasConsumption] for CNG, [consumption]
+  /// otherwise.
+  QuantityFormatter fuelConsumption(RefuelFuel fuel) =>
+      fuel.quantity == FuelQuantity.mass ? gasConsumption : consumption;
+
+  /// How many SI units (litres, kg) one shown unit of [fuel] is.
+  double _siPerShownUnit(RefuelFuel fuel) => fuelQuantity(fuel).toSI(1);
+
+  /// A price in euros per SI unit of [fuel] as euros per shown unit (per
+  /// gallon when the volume is in gallons).
+  double unitPriceToDisplay(RefuelFuel fuel, double eurosPerSI) =>
+      eurosPerSI * _siPerShownUnit(fuel);
+
+  /// A price in euros per shown unit of [fuel] as euros per SI unit.
+  double unitPriceToSI(RefuelFuel fuel, double eurosPerShown) =>
+      eurosPerShown / _siPerShownUnit(fuel);
+
+  /// The symbol of a price per shown unit of [fuel], e.g. `€/L`, for a
+  /// field suffix.
+  String unitPriceSymbol(RefuelFuel fuel) => _l10n.pricePerUnitSymbol(
+        NumberFormat.simpleCurrency(locale: _l10n.localeName, name: 'EUR')
+            .currencySymbol,
+        fuelQuantity(fuel).symbol,
+      );
+
+  /// [eurosPerSI] as a price per shown unit of [fuel] with three decimals,
+  /// e.g. `1,859 €/L`.
+  String formatUnitPrice(RefuelFuel fuel, double eurosPerSI) =>
+      _l10n.pricePerUnit(
+        formatEuroRate(
+          unitPriceToDisplay(fuel, eurosPerSI),
+          _l10n.localeName,
+          decimals: 3,
+        ),
+        fuelQuantity(fuel).symbol,
+      );
+
+  /// A cost of [centsPerKm] cents per km as the user reads it: euros per
+  /// 100 km with the distance in km, euros per mile in miles.
+  String formatCostPerDistance(double centsPerKm) =>
+      switch (preferences.distance) {
+        DistanceUnit.kilometre => _l10n.costPer100Distance(
+            // Cents per km are euros per 100 km.
+            formatEuroRate(centsPerKm, _l10n.localeName),
+            distance.symbol,
+          ),
+        DistanceUnit.mile => _l10n.costPerDistance(
+            formatEuroRate(
+              centsPerKm * DistanceUnit.mile.kmPerUnit / 100,
+              _l10n.localeName,
+            ),
+            distance.symbol,
+          ),
+      };
 
   /// The friendly "big odometer jump" threshold in the distance unit, e.g.
   /// `50,000 km` or `30,000 mi` (`friendlyBigOdometerJump`).

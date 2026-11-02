@@ -37,6 +37,35 @@ enum RefuelFuel {
       this == cng ? FuelQuantity.mass : FuelQuantity.volume;
 }
 
+/// A value of a refuel that looks wrong: the form asks before saving it,
+/// never refuses it (`Docs/03_features.md`, refuel form).
+enum RefuelWarning {
+  /// The price per litre (per kg) is outside [RefuelChecks.usualPrice].
+  unusualPrice,
+
+  /// The volume (mass) is above [RefuelChecks.maxUsualQuantity].
+  largeQuantity,
+}
+
+/// The soft checks of a refuel, in SI units.
+abstract final class RefuelChecks {
+  /// The usual price range, in euros per litre (or per kg).
+  static const ({double low, double high}) usualPrice = (low: 0.5, high: 3.5);
+
+  /// The largest usual quantity of one refuel, in litres (or kg).
+  static const double maxUsualQuantity = 200;
+
+  /// The warnings for a refuel of [quantity] (litres or kg) at [price]
+  /// euros per litre (per kg); a missing value raises none.
+  static List<RefuelWarning> warningsFor({double? quantity, double? price}) => [
+        if (price != null &&
+            (price < usualPrice.low || price > usualPrice.high))
+          RefuelWarning.unusualPrice,
+        if (quantity != null && quantity > maxUsualQuantity)
+          RefuelWarning.largeQuantity,
+      ];
+}
+
 /// The physical quantity a refuel is measured in.
 enum FuelQuantity {
   /// Litres, shown in the volume unit of the settings.

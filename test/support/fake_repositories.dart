@@ -287,6 +287,7 @@ class FakeStore {
     double? km = 1000,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
   }) {
     final created = _now.add(Duration(minutes: entries.length));
     final entry = LogEntry(
@@ -297,6 +298,7 @@ class FakeStore {
       type: type,
       description: description,
       costCents: costCents,
+      refuel: refuel,
       createdAt: created,
       updatedAt: created,
     );
@@ -720,6 +722,13 @@ class FakeLogEntryRepository implements LogEntryRepository {
       store.watch(
         () => store.liveEntriesOf(vehicleId).where(filter.matches).toList(),
       );
+
+  @override
+  Future<List<LogEntry>> getByVehicle(
+    String vehicleId, {
+    LogEntryFilter filter = LogEntryFilter.none,
+  }) async =>
+      store.liveEntriesOf(vehicleId).where(filter.matches).toList();
 
   @override
   Future<LogEntry?> getById(String id) async => _live(id);
