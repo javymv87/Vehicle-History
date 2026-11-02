@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The tabs of the vehicle page, in display order (`Docs/03_features.md`,
-/// U11, U25).
+/// U11, U25, "Informes").
 enum VehicleTab {
   /// The history entries, the default tab.
   history('history'),
 
   /// The odometer readings.
   mileage('mileage'),
+
+  /// The read-only reports: consumption, fuel spend, distance over time.
+  reports('reports'),
 
   /// The vehicle's own attachments: registration, insurance policy, ...
   documents('documents'),

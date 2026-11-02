@@ -2460,5 +2460,222 @@
   "valueNo": "No",
   "@valueNo": {
     "description": "No, as the value of a switch in a detail page."
+  },
+  "tabReports": "Reports",
+  "@tabReports": {
+    "description": "Tab of the vehicle page with its read-only reports."
+  },
+  "reportFilterDates": "Dates",
+  "@reportFilterDates": {
+    "description": "Report filter mode: a range of days."
+  },
+  "reportFilterOdometer": "Odometer",
+  "@reportFilterOdometer": {
+    "description": "Report filter mode: a range of odometer readings."
+  },
+  "reportPresetAll": "All",
+  "@reportPresetAll": {
+    "description": "Report date preset: the whole life of the vehicle."
+  },
+  "reportPreset12Months": "12 months",
+  "@reportPreset12Months": {
+    "description": "Report date preset: the last 12 months."
+  },
+  "reportPreset90Days": "90 days",
+  "@reportPreset90Days": {
+    "description": "Report date preset: the last 90 days."
+  },
+  "reportPresetCustom": "Custom",
+  "@reportPresetCustom": {
+    "description": "Report date preset: two dates chosen by the user."
+  },
+  "reportFrom": "From",
+  "@reportFrom": {
+    "description": "Start of a report range (date or odometer)."
+  },
+  "reportTo": "To",
+  "@reportTo": {
+    "description": "End of a report range (date or odometer)."
+  },
+  "reportConsumptionTitle": "Consumption",
+  "@reportConsumptionTitle": {
+    "description": "Title of the consumption report."
+  },
+  "reportFuelSpendTitle": "Fuel spend",
+  "@reportFuelSpendTitle": {
+    "description": "Title of the fuel spend report."
+  },
+  "reportDistanceTitle": "Distance over time",
+  "@reportDistanceTitle": {
+    "description": "Title of the report of the distance driven over time, from the odometer readings."
+  },
+  "reportAverageConsumption": "Average consumption",
+  "@reportAverageConsumption": {
+    "description": "Label: average consumption over the valid segments."
+  },
+  "reportAverageCost": "Average cost",
+  "@reportAverageCost": {
+    "description": "Label: average cost per distance over the valid segments."
+  },
+  "reportTotalVolume": "Total quantity",
+  "@reportTotalVolume": {
+    "description": "Label: total volume (or kg) of the valid segments."
+  },
+  "reportTotalSpent": "Total spent",
+  "@reportTotalSpent": {
+    "description": "Label: total amount spent."
+  },
+  "reportValidSegments": "Valid segments",
+  "@reportValidSegments": {
+    "description": "Label: number of computable segments."
+  },
+  "reportCoverage": "Average over {covered} ({coveredDays}) of the {span} ({spanDays}) in the range.",
+  "@reportCoverage": {
+    "description": "Coverage line of the consumption report: the distance and days of the valid segments, then the real extent of the filter.",
+    "placeholders": {
+      "covered": {
+        "type": "String"
+      },
+      "coveredDays": {
+        "type": "String"
+      },
+      "span": {
+        "type": "String"
+      },
+      "spanDays": {
+        "type": "String"
+      }
+    }
+  },
+  "dayCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "@dayCount": {
+    "description": "A number of days.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportConsumptionEmpty": "No consumption segment in this range.",
+  "@reportConsumptionEmpty": {
+    "description": "Empty state of the consumption report."
+  },
+  "segmentDates": "{from} → {to}",
+  "@segmentDates": {
+    "description": "Opening and closing dates of a consumption segment.",
+    "placeholders": {
+      "from": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "to": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "segmentFigures": "{distance} · {quantity}",
+  "@segmentFigures": {
+    "description": "Distance and quantity of a segment in the report list.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "segmentFiguresWithCost": "{distance} · {quantity} · {amount}",
+  "@segmentFiguresWithCost": {
+    "description": "Distance, quantity and amount of a segment in the report list.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "segmentStateValid": "Valid",
+  "@segmentStateValid": {
+    "description": "Badge of a valid consumption segment."
+  },
+  "segmentStateSuspicious": "Far from the average",
+  "@segmentStateSuspicious": {
+    "description": "Badge of a suspicious consumption segment (amber)."
+  },
+  "segmentStateInvalid": "Not calculated",
+  "@segmentStateInvalid": {
+    "description": "Badge of a segment that cannot be computed."
+  },
+  "reportRefuelCount": "Refuels",
+  "@reportRefuelCount": {
+    "description": "Label: number of refuels in the range."
+  },
+  "reportAveragePrice": "Average price",
+  "@reportAveragePrice": {
+    "description": "Label: average price per unit."
+  },
+  "reportAveragePriceOf": "Average price · {fuel}",
+  "@reportAveragePriceOf": {
+    "description": "Label: average price per unit of one fuel of a bi-fuel vehicle.",
+    "placeholders": {
+      "fuel": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSpendByMonth": "By month",
+  "@reportSpendByMonth": {
+    "description": "Header of the spend-per-month table."
+  },
+  "reportMonthSpend": "{amount} ({count, plural, =1{1 refuel} other{{count} refuels}})",
+  "@reportMonthSpend": {
+    "description": "Spend of one month and its number of refuels.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportFuelSpendEmpty": "No refuel in this range.",
+  "@reportFuelSpendEmpty": {
+    "description": "Empty state of the fuel spend report."
+  },
+  "reportDistance": "Distance",
+  "@reportDistance": {
+    "description": "Label: distance driven in the range."
+  },
+  "reportDays": "Days",
+  "@reportDays": {
+    "description": "Label: days in the range."
+  },
+  "reportPerDay": "Per day",
+  "@reportPerDay": {
+    "description": "Label: distance per day."
+  },
+  "reportPerMonth": "Per month",
+  "@reportPerMonth": {
+    "description": "Label: distance per month."
+  },
+  "reportFirstReading": "First reading of the range",
+  "@reportFirstReading": {
+    "description": "The oldest reading of the distance report, with nothing before it."
+  },
+  "reportDistanceEmpty": "No odometer reading in this range.",
+  "@reportDistanceEmpty": {
+    "description": "Empty state of the distance report."
+  },
+  "valueNone": "—",
+  "@valueNone": {
+    "description": "Shown for a figure that cannot be computed."
   }
 }

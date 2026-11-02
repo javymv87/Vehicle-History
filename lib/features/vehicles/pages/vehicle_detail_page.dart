@@ -22,6 +22,8 @@ import '../../attachments/widgets/attachments_section.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
+import '../../reports/controllers/report_filter_controller.dart';
+import '../../reports/widgets/reports_view.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_archive_controller.dart';
 import '../controllers/vehicle_deletion_controller.dart';
@@ -32,7 +34,7 @@ import '../widgets/archive_banner.dart';
 import '../widgets/archive_dialog.dart';
 
 /// The page of one vehicle: its history first, then its odometer readings,
-/// its documents and its details. The vehicle id comes from the path; an
+/// its reports, its documents and its details. The vehicle id comes from the path; an
 /// unknown or deleted id shows a not-found page. An archived vehicle opens
 /// read-only: a banner under the app bar, no add, edit or delete affordance
 /// anywhere, only "Reactivate" and "Move to Trash".
@@ -73,8 +75,9 @@ class VehicleDetailPage extends ConsumerWidget {
 }
 
 /// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15, U25): a
-/// compact header, then four tabs, History (the default), Mileage,
-/// Documents and Details, and a button that adds what the tab shows. The
+/// compact header, then five tabs, History (the default), Mileage, Reports,
+/// Documents and Details, and a button that adds what the tab shows (none
+/// on the read-only Reports). The
 /// overflow menu archives the vehicle, or reactivates it, and moves it to
 /// the Trash.
 class _VehicleDetailView extends ConsumerStatefulWidget {
@@ -222,6 +225,9 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
         _tabs.animateTo(request.tab.index);
       }
     });
+    // Keeps the reports filter while the page is open, also when the tab
+    // is left and its view disposed.
+    ref.listen(reportFilterProvider(vehicle.id), (previous, next) {});
     final selectingDocuments =
         ref.watch(attachmentSelectionProvider(_documents)).isNotEmpty;
     return Scaffold(
@@ -278,6 +284,8 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addEntry),
                 ),
+              // Read-only: nothing to add from the reports.
+              VehicleTab.reports => null,
               VehicleTab.mileage => FloatingActionButton.extended(
                   heroTag: AppRoutes.newMileageReading(vehicle.id),
                   onPressed: () =>
@@ -302,12 +310,13 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
           _VehicleHeader(vehicle: vehicle),
           TabBar(
             controller: _tabs,
-            // Four tabs with large text do not fit at 360 dp: they scroll.
+            // Five tabs do not fit at 360 dp: they scroll.
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: l10n.tabHistory),
               Tab(text: l10n.tabMileage),
+              Tab(text: l10n.tabReports),
               Tab(text: l10n.tabDocuments),
               Tab(text: l10n.tabDetails),
             ],
@@ -318,6 +327,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
               children: [
                 LogEntryHistoryView(vehicleId: vehicle.id),
                 MileageHistoryView(vehicleId: vehicle.id),
+                ReportsView(vehicleId: vehicle.id),
                 ListView(
                   // Room at the bottom so the FAB never covers the last row.
                   padding: const EdgeInsets.only(top: 8, bottom: 88),
