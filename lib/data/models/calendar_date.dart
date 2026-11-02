@@ -92,6 +92,22 @@ class CalendarDate implements Comparable<CalendarDate> {
   /// Whether this date falls strictly after [other].
   bool isAfter(CalendarDate other) => compareTo(other) > 0;
 
+  /// Calendar days from this date to [other]: positive when [other] is
+  /// later, 0 for the same day. Counted on UTC midnights, so no daylight
+  /// saving change can make a day 23 or 25 hours long.
+  int daysUntil(CalendarDate other) =>
+      other._utcMidnight.difference(_utcMidnight).inDays;
+
+  /// The date [days] calendar days after this one (before it when
+  /// negative), across month and year ends.
+  CalendarDate addDays(int days) {
+    final shifted = _utcMidnight.add(Duration(days: days));
+    return CalendarDate(shifted.year, shifted.month, shifted.day);
+  }
+
+  /// This day at 00:00 UTC, only for day arithmetic.
+  DateTime get _utcMidnight => DateTime.utc(year, month, day);
+
   @override
   bool operator ==(Object other) =>
       other is CalendarDate &&
