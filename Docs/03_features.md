@@ -95,8 +95,9 @@ valor que no esté en la lista.
 
 Cada vehículo tiene una lista desplazable de LogEntry ordenadas por fecha (las
 más recientes arriba). Cada fila muestra de un vistazo: tipo, fecha, km, un
-extracto del texto, el coste (si lo hay) y un icono si hay fotos o un
-recordatorio.
+extracto del texto, el coste (si lo hay) y un clip con el número de adjuntos
+si los hay (U24); el icono de recordatorio llegará con los recordatorios
+(paso 13a).
 
 Al tocar una entrada se ve su detalle completo y se puede modificar o
 borrar.
@@ -114,6 +115,7 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
 - **U3 — Formulario rápido, pocos toques.** Orden: tipo (chips con icono, un
   toque), fecha (**hoy por defecto**, selector de fecha de Material), km,
   coste y descripción. El botón Guardar está siempre en la barra superior.
+  Un repostaje añade sus campos (desde el paso 12, ver "Repostajes" abajo).
 - **U4 — Ayuda para el km:** bajo el campo, un chip de un toque "Usar
   lectura actual (123.456 km)" copia el km actual del vehículo, en la
   unidad elegida. El campo **nunca** se rellena solo. La etiqueta indica si
@@ -133,12 +135,14 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
   2026").
 - **U7 — Detalle:** todos los campos; editar y borrar (confirmación +
   toast con Deshacer). Bajo los km, una nota recuerda que solo se registran
-  en la entrada y no cambian el km del vehículo.
+  en la entrada y no cambian el km del vehículo. Un repostaje enseña además
+  sus campos y su consumo (ver "Repostajes").
 - **U9 — Historial vacío:** un texto breve; para añadir, el botón flotante.
 - **U10 — Validación** en línea y traducida: tipo obligatorio; fecha
   obligatoria; km entero ≥ 0 en la unidad elegida, obligatorio para los
   tipos que lo requieren (ver `02_data_model.md`); coste ≥ 0 con 2 decimales
-  como máximo.
+  como máximo. En un repostaje: cantidad ≥ 0 (con decimales) y precio por
+  unidad ≥ 0 con 3 decimales como máximo.
 
 Reglas añadidas al formulario de entradas en el paso 5:
 
@@ -163,20 +167,68 @@ Reglas añadidas al formulario de entradas en el paso 5:
   del vehículo pasa a la pestaña Kilometraje. Si no se pulsa, no pasa nada:
   la entrada ya está guardada.
 
+## Repostajes
+
+Los campos del repostaje y su consumo (paso 12 de la hoja de ruta). Reglas de
+cálculo en `04_maintenance_logic.md` ("Repostajes y consumos"); columnas en
+`02_data_model.md` ("Repostaje (esquema v10)").
+
+- **Formulario** (tipo repostaje, vehículo no eléctrico). Orden: fecha, km
+  (obligatorio), **carburante** (solo en los bifuel: gasolina / GLP o
+  gasolina / GNC, con la gasolina elegida al principio), **cantidad** (en la
+  unidad de volumen de los ajustes, o en kg con GNC; con decimales; opcional,
+  con la ayuda "Sin ella, el repostaje cuenta solo como gasto"), **precio por
+  unidad** (€/L, €/gal o €/kg; no se guarda), **importe** (el coste de
+  siempre), el interruptor **Depósito lleno** (encendido por defecto), la
+  casilla **Me salté un repostaje antes de este** (apagada, con una línea de
+  ayuda), descripción y adjuntos.
+- **Triángulo importe / cantidad / precio:** se rellenan dos cualesquiera y
+  el tercero se calcula al momento y sigue siendo editable; al cambiar uno se
+  recalcula el que no está entre los dos tocados más recientemente.
+- **Avisos que no bloquean:** un precio fuera de 0,5–3,5 € por litro (o por
+  kg) o una cantidad de más de 200 L (o kg) piden "¿Guardar este repostaje?"
+  con un "Guardar igualmente".
+- Los repostajes anteriores al paso 12 se abren con la cantidad vacía y los
+  valores por defecto, y se pueden completar.
+- **Vehículo eléctrico:** el repostaje solo tiene los campos de siempre (es un
+  gasto).
+- **Al guardar**, un único aviso de unos 8 segundos: "Repostaje guardado." y
+  lo que significa para el consumo (el consumo, km, días y coste del tramo
+  que cierra; "A partir del siguiente lleno verás el consumo"; "Se contará en
+  el tramo del siguiente lleno"; o por qué el tramo no se puede calcular).
+  Si además procede la oferta de E3, el mismo aviso termina con "¿Actualizar
+  el cuentakilómetros…?" y su botón **Actualizar**; si no, el botón es
+  **Ver**, que abre el repostaje.
+- **Detalle:** carburante (en bifuel), cantidad, precio por unidad (calculado),
+  depósito lleno, "me salté uno" y una sección **Consumo** con lo mismo que el
+  aviso. Un tramo sospechoso añade la línea ámbar "Consumo muy distinto de la
+  media. ¿Faltó un repostaje?" (con icono) y el enlace **Editar repostaje**;
+  un parcial dice en qué tramo cuenta o que contará en el del siguiente
+  lleno.
+- **Ficha del vehículo:** cambiar el tipo de combustible se rechaza si deja
+  repostajes con un carburante que el nuevo tipo no admite, con el número de
+  repostajes en el mensaje.
+
 ## Kilometraje
 
 El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
 `04_maintenance_logic.md`.
 
-- **U11 — Tres pestañas** en la página del vehículo: **Historial** (la que
-  se ve al abrir), **Kilometraje** y **Ficha**. La cabecera compacta sigue
-  mostrando el km actual.
+- **U11 — Pestañas** de la página del vehículo: en el paso 5 eran tres
+  (**Historial**, la que se ve al abrir, **Kilometraje** y **Ficha**); el paso
+  8 añadió **Documentos** (U25) y el paso 12 **Informes**. Hoy son cinco:
+  Historial, Kilometraje, Informes, Documentos y Ficha. La cabecera compacta
+  sigue mostrando el km actual.
 - **U12 — Pestaña Kilometraje:** las lecturas de la más reciente a la más
   antigua; cada fila muestra la fecha, los km (con el formato del idioma) y
-  la diferencia con la lectura anterior ("+1.250 km"); la más antigua
-  muestra "Lectura inicial" en lugar de la diferencia.
+  la diferencia con la lectura anterior con los días entre las dos
+  ("+1.250 km en 12 días"; desde el paso 12); la más antigua muestra
+  "Lectura inicial" en lugar de la diferencia. Las estadísticas por periodo
+  están en Informes.
 - **U13 — Botón flotante "Actualizar cuentakilómetros"** en la pestaña
-  Kilometraje (en Historial y en Ficha sigue "Nueva entrada"). Formulario:
+  Kilometraje (en Historial y en Ficha sigue "Nueva entrada", en Documentos
+  es "Añadir documento" e Informes, que es de solo lectura, no tiene).
+  Formulario:
   lectura (obligatoria, número entero en la unidad elegida, con su símbolo
   como sufijo y la ayuda "Última: 123.456 km el 3 oct 2026") y fecha (hoy
   por defecto; el selector solo permite días entre la última lectura y hoy).
@@ -311,9 +363,11 @@ ruta). Formato del paquete, validación y red de seguridad en
     el estado cambia. Sin punto común, copia más nueva o cuenta por
     vincular: un mensaje breve una vez, con el mismo acceso.
 - **U21 — Pantalla Ajustes** (ruta `/settings`), desde el menú de las listas
-  de inicio, junto a Copia de seguridad, Papelera y Acerca de. Dos ajustes,
-  cada uno una fila con su valor actual que abre un diálogo con botones de
-  opción:
+  de inicio, junto a Copia de seguridad, Papelera e Información. Idioma y
+  tema, cada uno una fila con su valor actual que abre un diálogo con botones
+  de opción, y desde el paso 11 la sección **Unidades** (preajuste
+  Internacional / Imperial y una fila por magnitud; ver
+  `06_settings_and_i18n.md`, "Unidades de medida"):
   - **Idioma**: Sistema, Italiano, Español, English. Cada idioma se escribe
     en su propio idioma, sea cual sea el de la app.
   - **Tema**: Sistema, Claro, Oscuro.
@@ -352,6 +406,9 @@ Cómo funciona (U8):
 
 ## Recordatorios y notificaciones
 
+*Previsto, no implementado todavía (paso 13a dentro de la app, 13b
+notificaciones).*
+
 Dos orígenes de recordatorios:
 
 1. **Manuales** — configurados en una sola entrada (una fecha futura y/o un
@@ -374,7 +431,61 @@ Comportamiento de los avisos:
 
 ## Informes
 
-Todos los informes ofrecen la opción **incluir / excluir imágenes** y, donde
+### Informes de la ficha del vehículo (paso 12)
+
+Una pestaña **Informes** en la página del vehículo, entre Kilometraje y
+Documentos (`?tab=reports`). Solo lectura, sin botón flotante; igual en un
+vehículo archivado. Todo se calcula al momento con las entradas y lecturas:
+nada se guarda.
+
+- **Filtro común**, arriba, con dos modos excluyentes (control segmentado):
+  - **Fechas**: Todo (por defecto), 12 meses, 90 días (los dos terminan hoy,
+    incluido) o Personalizado, con dos selectores de fecha ("Desde",
+    "Hasta"; uno vacío deja ese extremo abierto).
+  - **Cuentakilómetros**: dos valores del cuentakilómetros en la unidad de
+    distancia elegida, rellenados con la primera y la última lectura del
+    vehículo.
+
+  El filtro es estado de la pantalla: dura mientras la página del vehículo
+  está abierta y no es un ajuste.
+- Un **tramo de consumo pertenece al filtro** solo si sus dos repostajes, el
+  que lo abre y el que lo cierra, caen dentro (por fecha o por km). Un tramo
+  que cruza el borde queda fuera: no se reparte, porque sería suponer.
+- **Consumo** (no en los vehículos eléctricos): resumen con el consumo medio,
+  el coste medio por distancia, la cantidad total, el gasto total y el número
+  de tramos válidos, más la **línea de cobertura** "Media calculada sobre X
+  km (N días) de los Y km (M días) del tramo". X y N suman solo los tramos
+  válidos del filtro. Y es el tramo real del filtro: en modo cuentakilómetros,
+  exactamente el rango escrito, recortado a la primera y la última lectura
+  del vehículo; en modo fechas, del primer al último repostaje de ese
+  carburante dentro del filtro, tengan o no cantidad. M son los días entre
+  el primer y el último repostaje de ese carburante dentro del filtro (en los
+  dos modos). La diferencia Y − X es justo lo que no se pudo calcular: nada
+  se estima ni se interpola. Debajo, la lista de tramos, el más reciente
+  arriba: fechas de apertura → cierre, consumo, km, cantidad, importe y el
+  estado (válido, no calculado con su motivo, o muy distinto de la media en
+  ámbar), siempre con icono y texto. En un bifuel, unos chips cambian entre
+  las dos cadenas. Tocar un tramo abre el repostaje que lo cierra.
+- **Gasto en carburante**: gasto total, número de repostajes, precio medio
+  por unidad (en un bifuel, uno por carburante: no se mezclan €/L y €/kg) y el
+  gasto por mes en una tabla (sin gráfico), de todos los repostajes del
+  filtro con importe, estén o no en una cadena. En un eléctrico, sin precio
+  por unidad.
+- **Distancia frente a tiempo**: con las lecturas del cuentakilómetros del
+  filtro, la distancia, los días, la distancia por día y por mes, y la lista
+  de lecturas con la distancia y los días desde la anterior. Varias lecturas
+  del mismo día cuentan como una (la última); con un solo día no se divide
+  entre cero (se muestra "—"). El nombre no dice "km" porque la distancia se
+  muestra en la unidad elegida.
+- Todo pasa por el formateador de unidades y los importes por el formato de
+  moneda del idioma.
+
+### Informes en PDF
+
+*Previsto, no implementado todavía (paso 14 o posterior), sobre los informes
+de la ficha.*
+
+Todos los informes ofrecerán la opción **incluir / excluir imágenes** y, donde
 corresponda, **incluir / excluir importes**. La exportación de referencia es
 en **PDF** (adecuado para imprimir, enviar o entregar a un comprador).
 
@@ -384,19 +495,20 @@ Informes previstos:
   los mantenimientos (ver abajo) y los gastos genéricos.
 - **Entradas por tipo** — solo mantenimientos, solo repostajes, etc.; con la
   opción de incluir o no los importes.
-- **Consumo de combustible** — consumo medio (total o por periodo) y gasto
-  total en combustible por periodo (detalle del cálculo en
-  `04_maintenance_logic.md`).
+- **Consumo de combustible** — el de la pestaña Informes (detalle del cálculo
+  en `04_maintenance_logic.md`).
 - **Km recorridos frente a tiempo** — basado en el historial de kilometraje
-  (`MileageReading`).
+  (`MileageReading`), como la pestaña Informes.
 - **General** — TODA la información de un vehículo en un único documento.
   Pensado como registro completo para la reventa / cambio de titularidad. Es
   un punto fuerte de la app.
 
-Los informes pueden generarse para **un** vehículo o para **varios**
+Los informes en PDF podrán generarse para **un** vehículo o para **varios**
 vehículos.
 
 ## Gastos dentro del mantenimiento
+
+*Previsto, no implementado todavía.*
 
 El coste ya es un campo de la entrada base (`LogEntry`). Además, dentro de una
 entrada de mantenimiento se pueden enumerar las **partidas de gasto
@@ -507,7 +619,8 @@ Pantallas:
 - **U24 — Fila del historial:** un clip con el número de adjuntos cuando la
   entrada tiene alguno.
 - **U25 — Página del vehículo:** pestaña nueva **Documentos** después de
-  Kilometraje (Historial, Kilometraje, Documentos, Ficha; `?tab=documents`).
+  Kilometraje (Historial, Kilometraje, Documentos, Ficha; `?tab=documents`;
+  desde el paso 12, Informes va entre Kilometraje y Documentos).
   En esa pestaña el botón flotante es "Añadir documento". Lista los adjuntos
   del propio vehículo (permiso de circulación, póliza, inspección…), con las
   mismas acciones. Las pestañas se desplazan si no caben (texto grande).

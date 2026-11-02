@@ -64,7 +64,8 @@ representación de los colores cambia.
 
 ### Coherencia claro/oscuro en las imágenes
 
-La app muestra fotos (vehículos, documentos, entradas). Las miniaturas deben
+La app muestra fotos (documentos y entradas; las fotos de perfil de los
+vehículos y propietarios están pendientes). Las miniaturas deben
 tener un fondo/contenedor que funcione en ambos temas, y el posible texto
 superpuesto debe seguir siendo legible en claro y en oscuro.
 

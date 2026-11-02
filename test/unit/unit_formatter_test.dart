@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/units.dart';
 import 'package:vehicle_history/l10n/app_localizations.dart';
 import 'package:vehicle_history/shared/utils/unit_formatter.dart';
@@ -191,5 +192,56 @@ void main() {
       formatter(UnitPreferences.imperial, 'it').bigOdometerJumpThreshold,
       '30.000 mi',
     );
+  });
+
+  group('refuels (step 12)', () {
+    test('CNG is in kg whatever the volume unit', () {
+      expect(imperial.fuelQuantity(RefuelFuel.cng).format(12.4), '12.4 kg');
+      expect(imperial.fuelQuantity(RefuelFuel.petrol).symbol, 'gal');
+      expect(international.fuelQuantity(RefuelFuel.lpg).format(40), '40 L');
+    });
+
+    test('CNG consumption follows the shape of the setting', () {
+      // 5 kg/100 km.
+      expect(
+        international.fuelConsumption(RefuelFuel.cng).format(5),
+        '5 kg/100 km',
+      );
+      expect(
+        formatter(
+          const UnitPreferences(consumption: ConsumptionUnit.kmPerLitre),
+        ).fuelConsumption(RefuelFuel.cng).format(5),
+        '20 km/kg',
+      );
+      // mpg has no gas counterpart: km/kg, no error.
+      expect(imperial.fuelConsumption(RefuelFuel.cng).format(5), '20 km/kg');
+      expect(imperial.fuelConsumption(RefuelFuel.petrol).symbol, 'mpg');
+    });
+
+    test('prices per shown unit, from euros per litre or kg', () {
+      expect(
+        international.formatUnitPrice(RefuelFuel.petrol, 1.859),
+        '€1.859/L',
+      );
+      // 1.859 €/L × 3.785411784 L/gal.
+      expect(imperial.formatUnitPrice(RefuelFuel.petrol, 1.859), '€7.037/gal');
+      expect(imperial.formatUnitPrice(RefuelFuel.cng, 1.5), '€1.500/kg');
+      expect(international.unitPriceSymbol(RefuelFuel.petrol), '€/L');
+      expect(
+        imperial.unitPriceToSI(RefuelFuel.petrol, 7.037),
+        closeTo(1.859, 1e-3),
+      );
+    });
+
+    test('cost per distance: per 100 km, or per mile', () {
+      // 8.9 cents per km.
+      expect(international.formatCostPerDistance(8.9), '€8.90/100 km');
+      expect(imperial.formatCostPerDistance(8.9), '€0.14/mi');
+      expect(
+        formatter(UnitPreferences.international, 'es')
+            .formatCostPerDistance(8.9),
+        '8,90 €/100 km',
+      );
+    });
   });
 }

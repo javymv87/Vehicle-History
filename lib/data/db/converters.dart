@@ -6,6 +6,7 @@ import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/log_entry_type.dart';
+import '../models/refuel.dart';
 import '../models/vehicle_kind.dart';
 
 /// Stores a [CalendarDate] as ISO-8601 `yyyy-MM-dd` text.
@@ -56,6 +57,23 @@ class FuelTypeConverter extends TypeConverter<FuelType, String> {
         FuelType.electric => 'electric',
         FuelType.other => 'other',
       };
+}
+
+/// Stores a [RefuelFuel] as its stable text code ([RefuelFuel.code]).
+class RefuelFuelConverter extends TypeConverter<RefuelFuel, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const RefuelFuelConverter();
+
+  @override
+  RefuelFuel fromSql(String fromDb) => RefuelFuel.values.firstWhere(
+        (fuel) => fuel.code == fromDb,
+        // Only reachable with a corrupted or foreign database file.
+        orElse: () =>
+            throw StateError('Unknown refuel fuel code in database: $fromDb'),
+      );
+
+  @override
+  String toSql(RefuelFuel value) => value.code;
 }
 
 /// Stores a [VehicleKind] as a stable text code.

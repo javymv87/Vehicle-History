@@ -95,8 +95,9 @@ abstract interface class VehicleRepository {
   /// mileage feature (`MileageReading`), never to the vehicle form.
   ///
   /// Throws the same errors as [create], `EntityNotFoundException` when
-  /// the vehicle itself is missing or deleted, and `VehicleArchivedException`
-  /// when it is archived.
+  /// the vehicle itself is missing or deleted, `VehicleArchivedException`
+  /// when it is archived, and `VehicleFuelTypeConflictException` when
+  /// [fuelType] does not allow the fuel of some of its live refuels.
   Future<Vehicle> update(
     String id, {
     required String plate,

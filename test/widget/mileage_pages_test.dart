@@ -68,6 +68,8 @@ void main() {
       await openMileage(tester);
       expect(find.text('13,595 km'), findsOneWidget);
       expect(find.textContaining('+1,250 km'), findsOneWidget);
+      // With the days since the previous reading (step 12).
+      expect(find.text('Jan 10, 2025 · +1,250 km in 312 days'), findsOneWidget);
       expect(find.textContaining('Initial reading'), findsOneWidget);
     });
   });

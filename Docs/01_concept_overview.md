@@ -55,13 +55,17 @@ versión **excluye**:
 - Estimación de costes de reparación y búsqueda de talleres cercanos (servicios
   de terceros).
 - Diagnóstico OBD / conexión a la centralita.
-- Vehículos eléctricos (por ahora se razona sobre motores térmicos de
-  gasolina/diésel; sin embargo, la estructura no debe hacerse tan rígida que lo
-  impida en el futuro).
+- Lógica propia de los vehículos eléctricos (carga en kWh, consumo
+  eléctrico). Un eléctrico se puede registrar (tipo de combustible
+  "eléctrico") y llevar todo su historial, pero sus repostajes son solo un
+  gasto: sin campos de carburante ni informe de consumo (ver
+  `04_maintenance_logic.md`). La estructura no debe hacerse tan rígida que
+  impida añadir esa lógica en el futuro.
 
 ## Las secciones de la app
 
-1. **Lista de vehículos** — con foto, nombre/matrícula.
+1. **Lista de vehículos** — icono del tipo, nombre/matrícula (la foto de
+   perfil está pendiente).
 2. **Ficha del vehículo** — datos generales, especificaciones de fábrica, km
    actual.
 3. **Historial de entradas** — la lista desplazable de todo lo que ha sucedido.
@@ -69,8 +73,12 @@ versión **excluye**:
    eventos).
 5. **Vencimientos / recordatorios** — manuales y automáticos a partir de los
    datos de fábrica.
-6. **Informes** — gastos, por tipo, consumos, general.
-7. **Ajustes** — idioma, nube/copia de seguridad.
+6. **Informes** — desde el paso 12, en la ficha de cada vehículo: consumo,
+   gasto en carburante y distancia frente al tiempo; los informes en PDF
+   (gastos, por tipo, consumos, general) llegarán después.
+7. **Ajustes** — idioma, tema y unidades de medida. La **copia de
+   seguridad** (archivo y Google Drive) tiene su propia pantalla, desde el
+   mismo menú.
 8. **Registro de propietarios** — personas y sus documentos personales.
 
 El detalle de cada sección está en los documentos siguientes.

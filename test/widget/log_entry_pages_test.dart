@@ -188,7 +188,9 @@ void main() {
       );
       expect(store.entries, isEmpty);
 
-      // A legal deadline needs no km.
+      // A legal deadline needs no km. The refuel fields made the form
+      // longer: bring the type chips back into view first.
+      await tester.ensureVisible(find.text('Legal deadline'));
       await tester.tap(find.text('Legal deadline'));
       await tester.pumpAndSettle();
       expect(find.text('Odometer (optional)'), findsOneWidget);

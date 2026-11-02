@@ -5,7 +5,15 @@ comportamiento de la parte de mantenimiento. Las decisiones aquí derivan
 también del análisis de los manuales reales del Fiat Grande Punto y del Toyota
 Yaris Hybrid.
 
+**Qué está implementado.** Los repostajes y su consumo (paso 12) y el
+historial de kilometraje (pasos 5 y 10). El catálogo de mantenimiento, los
+criterios por vehículo, los frenos por eje, el control frente a sustitución,
+los controles con medición y los intervalos de fábrica son **diseño previsto,
+no implementado todavía** (paso 14 o posterior).
+
 ## Catálogo de tipos de mantenimiento (MaintenanceType)
+
+*Previsto, no implementado todavía (paso 14 o posterior).*
 
 Lista común, agrupada por familia para encontrarla fácilmente cuando crece.
 Precargada con las entradas más comunes, y modificable por el usuario.
@@ -40,6 +48,8 @@ estructura debe admitir: solo km, solo tiempo, o ambos.
 
 ## Criterio configurado por vehículo (MaintenanceRule)
 
+*Previsto, no implementado todavía (paso 14 o posterior).*
+
 Asignar un criterio a un vehículo significa tomar un tipo del catálogo y darle
 los intervalos de *ese* vehículo:
 
@@ -64,6 +74,8 @@ demás vehículos.
 
 ## Frenos (lógica por eje)
 
+*Previsto, no implementado todavía (paso 14 o posterior).*
+
 Modelo: **eje → tipo de sistema → componentes, cada uno con su propio
 vencimiento.**
 
@@ -86,6 +98,8 @@ distinción control frente a sustitución (abajo) se aplica también aquí.
 
 ## Control frente a sustitución
 
+*Previsto, no implementado todavía (paso 14 o posterior).*
+
 Son dos cosas distintas y complementarias, ambas registrables:
 
 - **Sustitución** — he cambiado un componente. Pone a cero el contador del
@@ -95,6 +109,8 @@ Son dos cosas distintas y complementarias, ambas registrables:
   - **genérico no clasificado** (solo nota libre)
 
 ## Control con medición
+
+*Previsto, no implementado todavía (paso de las mediciones).*
 
 Registra un valor numérico inspeccionado en una fecha/km determinados,
 construyendo un **historial de valores** en el que se ve la tendencia (p. ej.
@@ -109,31 +125,101 @@ dibujo del neumático 7 → 5 → 3 mm).
 
 ## Repostajes y consumos
 
-Cada repostaje es **autosuficiente**: contiene los datos para calcular el
-consumo por sí solo, sin depender del repostaje anterior (método "por cada
-lleno", no "rango entre dos llenos").
+Desde el paso 12 (esquema v10). El consumo **se deriva, nunca se guarda**: se
+calcula de nuevo con los repostajes cada vez que se muestra, así que corregir
+un repostaje corrige al momento todo lo que depende de él.
 
-Campos:
+### Campos de un repostaje
 
-- **Km recorridos** con ese lleno (del cuentakilómetros parcial/trip puesto a
-  cero en cada lleno). NO es el cuentakilómetros total.
-- **Litros**
-- **Precio por litro** (introducido por el usuario)
+Además de la fecha, el km del cuentakilómetros (obligatorio en un repostaje),
+el importe (el coste de siempre) y la descripción:
 
-Cálculos que hace la app:
+- **Carburante.** Lo decide el tipo de combustible del vehículo:
 
-- **Consumo** de cada repostaje = km recorridos ÷ litros. (Este cálculo lo
-  hace la app; el total gastado NO se calcula automáticamente, por decisión.)
-- Informe de **consumo medio** (total o por periodo).
-- Informe de **gasto total en combustible** por periodo.
+  | Combustible del vehículo | Cadenas | Elección en el formulario | Cantidad en |
+  | --- | --- | --- | --- |
+  | Gasolina, diésel, otro | una | no | volumen (L o galones según los ajustes) |
+  | Híbrido, híbrido enchufable | una, de gasolina | no | volumen |
+  | Gasolina + GLP | dos | gasolina / GLP | volumen |
+  | Gasolina + GNC | dos | gasolina / GNC | gasolina en volumen; **GNC en kg** (sin conversión) |
+  | Eléctrico | ninguna | — | — |
 
-Atención a no confundir los dos tipos de km:
+  En un eléctrico un repostaje es solo un gasto: el formulario no enseña
+  ningún campo de carburante y no hay informe de consumo.
+- **Cantidad** (opcional): litros, o kg con GNC. Sin cantidad, el repostaje
+  cuenta como gasto y queda fuera de la cadena (no es un error).
+- **Depósito lleno** (por defecto, sí). Sin cantidad se ignora para la
+  cadena.
+- **Me salté un repostaje antes de este** (por defecto, no): el usuario no
+  registró el repostaje anterior, así que el tramo al que pertenece este no
+  se puede calcular.
+- **Precio por unidad**: solo en el formulario, **nunca se guarda**. Importe,
+  cantidad y precio forman un triángulo: se escriben dos cualesquiera y el
+  tercero se calcula al momento y sigue siendo editable. Al cambiar uno se
+  recalcula el que no está entre los dos tocados más recientemente. El
+  precio se muestra por la unidad que ve el usuario (€/L, €/gal, €/kg) y se
+  calcula desde los valores en SI.
 
-- **Km recorridos** (en el repostaje) → solo para el consumo. NO toca ni el
-  cuentakilómetros total ni el historial de kilometraje.
-- **Km total / cuentakilómetros total** (estado del vehículo) → para los
-  vencimientos. Vive en `Vehicle.current_odometer_km` y en el historial
-  `MileageReading`.
+### La cadena de llenos
+
+- Un **tramo** va de un repostaje con depósito lleno al siguiente repostaje
+  con depósito lleno **del mismo carburante**, en orden cronológico (fecha y,
+  en el mismo día, el creado antes). Solo un lleno **con cantidad** abre o
+  cierra un tramo.
+- **Km del tramo** = km del cuentakilómetros del repostaje que lo cierra − km
+  del que lo abre. Son los km que ya pide cada repostaje: no hay km parciales
+  ni cuentakilómetros parcial.
+- **Cantidad del tramo** = la del repostaje que lo cierra **más la de todos
+  los repostajes parciales** de ese carburante entre los dos. La cantidad del
+  repostaje que lo abre pertenece al tramo anterior.
+- **Días del tramo** = días entre las dos fechas.
+- **Consumo** = cantidad ÷ km (L/100 km por dentro), mostrado con el ajuste de
+  consumo: L/100 km, km/L, mpg EE. UU. o mpg imperial; el GNC en kg/100 km o
+  km/kg según la forma del ajuste (con mpg, km/kg).
+- **Coste por distancia** = suma de los importes de esos mismos repostajes ÷
+  km, en € por 100 km (o € por milla con la distancia en millas). Si a alguno
+  le falta el importe, el coste del tramo no se calcula (una suma parcial lo
+  subestimaría).
+- **Tramo no calculable** (se lista, nunca entra en las medias): algún
+  repostaje del tramo (sin contar el que lo abre) tiene marcado "me salté
+  uno"; un repostaje entre los dos no tiene cantidad; a alguno le falta el
+  km; los km no aumentan; la cantidad es 0. La app dice el motivo en una
+  línea.
+- **Tramo sospechoso** (en ámbar, sigue contando): cuando la cadena tiene al
+  menos 3 tramos calculables y este se aleja más de un 40 % de la media de
+  su cadena (todos sus tramos calculables, sin filtro). Nunca se excluye solo:
+  la app sugiere revisar si faltó un repostaje.
+- **Media del vehículo** = cantidad total ÷ km totales de los tramos
+  calculables, no la media de los consumos de cada tramo.
+- El primer lleno no tiene tramo: la app dice "A partir del siguiente lleno
+  verás el consumo".
+- Los repostajes registrados antes del paso 12 recibieron el carburante
+  principal del vehículo y "depósito lleno", pero no tienen cantidad: no
+  forman tramos hasta que el usuario los completa.
+
+### Qué enseña la app
+
+- **Al guardar un repostaje**, un único aviso (con la oferta de actualizar el
+  cuentakilómetros si procede, o "Ver" para abrir el repostaje): el consumo,
+  km, días y coste del tramo que cierra; o "A partir del siguiente lleno
+  verás el consumo"; o, para un parcial, que se contará en el tramo del
+  siguiente lleno; o por qué el tramo no se puede calcular.
+- **En el detalle del repostaje**, lo mismo, y para un tramo sospechoso la
+  línea ámbar "Consumo muy distinto de la media. ¿Faltó un repostaje?" con un
+  enlace al formulario, donde se marca "me salté uno". Los informes nunca
+  escriben.
+- **En Informes** (ver `03_features.md`), el consumo, el gasto en carburante y
+  la distancia frente al tiempo. El gasto total en carburante **sí** se
+  calcula ahí: es una suma de importes que el usuario ya escribió, no un dato
+  inventado.
+
+### Los km de un repostaje y el historial de kilometraje
+
+El km de un repostaje es el del cuentakilómetros total, como el de cualquier
+entrada, y **no** alimenta el historial de kilometraje (`MileageReading`) ni el
+km actual del vehículo: sigue valiendo la oferta explícita "¿Actualizar el
+cuentakilómetros?" después de guardar. La cadena usa los km de las entradas;
+el informe de distancia usa solo las lecturas.
 
 ## Kilometraje
 
@@ -209,7 +295,9 @@ del tiempo, para el informe "km recorridos frente a tiempo". Reglas:
 En la ficha del vehículo se registran los datos recomendados por el
 fabricante, usados como base para crear los criterios y como referencia:
 
-- Tipo de combustible
-- Aceite de motor recomendado
-- Intervalos de mantenimiento aconsejados (en km y/o tiempo), que alimentan las
-  `MaintenanceRule`
+- Tipo de combustible (implementado; decide los carburantes de sus
+  repostajes)
+- Aceite de motor recomendado (implementado, texto libre)
+- Notas del fabricante (implementado, texto libre)
+- Intervalos de mantenimiento aconsejados (en km y/o tiempo), que alimentarán
+  las `MaintenanceRule` — *previsto, no implementado todavía*

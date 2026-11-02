@@ -24,8 +24,9 @@ registro principal lleva consigo:
   propósito.
 - `deleted_at` — **cuándo** se borró (instante en UTC, texto ISO-8601);
   vacío (`NULL`) mientras el registro está vivo. Existe desde el esquema v5
-  en `owners`, `vehicles`, `log_entries` y `mileage_readings`. Se escribe
-  siempre junto con `deleted` y se vacía junto con él al restaurar.
+  en `owners`, `vehicles`, `log_entries` y `mileage_readings`, y en
+  `attachments` desde que la tabla existe (v7). Se escribe siempre junto con
+  `deleted` y se vacía junto con él al restaurar.
 
 ### Borrado lógico, papelera y borrado físico (esquema v5)
 
@@ -93,7 +94,7 @@ hasta que se reactiva. Los dos estados son independientes.
   cierre. `archived_km` guarda el mismo valor como resumen para el banner y
   el chip. Sin km, no hay lectura.
 - **Activo = vivo y no archivado.** Es el único filtro de los vehículos
-  "actuales" (lista principal, y los recordatorios del paso 11); la ficha
+  "actuales" (lista principal, y los recordatorios del paso 13a); la ficha
   del propietario muestra también los archivados, en una sección plegable.
 - **Solo lectura:** mientras está archivado, los repositorios rechazan
   cualquier escritura sobre el vehículo, sus entradas, sus lecturas y sus
@@ -159,6 +160,9 @@ esquema v5): restaurarlos necesitaría al propietario. El mensaje lo dice
 ("Tiene vehículos en la papelera: restáuralos o vacía la papelera").
 
 ### OwnerDocument (documento del propietario)
+
+*Previsto, no implementado todavía (paso 14 o posterior).* Hoy los documentos
+del propietario son adjuntos sin datos propios (ver "Attachment").
 
 Documentos personales vinculados a un Owner. Cada uno es un archivo
 (foto/escaneo) con sus datos y su vencimiento, de modo que puede generar
@@ -247,7 +251,7 @@ Campos siempre presentes:
 - **Texto** / descripción libre
 - **Coste** total (opcional), en euros
 - **Recordatorio** opcional (fecha futura + eventual umbral de km) que genera
-  una notificación
+  una notificación — *previsto para el paso 13a; ver abajo*
 
 Tipos de entrada previstos:
 
@@ -255,14 +259,18 @@ Tipos de entrada previstos:
 - Reparación / extraordinario
 - Vencimiento legal (impuesto de circulación, inspección técnica obligatoria,
   seguro)
-- Repostaje (campos extra: litros, precio/litro, km recorridos — ver doc 04)
+- Repostaje (campos extra desde el esquema v10: cantidad, depósito lleno,
+  "me salté uno" y carburante; el precio por unidad no se guarda y los km son
+  los del cuentakilómetros de la entrada — ver "Repostaje (esquema v10)" y el
+  doc 04)
 - Gasto genérico (peajes, lavado, accesorios...)
 - Control con medición (campos extra en Measurement)
 - Control genérico no clasificado (nota libre)
 - Nota / evento (accidentes, multas, recordatorios libres)
 
-**Lo que existe hoy (esquema v3).** La tabla `log_entries` guarda los campos
-técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la referencia
+**Lo que existe hoy (esquema v10).** La tabla `log_entries` (desde el
+esquema v3) guarda los campos técnicos comunes (`id`, `created_at`,
+`updated_at`, `deleted`, `deleted_at`), la referencia
 al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON DELETE
 RESTRICT`), la **fecha** (fecha de calendario, texto `yyyy-MM-dd`, sin hora ni
 zona horaria), los **km** (número en km, opcional, nunca negativo; `REAL`
@@ -299,9 +307,44 @@ vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
 - **Deshacer el borrado de una entrada** la restaura; si mientras tanto se ha
   borrado su vehículo, el deshacer se rechaza con un mensaje y no cambia
   nada.
-- Los campos extra del repostaje (litros, precio/litro), las partidas de
-  gasto y las mediciones llegarán en pasos posteriores. Las fotos y los
-  documentos de una entrada son **adjuntos** (ver "Attachment").
+- Los campos del repostaje existen desde el esquema v10 (abajo); las
+  partidas de gasto y las mediciones llegarán en pasos posteriores. Las fotos
+  y los documentos de una entrada son **adjuntos** (ver "Attachment").
+
+#### Repostaje (esquema v10)
+
+Cuatro columnas de `log_entries`, todas vacías (`NULL`) en las entradas que no
+son repostajes y en los repostajes de un vehículo eléctrico (que son solo un
+gasto):
+
+- `volume` (`REAL`, `CHECK >= 0`): la cantidad repostada, en **litros**, o en
+  **kg** cuando el carburante es GNC; con 3 decimales. Opcional: sin ella el
+  repostaje queda fuera del cálculo del consumo. Siempre en SI, como el resto
+  (ver `06_settings_and_i18n.md`).
+- `full_tank` (booleano): depósito lleno; `true` por defecto.
+- `missed_previous` (booleano): "me salté un repostaje antes de este";
+  `false` por defecto.
+- `fuel` (texto con código estable): `petrol`, `diesel`, `lpg`, `cng`,
+  `other`. Al guardar un repostaje siempre se rellena: el carburante principal
+  del vehículo o, en un bifuel, el elegido. Qué carburantes admite cada tipo
+  de combustible está en el doc 04.
+- El **precio por unidad no se guarda** (se deriva de importe y cantidad) y el
+  importe es el `cost_cents` de siempre. El **consumo no se guarda**: se
+  calcula con la cadena de llenos (doc 04).
+- **Cambiar el tipo de combustible** de un vehículo se rechaza mientras tenga
+  repostajes vivos de un carburante que el nuevo tipo no admite; el mensaje
+  dice cuántos ("Este vehículo tiene N repostajes… Bórralos antes."), como el
+  de un propietario con vehículos.
+- Cambiar el tipo de una entrada de repostaje a otro vacía las cuatro
+  columnas.
+- **Migración v9 → v10:** añade las columnas y, en la misma migración, rellena
+  todos los repostajes existentes (también los borrados y los de vehículos en
+  la papelera o archivados) con el carburante principal de su vehículo
+  (gasolina en bifuel e híbridos, `other` en "otro", nada en eléctricos),
+  depósito lleno y nada saltado. La cantidad queda vacía. No escribe en el
+  historial de operaciones ni toca `updated_at`, así que la fecha de última
+  modificación de los datos no cambia y Drive no ve un cambio local. Una
+  copia v9 se importa y se migra igual.
 
 ### Attachment (adjunto) — esquema v7
 
@@ -377,6 +420,8 @@ galería ni en el almacenamiento público.
 
 ### Measurement (control con medición)
 
+*Previsto, no implementado todavía (paso de las mediciones).*
+
 Campo extra para las entradas de tipo "control con medición". Registra un valor
 numérico inspeccionado, alimentando el historial de valores a lo largo del
 tiempo.
@@ -390,6 +435,10 @@ tiempo.
 
 ### Document (documento del vehículo)
 
+*Previsto, no implementado todavía (paso 14 o posterior).* Hoy los documentos
+del vehículo son adjuntos sin datos propios (pestaña Documentos, ver
+"Attachment").
+
 Documentos del vehículo que representan un **estado actual**, distintos de los
 eventos del historial.
 
@@ -401,6 +450,8 @@ eventos del historial.
 
 ### MaintenanceType (catálogo de tipos de mantenimiento)
 
+*Previsto, no implementado todavía (paso 14 o posterior).*
+
 Catálogo **común** y modificable de los tipos de mantenimiento disponibles,
 agrupados por familia. Se comparte entre todos los vehículos.
 
@@ -411,6 +462,8 @@ agrupados por familia. Se comparte entre todos los vehículos.
 - Precargado por el sistema o creado por el usuario
 
 ### MaintenanceRule (criterio de mantenimiento por vehículo)
+
+*Previsto, no implementado todavía (paso 14 o posterior).*
 
 El criterio de mantenimiento **configurado para un vehículo concreto**,
 tomando un tipo del catálogo y asignándole los intervalos de ese vehículo.
@@ -454,8 +507,9 @@ Reglas lógicas (detalle en `04_maintenance_logic.md`):
 - Se actualiza **solo** cuando el usuario actualiza el cuentakilómetros total
   de forma explícita. El km escrito en cada entrada NO entra aquí.
 
-**Lo que existe hoy (esquema v4).** La tabla `mileage_readings` guarda los
-campos técnicos comunes (`id`, `created_at`, `updated_at`, `deleted`), la
+**Lo que existe hoy (desde el esquema v4).** La tabla `mileage_readings`
+guarda los campos técnicos comunes (`id`, `created_at`, `updated_at`,
+`deleted`, `deleted_at`), la
 referencia al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON
 DELETE RESTRICT`), la **fecha** (`reading_date`, fecha de calendario, texto
 `yyyy-MM-dd`) y los **km** (número en km, nunca negativo). No hay campo de
@@ -496,17 +550,21 @@ consultable y útil también en el futuro. Existe **desde la primera versión
 del esquema**: cada creación, modificación, borrado y restauración (deshacer
 un borrado) de un Owner, un Vehicle, una LogEntry, una MileageReading o un
 Attachment (desde la v7)
-añade su fila en la misma transacción. El tipo de entidad es texto sin
-restricción CHECK, así que añadir las entradas del historial (`logEntry`, en
-la v3), las lecturas del cuentakilómetros (`mileageReading`, en la v4) y la
-operación de borrado físico (`purge`, en la v5) no ha requerido tocar esta
+añade su fila en la misma transacción. El tipo de entidad y la operación son
+texto sin restricción CHECK, así que añadir las entradas del historial
+(`logEntry`, en la v3), las lecturas del cuentakilómetros (`mileageReading`,
+en la v4), la operación de borrado físico (`purge`, en la v5), la importación
+de un paquete (operación `import` sobre la entidad `database`, en la v6) y el
+archivo (`archive` y `reactivate`, en la v8) no ha requerido tocar esta
 tabla. Es solo de añadir: sus filas no se modifican ni se borran, tampoco
 cuando la entidad a la que apuntan se borra físicamente.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
 - Operación: creación / modificación / eliminación / restauración /
   eliminación definitiva (`purge`: vehículos y propietarios, y entradas,
-  lecturas y adjuntos que la limpieza elimina sueltos)
+  lecturas y adjuntos que la limpieza elimina sueltos) / importación
+  (`import`, entidad `database`) / archivo y reactivación (`archive`,
+  `reactivate`, sobre el vehículo)
 - Cuándo: fecha y hora
 
 ### Settings (ajustes)
@@ -514,24 +572,35 @@ cuando la entidad a la que apuntan se borra físicamente.
 Configuración de la app, no vinculada a un vehículo. Desde el esquema v6 es
 la tabla clave / valor `settings`, descrita en `06_settings_and_i18n.md`.
 
-- Idioma (IT / ES / EN)
-- Tema (Sistema / Claro / Oscuro)
-- Configuración de la nube / Google Drive (cuenta, activo sí/no)
-- Metadatos de la copia de seguridad: **número de versión** de la base de datos
-  y **fecha de la última modificación**, usados para el control de versión al
-  abrir la app (ver `05_sync_and_storage.md`).
+- Idioma (IT / ES / EN) y tema (Sistema / Claro / Oscuro)
+- Las cinco unidades de medida (desde el paso 11)
+- La fecha de la última exportación del paquete
+- Google Drive: la cuenta vinculada, la modalidad, el identificador del
+  teléfono, el uso de datos móviles y el último punto en común con la copia
+  (no hay un indicador "activo": sin cuenta no hay copia en Drive)
+
+Las claves y sus valores están en `06_settings_and_i18n.md`. Los metadatos del
+control de versión **no** son ajustes: el número de versión es la versión del
+esquema de la propia base de datos (`user_version`) y la fecha de la última
+modificación (`last_modified_at`) se calcula a partir de los datos cada vez
+que hace falta (ver `05_sync_and_storage.md`).
 
 ## Resumen de relaciones
 
+Implementadas:
+
 - Owner 1 — N Vehicle
-- Owner 1 — N OwnerDocument
 - Vehicle 1 — N LogEntry
-- Vehicle 1 — N Document
-- Vehicle 1 — N MaintenanceRule
 - Vehicle 1 — N MileageReading
 - LogEntry 1 — N Attachment
 - Vehicle 1 — N Attachment
 - Owner 1 — N Attachment
+- AuditLog y Settings son transversales / globales
+
+Previstas (no implementadas todavía):
+
+- Owner 1 — N OwnerDocument
+- Vehicle 1 — N Document
+- Vehicle 1 — N MaintenanceRule
 - LogEntry 1 — 1 Measurement (solo para el tipo "control con medición")
 - MaintenanceType 1 — N MaintenanceRule (el catálogo alimenta las reglas)
-- AuditLog y Settings son transversales / globales

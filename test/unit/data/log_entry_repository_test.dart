@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
 import 'package:vehicle_history/data/models/audit_entry.dart';
@@ -6,6 +7,7 @@ import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry.dart';
 import 'package:vehicle_history/data/models/log_entry_filter.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/audit_log_repository.dart';
@@ -646,6 +648,172 @@ void main() {
         },
         {LogEntryType.legalDue, LogEntryType.expense, LogEntryType.note},
       );
+    });
+  });
+
+  group('refuel fields (schema v10)', () {
+    /// Creates a vehicle of [fuelType] owned by the Punto's owner.
+    Future<Vehicle> vehicleOf(FuelType fuelType, String plate) =>
+        vehicles.create(
+          plate: plate,
+          kind: VehicleKind.car,
+          ownerId: punto.ownerId,
+          currentOdometerKm: 1000,
+          fuelType: fuelType,
+        );
+
+    test('a refuel stores its fields, the volume rounded to 3 decimals',
+        () async {
+      clock.advance();
+      final entry = await entries.create(
+        vehicleId: punto.id,
+        date: const CalendarDate(2026, 10, 1),
+        km: 85000,
+        type: LogEntryType.refuel,
+        costCents: 6050,
+        refuel: const RefuelDetails(
+          fuel: RefuelFuel.petrol,
+          volume: 35.123456,
+          fullTank: false,
+          missedPrevious: true,
+        ),
+      );
+      final stored = (await entries.getById(entry.id))!.refuel!;
+      expect(stored.volume, 35.123);
+      expect(stored.fullTank, isFalse);
+      expect(stored.missedPrevious, isTrue);
+      expect(stored.fuel, RefuelFuel.petrol);
+      expect(entry.refuel, stored);
+    });
+
+    test('a refuel without fields gets the primary fuel and a full tank',
+        () async {
+      final refuel = await add(type: LogEntryType.refuel);
+      expect(
+        (await entries.getById(refuel.id))!.refuel,
+        const RefuelDetails(fuel: RefuelFuel.petrol),
+      );
+      final diesel = await add(vehicle: panda, type: LogEntryType.refuel);
+      expect(
+        (await entries.getById(diesel.id))!.refuel?.fuel,
+        RefuelFuel.diesel,
+      );
+    });
+
+    test('other types and electric refuels keep no refuel fields', () async {
+      clock.advance();
+      final service = await entries.create(
+        vehicleId: punto.id,
+        date: const CalendarDate(2026, 10, 1),
+        km: 85000,
+        type: LogEntryType.maintenance,
+        refuel: const RefuelDetails(fuel: RefuelFuel.petrol, volume: 10),
+      );
+      expect((await entries.getById(service.id))!.refuel, isNull);
+      final zoe = await vehicleOf(FuelType.electric, 'EL123EL');
+      final charge = await add(vehicle: zoe, type: LogEntryType.refuel);
+      expect((await entries.getById(charge.id))!.refuel, isNull);
+    });
+
+    test('a bi-fuel vehicle takes its second fuel, never a foreign one',
+        () async {
+      final lpg = await vehicleOf(FuelType.petrolLpg, 'LP123LP');
+      clock.advance();
+      final entry = await entries.create(
+        vehicleId: lpg.id,
+        date: const CalendarDate(2026, 10, 1),
+        km: 1000,
+        type: LogEntryType.refuel,
+        refuel: const RefuelDetails(fuel: RefuelFuel.lpg, volume: 30),
+      );
+      expect((await entries.getById(entry.id))!.refuel?.fuel, RefuelFuel.lpg);
+      await expectLater(
+        entries.create(
+          vehicleId: lpg.id,
+          date: const CalendarDate(2026, 10, 1),
+          km: 1000,
+          type: LogEntryType.refuel,
+          refuel: const RefuelDetails(fuel: RefuelFuel.cng),
+        ),
+        throwsA(isA<InvalidFieldException>()),
+      );
+    });
+
+    test('a negative volume is refused', () async {
+      await expectLater(
+        entries.create(
+          vehicleId: punto.id,
+          date: const CalendarDate(2026, 10, 1),
+          km: 85000,
+          type: LogEntryType.refuel,
+          refuel: const RefuelDetails(fuel: RefuelFuel.petrol, volume: -1),
+        ),
+        throwsA(isA<InvalidFieldException>()),
+      );
+    });
+
+    test('changing the type away from refuel clears the fields', () async {
+      clock.advance();
+      final entry = await entries.create(
+        vehicleId: punto.id,
+        date: const CalendarDate(2026, 10, 1),
+        km: 85000,
+        type: LogEntryType.refuel,
+        refuel: const RefuelDetails(fuel: RefuelFuel.petrol, volume: 40),
+      );
+      await entries.update(
+        entry.id,
+        date: entry.date,
+        km: entry.km,
+        type: LogEntryType.expense,
+      );
+      expect((await entries.getById(entry.id))!.refuel, isNull);
+      final raw = await db.customSelect(
+        'SELECT volume, full_tank, missed_previous, fuel FROM log_entries '
+        'WHERE id = ?',
+        variables: [Variable(entry.id)],
+      ).getSingle();
+      expect(raw.data.values, everyElement(isNull));
+    });
+
+    test('the fuel type cannot change past the fuel of a refuel', () async {
+      await add(type: LogEntryType.refuel);
+      await add(type: LogEntryType.refuel);
+      Future<Vehicle> changeTo(FuelType fuelType) => vehicles.update(
+            punto.id,
+            plate: punto.plate,
+            kind: punto.kind,
+            ownerId: punto.ownerId,
+            fuelType: fuelType,
+          );
+      await expectLater(
+        changeTo(FuelType.diesel),
+        throwsA(
+          isA<VehicleFuelTypeConflictException>()
+              .having((e) => e.refuelCount, 'refuelCount', 2),
+        ),
+      );
+      await expectLater(
+        changeTo(FuelType.electric),
+        throwsA(isA<VehicleFuelTypeConflictException>()),
+      );
+      expect((await vehicles.getById(punto.id))!.fuelType, FuelType.petrol);
+      // Types that still allow petrol are fine.
+      expect((await changeTo(FuelType.petrolLpg)).fuelType, FuelType.petrolLpg);
+      expect((await changeTo(FuelType.hybrid)).fuelType, FuelType.hybrid);
+    });
+
+    test('deleted refuels do not block a change of fuel type', () async {
+      final refuel = await add(type: LogEntryType.refuel);
+      await entries.delete(refuel.id);
+      final updated = await vehicles.update(
+        punto.id,
+        plate: punto.plate,
+        kind: punto.kind,
+        ownerId: punto.ownerId,
+        fuelType: FuelType.diesel,
+      );
+      expect(updated.fuelType, FuelType.diesel);
     });
   });
 }

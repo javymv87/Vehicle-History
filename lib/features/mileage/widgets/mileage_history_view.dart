@@ -17,7 +17,8 @@ import '../controllers/mileage_reading_deletion_controller.dart';
 
 /// The Mileage tab of a vehicle (`Docs/03_features.md`, U12 and U14): its
 /// odometer readings newest first, each with the km driven since the
-/// previous one, the initial reading at the bottom. Tapping a reading opens
+/// previous one and the days between them, the initial reading at the
+/// bottom. Tapping a reading opens
 /// its actions; for an archived vehicle the rows have none.
 class MileageHistoryView extends ConsumerWidget {
   /// Creates the readings list of the vehicle with [vehicleId].
@@ -153,7 +154,7 @@ class MileageHistoryView extends ConsumerWidget {
 enum _ReadingAction { edit, delete }
 
 /// One reading row: km, day, and the difference with the [previous]
-/// reading ("Initial reading" for the oldest).
+/// reading with the days between them ("Initial reading" for the oldest).
 class _ReadingTile extends ConsumerWidget {
   const _ReadingTile({
     required this.reading,
@@ -170,10 +171,14 @@ class _ReadingTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final units = unitFormatterOf(context, ref);
     final previous = this.previous;
+    // The km since the previous reading and the days between them (D7).
     final difference = previous == null
         ? l10n.initialReading
-        : l10n.readingDifference(
-            units.distance.format(reading.km - previous.km),
+        : l10n.segmentDistanceDays(
+            l10n.readingDifference(
+              units.distance.format(reading.km - previous.km),
+            ),
+            previous.date.daysUntil(reading.date),
           );
     return ListTile(
       leading: const Icon(Icons.speed),

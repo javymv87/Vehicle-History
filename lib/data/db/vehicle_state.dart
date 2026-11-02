@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../models/fuel_type.dart';
 import 'app_database.dart';
 
 /// Whether a vehicle row can be written to, as the repositories need to know
@@ -35,5 +36,19 @@ extension VehicleStateQuery on DatabaseAccessor<AppDatabase> {
     return row.read(vehicles.archivedAt) == null
         ? VehicleState.active
         : VehicleState.archived;
+  }
+
+  /// The fuel type of the live vehicle [vehicleId], or `null` when it is
+  /// deleted or missing. Decides the refuel fields of its entries.
+  Future<FuelType?> vehicleFuelTypeOf(String vehicleId) async {
+    final vehicles = attachedDatabase.vehicles;
+    final row = await (attachedDatabase.selectOnly(vehicles)
+          ..addColumns([vehicles.fuelType])
+          ..where(
+            vehicles.id.equals(vehicleId) & vehicles.deleted.equals(false),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.readWithConverter(vehicles.fuelType);
   }
 }

@@ -11,6 +11,7 @@ import '../../../data/models/log_entry.dart';
 import '../../../data/models/log_entry_type.dart';
 import '../../../data/models/mileage_reading.dart';
 import '../../../data/models/odometer_checks.dart';
+import '../../../data/models/refuel.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -23,18 +24,23 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
+import '../../reports/widgets/segment_texts.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/log_entry_attachments_controller.dart';
 import '../controllers/log_entry_form_controller.dart';
+import '../controllers/refuel_triangle.dart';
 import '../widgets/log_entry_attachments_field.dart';
 import '../widgets/log_entry_type_icon.dart';
 
 /// Form that creates a history entry for a vehicle (no [entryId]) or edits
-/// one (`Docs/03_features.md`, U3–U5, U10, U22 and E1–E3).
+/// one (`Docs/03_features.md`, U3–U5, U10, U22, E1–E3 and the refuel form).
 ///
 /// Built for few taps: type, date (today by default), km with a one-tap
 /// "use current km" chip, cost and description, with Save always in the app
-/// bar.
+/// bar. A refuel of a vehicle that is not electric adds its fields: the
+/// fuel (bi-fuel vehicles only), the volume, the price per unit and the
+/// amount, linked by [RefuelTriangle], then the full-tank switch and the
+/// missed-refuel checkbox.
 class LogEntryFormPage extends ConsumerWidget {
   /// Creates the form for the vehicle with [vehicleId]; [entryId] is `null`
   /// to create a new entry.
@@ -114,7 +120,27 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
   /// known.
   final _km = TextEditingController();
   final _cost = TextEditingController();
+  final _volume = TextEditingController();
+  final _price = TextEditingController();
   bool _storedValuesFilled = false;
+
+  /// The amount / volume / price of a refuel, in SI: what the three fields
+  /// hold, and which of them is computed after an edit.
+  late final RefuelTriangle _triangle = RefuelTriangle(
+    amountCents: widget.initial?.costCents,
+    volume: widget.initial?.refuel?.volume,
+  );
+
+  /// The fuel of a refuel: the entry's, or the vehicle's primary one (petrol
+  /// on a bi-fuel vehicle); `null` for an electric vehicle.
+  late RefuelFuel? _fuel =
+      widget.initial?.refuel?.fuel ?? widget.vehicle.fuelType.primaryRefuelFuel;
+
+  /// Whether the refuel filled the tank: on for a new refuel.
+  late bool _fullTank = widget.initial?.refuel?.fullTank ?? true;
+
+  /// Whether a refuel before this one was not recorded: off by default.
+  late bool _missedPrevious = widget.initial?.refuel?.missedPrevious ?? false;
 
   /// The formatter of the last build, for the validators and the save.
   late UnitFormatter _units;
@@ -147,6 +173,10 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
       if (km != null) {
         _km.text = readUnitFormatter(context, ref).distance.inputText(km);
       }
+      // An edited refuel: its volume, and the price computed from it.
+      _units = readUnitFormatter(context, ref);
+      _showTriangleValue(TriangleField.volume);
+      _showTriangleValue(TriangleField.price);
     }
     _storedValuesFilled = true;
   }
@@ -156,7 +186,63 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     _km.dispose();
     _description.dispose();
     _cost.dispose();
+    _volume.dispose();
+    _price.dispose();
     super.dispose();
+  }
+
+  /// Whether the refuel fields are shown: a refuel of a vehicle that is not
+  /// electric.
+  bool get _showsRefuelFields => _type == LogEntryType.refuel && _fuel != null;
+
+  /// The formatter of the refuel's quantity: litres (or gallons), or kg for
+  /// CNG.
+  QuantityFormatter get _quantity => _units.fuelQuantity(_fuel!);
+
+  /// The typed volume in SI, or `null` when blank or malformed; the
+  /// triangle's own value when the text is exactly how it shows.
+  double? _parseVolume(String text) => text.trim().isEmpty || _fuel == null
+      ? null
+      : _quantity.parse(text, sameAs: _triangle.volume);
+
+  /// Feeds an edit of [field] to the triangle and shows the value it
+  /// computed, if any. Called for the user's own typing only (`onChanged`),
+  /// so a computed value never triggers another computation.
+  void _editTriangle(TriangleField field, num? value) {
+    final computed = _triangle.edit(field, value);
+    if (computed != null) _showTriangleValue(computed);
+  }
+
+  /// Writes the triangle's value of [field] into its text field, in the
+  /// unit and the locale of the moment.
+  void _showTriangleValue(TriangleField field) {
+    final locale = AppLocalizations.of(context).localeName;
+    switch (field) {
+      case TriangleField.amount:
+        final cents = _triangle.amountCents;
+        _cost.text = cents == null ? '' : euroCentsInputText(cents, locale);
+      case TriangleField.volume:
+        final volume = _triangle.volume;
+        _volume.text =
+            volume == null || _fuel == null ? '' : _quantity.inputText(volume);
+      case TriangleField.price:
+        final price = _triangle.price;
+        final fuel = _fuel;
+        _price.text = price == null || fuel == null
+            ? ''
+            : unitPriceInputText(
+                _units.unitPriceToDisplay(fuel, price),
+                locale,
+              );
+    }
+  }
+
+  /// Switches the fuel of a bi-fuel refuel and shows its volume and price
+  /// again in the units of the new fuel (litres or kg).
+  void _selectFuel(RefuelFuel fuel) {
+    setState(() => _fuel = fuel);
+    _showTriangleValue(TriangleField.volume);
+    _showTriangleValue(TriangleField.price);
   }
 
   /// The types offered: the selectable ones, plus the entry's own type when
@@ -228,6 +314,52 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     return null;
   }
 
+  /// Checks the optional volume of a refuel: a number ≥ 0 in its unit.
+  String? _validateVolume(String? value, AppLocalizations l10n) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    final volume = _parseVolume(text);
+    return volume == null || volume < 0 ? l10n.validationVolumeInvalid : null;
+  }
+
+  /// Checks the optional price per unit: ≥ 0 with at most three decimals.
+  String? _validatePrice(String? value, AppLocalizations l10n) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    return tryParseUnitPrice(text) == null ? l10n.validationPriceInvalid : null;
+  }
+
+  /// Asks before saving a refuel whose price or quantity looks unusual
+  /// (`RefuelChecks`); `true` to save. Never refuses.
+  Future<bool> _confirmUnusualRefuel(
+    AppLocalizations l10n, {
+    required double? volume,
+    required int? costCents,
+  }) async {
+    final fuel = _fuel;
+    if (!_showsRefuelFields || fuel == null) return true;
+    final price = costCents != null && volume != null && volume > 0
+        ? costCents / 100 / volume
+        : _triangle.price;
+    final warnings = RefuelChecks.warningsFor(quantity: volume, price: price);
+    if (warnings.isEmpty) return true;
+    final lines = [
+      for (final warning in warnings)
+        switch (warning) {
+          RefuelWarning.unusualPrice =>
+            l10n.refuelCheckPrice(_units.formatUnitPrice(fuel, price!)),
+          RefuelWarning.largeQuantity =>
+            l10n.refuelCheckVolume(_quantity.format(volume!)),
+        },
+    ];
+    return confirmAction(
+      context,
+      title: l10n.refuelCheckTitle,
+      message: lines.join('\n'),
+      confirmLabel: l10n.actionSaveAnyway,
+    );
+  }
+
   /// Checks the optional cost: ≥ 0 with at most two decimals (U5, U10).
   String? _validateCost(String? value, AppLocalizations l10n) {
     final text = (value ?? '').trim();
@@ -268,6 +400,16 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
       );
       if (!confirmed || !mounted) return;
     }
+    final volume = _showsRefuelFields ? _parseVolume(_volume.text) : null;
+    final costCents = costText.isEmpty ? null : tryParseEuroCents(costText);
+    if (!await _confirmUnusualRefuel(
+          l10n,
+          volume: volume,
+          costCents: costCents,
+        ) ||
+        !mounted) {
+      return;
+    }
 
     final messenger = ScaffoldMessenger.of(context);
     // Captured now: the offer's "Update" runs after this form is gone.
@@ -276,22 +418,37 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     final offer = ref.read(odometerUpdateOfferControllerProvider.notifier);
     final attachments =
         ref.read(logEntryAttachmentsControllerProvider(widget.formKey));
+    final form =
+        ref.read(logEntryFormControllerProvider(widget.formKey).notifier);
     setState(() => _saving = true);
-    final result = await ref
-        .read(logEntryFormControllerProvider(widget.formKey).notifier)
-        .save(
-          LogEntryDraft(
-            date: _date,
-            type: _type!,
-            km: km,
-            description: _description.text,
-            costCents: costText.isEmpty ? null : tryParseEuroCents(costText),
-            addedAttachments: attachments.staged,
-            removedAttachmentIds: attachments.removedIds,
-          ),
-        );
+    final result = await form.save(
+      LogEntryDraft(
+        date: _date,
+        type: _type!,
+        km: km,
+        description: _description.text,
+        costCents: costCents,
+        refuel: _showsRefuelFields
+            ? RefuelDetails(
+                fuel: _fuel!,
+                volume: volume,
+                fullTank: _fullTank,
+                missedPrevious: _missedPrevious,
+              )
+            : null,
+        addedAttachments: attachments.staged,
+        removedAttachmentIds: attachments.removedIds,
+      ),
+    );
+    if (!mounted) return;
+    // What a refuel means for the consumption, said in the same snackbar.
+    final role = result is ActionSuccess<LogEntry>
+        ? await form.refuelRoleOf(result.value)
+        : null;
     if (!mounted) return;
     setState(() => _saving = false);
+    final refuelSummary =
+        role == null ? null : refuelRoleText(role, l10n, units, quiet: true);
     switch (result) {
       case ActionSuccess(:final value):
         final entryKm = value.km;
@@ -313,6 +470,15 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
             date: value.date,
             km: entryKm,
             currentKm: currentKm,
+            refuelSummary: refuelSummary,
+          );
+        } else if (refuelSummary != null) {
+          showOfferSnackBar(
+            messenger,
+            l10n.refuelSavedWithSummary(refuelSummary),
+            actionLabel: l10n.actionView,
+            onAction: () =>
+                router.push(AppRoutes.entry(value.vehicleId, value.id)),
           );
         } else {
           showSavedSnackBar(messenger, l10n.entrySaved);
@@ -403,12 +569,73 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                   onPressed: _useCurrentKm,
                 ),
               ),
+              if (_showsRefuelFields) ...[
+                if (widget.vehicle.fuelType.hasFuelChoice) ...[
+                  gap,
+                  _FuelChoice(
+                    fuels: widget.vehicle.fuelType.refuelFuels,
+                    selected: _fuel!,
+                    onChanged: _selectFuel,
+                  ),
+                ],
+                gap,
+                TextFormField(
+                  key: const ValueKey('entry-volume-field'),
+                  controller: _volume,
+                  decoration: InputDecoration(
+                    labelText: _fuel!.quantity == FuelQuantity.mass
+                        ? l10n.fieldRefuelMass
+                        : l10n.fieldRefuelVolume,
+                    helperText: l10n.refuelVolumeHelp,
+                    helperMaxLines: 2,
+                    suffixText: _quantity.symbol,
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(amountCharacters),
+                  ],
+                  textInputAction: TextInputAction.next,
+                  onChanged: (text) =>
+                      _editTriangle(TriangleField.volume, _parseVolume(text)),
+                  validator: (value) => _validateVolume(value, l10n),
+                ),
+                gap,
+                TextFormField(
+                  key: const ValueKey('entry-price-field'),
+                  controller: _price,
+                  decoration: InputDecoration(
+                    labelText: l10n.fieldRefuelPrice,
+                    suffixText: _units.unitPriceSymbol(_fuel!),
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(amountCharacters),
+                  ],
+                  textInputAction: TextInputAction.next,
+                  onChanged: (text) {
+                    final shown = tryParseUnitPrice(text);
+                    _editTriangle(
+                      TriangleField.price,
+                      shown == null
+                          ? null
+                          : _units.unitPriceToSI(_fuel!, shown),
+                    );
+                  },
+                  validator: (value) => _validatePrice(value, l10n),
+                ),
+              ],
               gap,
               TextFormField(
                 key: const ValueKey('entry-cost-field'),
                 controller: _cost,
                 decoration: InputDecoration(
-                  labelText: l10n.fieldEntryCost,
+                  labelText: _showsRefuelFields
+                      ? l10n.fieldRefuelAmount
+                      : l10n.fieldEntryCost,
                   suffixText: currency.currencySymbol,
                   border: const OutlineInputBorder(),
                 ),
@@ -418,8 +645,32 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                   FilteringTextInputFormatter.allow(amountCharacters),
                 ],
                 textInputAction: TextInputAction.next,
+                onChanged: (text) => _editTriangle(
+                  TriangleField.amount,
+                  text.trim().isEmpty ? null : tryParseEuroCents(text),
+                ),
                 validator: (value) => _validateCost(value, l10n),
               ),
+              if (_showsRefuelFields) ...[
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  key: const ValueKey('entry-full-tank-switch'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.fieldRefuelFullTank),
+                  value: _fullTank,
+                  onChanged: (value) => setState(() => _fullTank = value),
+                ),
+                CheckboxListTile(
+                  key: const ValueKey('entry-missed-checkbox'),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(l10n.fieldRefuelMissed),
+                  subtitle: Text(l10n.refuelMissedHelp),
+                  value: _missedPrevious,
+                  onChanged: (value) =>
+                      setState(() => _missedPrevious = value ?? false),
+                ),
+              ],
               gap,
               TextFormField(
                 key: const ValueKey('entry-description-field'),
@@ -504,6 +755,45 @@ class _TypeChoice extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The fuel of a refuel on a bi-fuel vehicle: one segment per fuel the
+/// vehicle allows, petrol first.
+class _FuelChoice extends StatelessWidget {
+  const _FuelChoice({
+    required this.fuels,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<RefuelFuel> fuels;
+  final RefuelFuel selected;
+  final ValueChanged<RefuelFuel> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.fieldRefuelFuel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<RefuelFuel>(
+          key: const ValueKey('entry-fuel-choice'),
+          segments: [
+            for (final fuel in fuels)
+              ButtonSegment(value: fuel, label: Text(fuel.label(l10n))),
+          ],
+          selected: {selected},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) => onChanged(selection.single),
+        ),
+      ],
     );
   }
 }

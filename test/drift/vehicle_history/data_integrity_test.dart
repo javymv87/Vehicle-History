@@ -12,6 +12,7 @@ import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/mileage_reading.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 
@@ -32,7 +33,7 @@ import 'generated/schema.dart';
 /// 4. extend the existing expectations with any new column's default.
 ///
 /// The tests must never be weakened to make an upgrade pass.
-const int latestVersion = 9;
+const int latestVersion = 10;
 
 /// Timestamp written into every old row.
 const String _ts = '2024-03-04T10:30:00.000Z';
@@ -1239,6 +1240,212 @@ Future<void> _expectV9RealKmUsable(AppDatabase db) async {
   }
 }
 
+/// `updated_at` of every v9 row, and so the stamp of the v9 data.
+const String _ts5 = '2026-10-20T09:00:00.000Z';
+
+/// Writes a standalone v9 data set with plain SQL against the v9 schema,
+/// built to exercise the refuel fill of v10: one owner and a vehicle of
+/// every fuel type (the petrol + LPG one archived, the diesel one in the
+/// Trash), each with a refuel (a deleted one too), plus entries of other
+/// types that must keep every new column NULL.
+Future<void> _insertV9Rows(GeneratedDatabase oldDb) async {
+  await oldDb.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, deleted_at, '
+    'first_name, last_name, birth_date, nationality, phone, email, notes, '
+    'photo_path) VALUES '
+    "('o1', '$_ts', '$_ts5', 0, NULL, 'Javier', 'Muñoz', NULL, 'ES', NULL, "
+    'NULL, NULL, NULL)',
+  );
+  const columns = 'INSERT INTO vehicles (id, created_at, updated_at, '
+      'deleted, deleted_at, plate, kind, make, make_slug, model, model_slug, '
+      'model_year, version, nickname, owner_id, current_odometer_km, '
+      'fuel_type, recommended_engine_oil, manufacturer_notes, photo_path, '
+      'archived_at, archive_reason, archive_note, archived_km) VALUES ';
+  await oldDb.customStatement(
+    '$columns'
+    "('vP', '$_ts', '$_ts5', 0, NULL, 'AA001AA', 'car', 'Fiat', 'fiat', "
+    "'Panda', 'panda', 2018, NULL, NULL, 'o1', 50000.5, 'petrol', NULL, NULL, "
+    'NULL, NULL, NULL, NULL, NULL), '
+    "('vL', '$_ts', '$_ts5', 0, NULL, 'AA002AA', 'car', 'Fiat', 'fiat', "
+    "'Punto', 'punto', 2012, NULL, NULL, 'o1', 184300, 'petrolLpg', NULL, "
+    "NULL, NULL, '2026-10-01', 'sold', NULL, 184300), "
+    "('vC', '$_ts', '$_ts5', 0, NULL, 'AA003AA', 'van', 'Fiat', 'fiat', "
+    "'Doblò', 'doblo', 2016, NULL, NULL, 'o1', 90000, 'petrolCng', NULL, "
+    'NULL, NULL, NULL, NULL, NULL, NULL), '
+    "('vH', '$_ts', '$_ts5', 0, NULL, 'AA004AA', 'car', 'Toyota', 'toyota', "
+    "'Yaris', 'yaris', 2020, NULL, NULL, 'o1', 30000, 'hybrid', NULL, NULL, "
+    'NULL, NULL, NULL, NULL, NULL), '
+    "('vE', '$_ts', '$_ts5', 0, NULL, 'AA005AA', 'car', 'Renault', "
+    "'renault', 'Zoe', 'zoe', 2021, NULL, NULL, 'o1', 20000, 'electric', "
+    'NULL, NULL, NULL, NULL, NULL, NULL, NULL), '
+    "('vO', '$_ts', '$_ts5', 0, NULL, 'AA006AA', 'moped', NULL, NULL, NULL, "
+    "NULL, NULL, NULL, NULL, 'o1', 3000, 'other', NULL, NULL, NULL, NULL, "
+    'NULL, NULL, NULL), '
+    "('vD', '$_ts', '$_ts5', 1, '$_ts5', 'AA007AA', 'van', NULL, NULL, NULL, "
+    "NULL, NULL, NULL, NULL, 'o1', 99000, 'diesel', NULL, NULL, NULL, NULL, "
+    'NULL, NULL, NULL)',
+  );
+  await oldDb.customStatement(
+    'INSERT INTO log_entries (id, created_at, updated_at, deleted, '
+    'deleted_at, vehicle_id, entry_date, km, type, description, cost_cents) '
+    'VALUES '
+    "('fP', '$_ts', '$_ts5', 0, NULL, 'vP', '2026-10-01', 49800.25, "
+    "'refuel', 'Pieno', 6050), "
+    "('fPx', '$_ts', '$_ts5', 1, '$_ts5', 'vP', '2026-10-02', 49900, "
+    "'refuel', NULL, 3000), "
+    "('mP', '$_ts', '$_ts5', 0, NULL, 'vP', '2026-09-01', 49000, "
+    "'maintenance', 'Tagliando', 18950), "
+    "('fL', '$_ts', '$_ts5', 0, NULL, 'vL', '2026-09-20', 184000, 'refuel', "
+    'NULL, 2500), '
+    "('fC', '$_ts', '$_ts5', 0, NULL, 'vC', '2026-10-05', 89900, 'refuel', "
+    'NULL, 1800), '
+    "('fH', '$_ts', '$_ts5', 0, NULL, 'vH', '2026-10-06', 29950, 'refuel', "
+    'NULL, 4000), '
+    "('fE', '$_ts', '$_ts5', 0, NULL, 'vE', '2026-10-07', 19900, 'refuel', "
+    "'Ricarica', 1200), "
+    "('nE', '$_ts', '$_ts5', 0, NULL, 'vE', '2026-10-08', NULL, 'note', "
+    "'Nota', NULL), "
+    "('fO', '$_ts', '$_ts5', 0, NULL, 'vO', '2026-10-09', 2990, 'refuel', "
+    'NULL, NULL), '
+    "('fD', '$_ts', '$_ts5', 0, NULL, 'vD', '2026-10-10', 98900, 'refuel', "
+    'NULL, 7000)',
+  );
+  await oldDb.customStatement(
+    'INSERT INTO mileage_readings (id, created_at, updated_at, deleted, '
+    'deleted_at, vehicle_id, reading_date, km) VALUES '
+    "('rP', '$_ts', '$_ts5', 0, NULL, 'vP', '2024-03-04', 50000.5), "
+    "('rE', '$_ts', '$_ts5', 0, NULL, 'vE', '2024-03-04', 20000)",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO audit_log (id, entity_type, entity_id, operation, at) '
+    "VALUES ('a1', 'logEntry', 'fP', 'create', '$_ts5'), "
+    "('a2', 'vehicle', 'vL', 'archive', '$_ts5')",
+  );
+}
+
+/// The refuel fields every v9 row of [_insertV9Rows] must have after the
+/// v10 fill: the primary fuel of its vehicle, a full tank and nothing
+/// missed; NULL for the electric vehicle's refuel and for other types.
+const Map<String, RefuelFuel?> _v10Fuels = {
+  'fP': RefuelFuel.petrol,
+  'fPx': RefuelFuel.petrol,
+  'mP': null,
+  'fL': RefuelFuel.petrol,
+  'fC': RefuelFuel.petrol,
+  'fH': RefuelFuel.petrol,
+  'fE': null,
+  'nE': null,
+  'fO': RefuelFuel.other,
+  'fD': RefuelFuel.diesel,
+};
+
+/// Checks every row written by [_insertV9Rows] after an upgrade to v10 or
+/// later: every value as it was, the refuel fields filled as
+/// `fillExistingRefuels` promises, no `updated_at` moved and no audit row
+/// added, so the data stamp (`last_modified_at`) is still the v9 one.
+Future<void> _expectV9RowsIntact(AppDatabase db) async {
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM owners'), 1);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM vehicles'), 7);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM log_entries'), 10);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM mileage_readings'), 2);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM audit_log'), 2);
+  expect(
+    await _count(
+      db,
+      "SELECT COUNT(*) AS c FROM log_entries WHERE updated_at <> '$_ts5'",
+    ),
+    0,
+  );
+  expect(await db.backupDao.lastModifiedAt(), DateTime.parse(_ts5));
+
+  // The values of every entry, raw from disk.
+  final raw = await db
+      .customSelect(
+        'SELECT id, km, cost_cents, description, volume, full_tank, '
+        'missed_previous, fuel FROM log_entries',
+      )
+      .get();
+  final byId = {for (final r in raw) r.read<String>('id'): r};
+  expect(byId.keys.toSet(), _v10Fuels.keys.toSet());
+  expect(byId['fP']!.read<double>('km'), 49800.25);
+  expect(byId['fP']!.read<int>('cost_cents'), 6050);
+  expect(byId['fP']!.read<String>('description'), 'Pieno');
+  expect(byId['mP']!.read<int>('cost_cents'), 18950);
+  expect(byId['fO']!.readNullable<int>('cost_cents'), isNull);
+  for (final MapEntry(key: id, value: fuel) in _v10Fuels.entries) {
+    final row = byId[id]!;
+    expect(row.readNullable<double>('volume'), isNull, reason: id);
+    expect(row.readNullable<String>('fuel'), fuel?.code, reason: id);
+    expect(
+      row.readNullable<int>('full_tank'),
+      fuel == null ? isNull : 1,
+      reason: id,
+    );
+    expect(
+      row.readNullable<int>('missed_previous'),
+      fuel == null ? isNull : 0,
+      reason: id,
+    );
+  }
+
+  // Through the model: a filled refuel, the electric one, another type.
+  final petrol = (await db.logEntriesDao.getLiveById('fP'))!;
+  expect(petrol.refuel, const RefuelDetails(fuel: RefuelFuel.petrol));
+  expect(petrol.updatedAt, DateTime.parse(_ts5));
+  expect((await db.logEntriesDao.getLiveById('fE'))!.refuel, isNull);
+  expect((await db.logEntriesDao.getLiveById('mP'))!.refuel, isNull);
+  // The deleted refuel was filled too, so an Undo brings it back coherent.
+  expect(
+    (await db.logEntriesDao.getDeletedById('fPx'))!.refuel?.fuel,
+    RefuelFuel.petrol,
+  );
+
+  // Vehicles untouched.
+  final punto = (await db.vehiclesDao.getLiveById('vL'))!;
+  expect(punto.fuelType, FuelType.petrolLpg);
+  expect(punto.archivedKm, 184300);
+  expect(
+    (await db.vehiclesDao.getLiveById('vP'))!.currentOdometerKm,
+    50000.5,
+  );
+  await _expectForeignKeysValid(db);
+}
+
+/// Checks the v10 refuel columns on an upgraded database: a refuel with a
+/// volume, a fuel and both flags is stored and read back, and the CHECK
+/// constraints refuse a negative volume and a flag that is not 0 or 1.
+Future<void> _expectV10RefuelUsable(AppDatabase db, String vehicleId) async {
+  final entry = LogEntry(
+    id: 'f-new',
+    vehicleId: vehicleId,
+    date: const CalendarDate(2026, 10, 30),
+    km: 50500,
+    type: LogEntryType.refuel,
+    costCents: 7200,
+    refuel: const RefuelDetails(
+      fuel: RefuelFuel.lpg,
+      volume: 42.123,
+      fullTank: false,
+      missedPrevious: true,
+    ),
+    createdAt: _tsUtc,
+    updatedAt: _tsUtc,
+  );
+  await db.logEntriesDao.insertEntry(entry);
+  expect(await db.logEntriesDao.getLiveById('f-new'), entry);
+  for (final sql in [
+    "UPDATE log_entries SET volume = -1 WHERE id = 'f-new'",
+    "UPDATE log_entries SET full_tank = 2 WHERE id = 'f-new'",
+    "UPDATE log_entries SET missed_previous = -1 WHERE id = 'f-new'",
+  ]) {
+    await expectLater(
+      db.customStatement(sql),
+      throwsA(anything),
+      reason: 'should be refused: $sql',
+    );
+  }
+}
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late SchemaVerifier verifier;
@@ -1412,6 +1619,19 @@ void main() {
     await _expectV9RealKmUsable(db);
   });
 
+  test('rows written at v9 are intact at v10, every refuel filled', () async {
+    final db = await upgrade(9, 10, _insertV9Rows);
+    await _expectV9RowsIntact(db);
+    await _expectV10RefuelUsable(db, 'vP');
+  });
+
+  test('rows written at v8 are intact at v$latestVersion (chain)', () async {
+    final db = await upgrade(8, latestVersion, _insertV8Rows);
+    await _expectV8RowsIntact(db);
+    await _expectV9RealKmUsable(db);
+    await _expectV10RefuelUsable(db, 'v1');
+  });
+
   /// Writes [insert]'s rows into a real file at [fromVersion], opens it with
   /// the app's database (a real upgrade, as on the phone), checks the rows
   /// with [expectIntact], and checks the pre-upgrade copy.
@@ -1455,16 +1675,28 @@ void main() {
     final copyVersion =
         await copy.customSelect('PRAGMA user_version').getSingle();
     expect(copyVersion.read<int>('user_version'), fromVersion);
-    // The REAL km columns of the latest version are in the copy of no older
-    // file: `current_odometer_km` is still INTEGER there.
+    // The columns of the latest version are in the copy of no older file:
+    // up to v8 `current_odometer_km` is still INTEGER there, and up to v9
+    // `log_entries` has no refuel columns.
     final columns =
         await copy.customSelect('PRAGMA table_info(vehicles)').get();
     expect(
       {
         for (final c in columns) c.read<String>('name'): c.read<String>('type'),
       },
-      containsPair('current_odometer_km', 'INTEGER'),
+      containsPair(
+        'current_odometer_km',
+        fromVersion < 9 ? 'INTEGER' : 'REAL',
+      ),
     );
+    if (fromVersion >= 3) {
+      final entryColumns =
+          await copy.customSelect('PRAGMA table_info(log_entries)').get();
+      expect(
+        [for (final c in entryColumns) c.read<String>('name')],
+        isNot(contains('volume')),
+      );
+    }
     expect(
       await _count(copy, 'SELECT COUNT(*) AS c FROM vehicles'),
       vehicleRows,
@@ -1540,6 +1772,18 @@ void main() {
         await _expectV9RealKmUsable(db);
       },
       vehicleRows: 2,
+    );
+  });
+
+  test('a real upgrade of a v9 file first copies it', () async {
+    await realUpgrade(
+      9,
+      _insertV9Rows,
+      (db) async {
+        await _expectV9RowsIntact(db);
+        await _expectV10RefuelUsable(db, 'vP');
+      },
+      vehicleRows: 7,
     );
   });
 

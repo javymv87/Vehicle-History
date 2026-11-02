@@ -19,6 +19,7 @@ import 'package:vehicle_history/data/models/backup_manifest.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/attachment_writer.dart';
@@ -678,6 +679,26 @@ void main() {
       expect(await imported.vehiclesDao.watchArchived().first, isEmpty);
     });
 
+    test('a step-11 (v9) package imports with its refuels filled', () async {
+      final package = await _v9Package(pathOf('v9.sqlite'));
+
+      final preview = await serviceOf().inspectPackage(package);
+      expect(preview.manifest.schemaVersion, 9);
+      await serviceOf().importPackage(package);
+
+      final imported = openFile();
+      addTearDown(imported.close);
+      final entries = await imported.logEntriesDao.getLiveByVehicle('v1');
+      final byId = {for (final e in entries) e.id: e};
+      expect(byId['e1']!.km, 1500.5);
+      expect(byId['e1']!.costCents, 6000);
+      expect(
+        byId['e1']!.refuel,
+        const RefuelDetails(fuel: RefuelFuel.petrol),
+      );
+      expect(byId['e2']!.refuel, isNull);
+    });
+
     test('a second import replaces the older pre_import copy', () async {
       await seed(db);
       final package = await exportToFile();
@@ -1280,6 +1301,67 @@ Future<String> _v7Package(String path) async {
       'owners': 1,
       'vehicles': 1,
       'log_entries': 0,
+      'mileage_readings': 1,
+      'attachments': 0,
+    },
+    'attachments_bytes': 0,
+    'last_modified_at': ts,
+  };
+  final zip = '$path.zip';
+  final encoder = ZipFileEncoder()..create(zip);
+  encoder
+    ..addArchiveFile(
+      ArchiveFile.bytes(
+        manifestEntryName,
+        utf8.encode(jsonEncode(manifestJson)),
+      ),
+    )
+    ..addArchiveFile(ArchiveFile.directory(attachmentsEntryName));
+  await encoder.addFile(File(path), databaseEntryName);
+  await encoder.close();
+  return zip;
+}
+
+/// Writes a v9 database (step 11 app) with a petrol + LPG vehicle, a
+/// refuel and a maintenance entry to [path] and returns the path of a
+/// package holding it: a package from before the refuel columns existed.
+Future<String> _v9Package(String path) async {
+  const ts = '2026-10-28T16:30:00.000Z';
+  final old =
+      GeneratedHelper().databaseForVersion(NativeDatabase(File(path)), 9);
+  await old.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, first_name) '
+    "VALUES ('o1', '$ts', '$ts', 0, 'Ana')",
+  );
+  await old.customStatement(
+    'INSERT INTO vehicles (id, created_at, updated_at, deleted, plate, kind, '
+    'make, model, owner_id, current_odometer_km, fuel_type) VALUES '
+    "('v1', '$ts', '$ts', 0, 'AB123CD', 'car', 'Fiat', 'Punto', 'o1', 1500.5, "
+    "'petrolLpg')",
+  );
+  await old.customStatement(
+    'INSERT INTO log_entries (id, created_at, updated_at, deleted, '
+    'vehicle_id, entry_date, km, type, description, cost_cents) VALUES '
+    "('e1', '$ts', '$ts', 0, 'v1', '2026-10-27', 1500.5, 'refuel', NULL, "
+    '6000), '
+    "('e2', '$ts', '$ts', 0, 'v1', '2026-10-26', 1400, 'maintenance', "
+    "'Olio', 9000)",
+  );
+  await old.customStatement(
+    'INSERT INTO mileage_readings (id, created_at, updated_at, deleted, '
+    "vehicle_id, reading_date, km) VALUES ('r1', '$ts', '$ts', 0, 'v1', "
+    "'2026-10-28', 1500.5)",
+  );
+  await old.close();
+  final manifestJson = {
+    'format_version': 1,
+    'schema_version': 9,
+    'app_version': '0.11.0+13',
+    'exported_at': ts,
+    'counts': {
+      'owners': 1,
+      'vehicles': 1,
+      'log_entries': 2,
       'mileage_readings': 1,
       'attachments': 0,
     },

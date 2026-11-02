@@ -4,9 +4,11 @@ import '../db/vehicle_state.dart';
 import '../models/attachment.dart';
 import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
+import '../models/fuel_type.dart';
 import '../models/log_entry.dart';
 import '../models/log_entry_filter.dart';
 import '../models/log_entry_type.dart';
+import '../models/refuel.dart';
 import 'attachment_writer.dart';
 import 'log_entry_repository.dart';
 import 'repository_exceptions.dart';
@@ -62,6 +64,25 @@ class DriftLogEntryRepository implements LogEntryRepository {
   }
 
   @override
+  Future<List<LogEntry>> getByVehicle(
+    String vehicleId, {
+    LogEntryFilter filter = LogEntryFilter.none,
+  }) async {
+    final entries = await _entries.getLiveByVehicle(
+      vehicleId,
+      from: filter.from,
+      to: filter.to,
+      types: filter.types,
+    );
+    return filter.hasText
+        ? [
+            for (final entry in entries)
+              if (filter.matchesText(entry.description)) entry,
+          ]
+        : entries;
+  }
+
+  @override
   Future<LogEntry?> getById(String id) => _entries.getLiveById(id);
 
   @override
@@ -75,6 +96,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
   }) async {
     final now = utcNow(_clock);
@@ -84,9 +106,10 @@ class DriftLogEntryRepository implements LogEntryRepository {
       today: localToday(_clock),
       km: km,
       costCents: costCents,
+      refuel: refuel,
     );
     attachments.forEach(AttachmentWriter.checkSize);
-    final entry = LogEntry(
+    final draft = LogEntry(
       id: newId(),
       vehicleId: vehicleId,
       date: date,
@@ -100,6 +123,13 @@ class DriftLogEntryRepository implements LogEntryRepository {
     return _attachments.runWithMovedFiles(
       (moved) => _entries.transaction(() async {
         await _requireActiveVehicle(vehicleId);
+        final entry = draft.copyWith(
+          refuel: _refuelFor(
+            type,
+            refuel,
+            await _entries.vehicleFuelTypeOf(vehicleId),
+          ),
+        );
         await _entries.insertEntry(entry);
         await _record(entry.id, AuditOperation.create, now);
         await _attachments.addStaged(
@@ -121,6 +151,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
   }) async {
@@ -131,6 +162,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
       today: localToday(_clock),
       km: km,
       costCents: costCents,
+      refuel: refuel,
     );
     addedAttachments.forEach(AttachmentWriter.checkSize);
     final target = AttachmentTarget.logEntry(id);
@@ -144,6 +176,11 @@ class DriftLogEntryRepository implements LogEntryRepository {
           type: type,
           description: trimToNull(description),
           costCents: costCents,
+          refuel: _refuelFor(
+            type,
+            refuel,
+            await _entries.vehicleFuelTypeOf(current.vehicleId),
+          ),
           updatedAt: now,
         );
         await _entries.updateLive(updated);
@@ -186,8 +223,8 @@ class DriftLogEntryRepository implements LogEntryRepository {
   }
 
   /// Refuses values the form should already have caught: a missing km for a
-  /// type that requires it, a negative km, a negative cost, and a date after
-  /// [today] for a type that does not allow one.
+  /// type that requires it, a negative km, a negative cost or volume, and a
+  /// date after [today] for a type that does not allow one.
   ///
   /// Throws [InvalidFieldException]. Enforced here too so no caller can
   /// write an entry that breaks the rules of `Docs/02_data_model.md`.
@@ -197,6 +234,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     required CalendarDate today,
     required double? km,
     required int? costCents,
+    required RefuelDetails? refuel,
   }) {
     if (!type.allowsFutureDate && date.isAfter(today)) {
       throw const InvalidFieldException('date', InvalidFieldException.inFuture);
@@ -210,6 +248,36 @@ class DriftLogEntryRepository implements LogEntryRepository {
     if (costCents != null && costCents < 0) {
       throw const InvalidFieldException('costCents', 'must not be negative');
     }
+    final volume = refuel?.volume;
+    if (volume != null && (volume < 0 || !volume.isFinite)) {
+      throw const InvalidFieldException('volume', 'must not be negative');
+    }
+  }
+
+  /// The refuel fields stored for an entry of [type] on a vehicle of
+  /// [fuelType] (`Docs/02_data_model.md`, "Repostaje"): none for any other
+  /// type, nor for an electric (or missing) vehicle; otherwise [refuel], or
+  /// the defaults (the vehicle's primary fuel, a full tank) when the caller
+  /// gave none, with the volume rounded as stored.
+  ///
+  /// Throws [InvalidFieldException] for a fuel the vehicle does not allow.
+  static RefuelDetails? _refuelFor(
+    LogEntryType type,
+    RefuelDetails? refuel,
+    FuelType? fuelType,
+  ) {
+    final primary = fuelType?.primaryRefuelFuel;
+    if (type != LogEntryType.refuel || fuelType == null || primary == null) {
+      return null;
+    }
+    final details = refuel ?? RefuelDetails(fuel: primary);
+    if (!fuelType.refuelFuels.contains(details.fuel)) {
+      throw InvalidFieldException('fuel', 'not allowed for ${fuelType.name}');
+    }
+    final volume = details.volume;
+    return volume == null
+        ? details
+        : details.copyWith(volume: RefuelDetails.roundVolume(volume));
   }
 
   /// Throws [EntityNotFoundException] unless the vehicle with [vehicleId] is

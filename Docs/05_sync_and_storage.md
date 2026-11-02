@@ -305,14 +305,16 @@ token nuevo. Una barra de progreso muestra el avance (sin cancelar).
 La tabla `settings` viaja dentro del paquete, pero lo que describe el
 vínculo de **este teléfono** con Drive no debe llegar de otro:
 
-- se conservan los del teléfono: la cuenta vinculada, el identificador del
-  teléfono y el ajuste de datos móviles;
+- se conservan los del teléfono: la cuenta vinculada, la modalidad de
+  vinculación (`drive_auth_mode`), el identificador del teléfono y el ajuste
+  de datos móviles;
 - el último punto en común se **borra** en toda importación (manual o
   desde Drive): los datos ya no son los de ese punto. La restauración desde
   Drive anota el nuevo al terminar; tras una importación manual el estado
   queda "sin punto común" y la copia automática en pausa hasta que el
   usuario suba o restaure, y la confirmación de la importación lo avisa.
-- El idioma, el tema y `last_export_at` siguen viajando con los datos.
+- El idioma, el tema, las cinco unidades de medida (`unit_*`) y
+  `last_export_at` siguen viajando con los datos.
 
 ### Exportar / importar: el paquete de copia
 

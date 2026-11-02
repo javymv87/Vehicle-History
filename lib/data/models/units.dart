@@ -203,6 +203,56 @@ enum ConsumptionUnit implements UnitConversion {
       );
 }
 
+/// The unit of mass (SI: kilogram), for the CNG refuels only. Fixed: no
+/// setting chooses it and nothing converts it (`Docs/06_settings_and_i18n.md`,
+/// "Unidades de medida").
+enum MassUnit implements UnitConversion {
+  /// Kilograms: the stored and shown unit.
+  kilogram('kg');
+
+  const MassUnit(this.code);
+
+  @override
+  final String code;
+
+  @override
+  double toSI(double value) => value;
+
+  @override
+  double fromSI(double si) => si;
+}
+
+/// Units of the consumption of a gas measured by mass, CNG (SI for this
+/// app: kg per 100 km). Never a setting: it follows the shape of the
+/// chosen [ConsumptionUnit] ([GasConsumptionUnit.matching]).
+enum GasConsumptionUnit implements UnitConversion {
+  /// Kilograms per 100 km: the stored unit.
+  kgPer100Km('kg_100km'),
+
+  /// Kilometres per kilogram: 100 / (kg/100 km).
+  kmPerKg('km_kg');
+
+  const GasConsumptionUnit(this.code);
+
+  @override
+  final String code;
+
+  /// The gas unit shaped like [consumption]: "per 100 km" for L/100 km,
+  /// "distance per quantity" otherwise. The mpg units have no gas
+  /// counterpart and fall back to km/kg, with no error.
+  static GasConsumptionUnit matching(ConsumptionUnit consumption) =>
+      consumption == ConsumptionUnit.litresPer100Km ? kgPer100Km : kmPerKg;
+
+  /// Both directions are the same reciprocal for [kmPerKg].
+  double _convert(double value) => this == kgPer100Km ? value : 100 / value;
+
+  @override
+  double toSI(double value) => _convert(value);
+
+  @override
+  double fromSI(double si) => _convert(si);
+}
+
 /// The two fixed presets of the settings page, and "custom" for any other
 /// combination. Never stored: derived from the five units every time.
 enum UnitPreset {

@@ -32,7 +32,9 @@ estará en **inglés** y la interfaz se traduce a IT / ES / EN (ver
 App móvil monousuario (Flutter, primero Android, iOS posible más adelante) para
 llevar el historial completo de uno o varios vehículos — mantenimientos,
 repostajes, gastos, controles, vencimientos y documentos — sin conexión, con
-copia de seguridad manual en Google Drive e informes exportables a PDF.
+copia de seguridad en Google Drive (manual, más una subida automática al
+arrancar cuando solo ha cambiado el teléfono), informes por vehículo y, más
+adelante, informes exportables a PDF.
 
 ## Estado
 
@@ -89,10 +91,18 @@ Imperial y las cinco magnitudes (distancia, volumen, temperatura, presión,
 consumo) una a una; todo lo que muestra o pide una distancia se escribe y
 se lee en la unidad elegida, mientras la base de datos guarda siempre km (y
 litros, °C, bar) sin conocer unidades, con las columnas de distancia en
-`REAL` para que 100 mi vuelvan a ser 100 mi. Lo siguiente es el paso 12
-(consumo de combustible por lleno y estadísticas de km entre lecturas) y
-después los recordatorios (13a dentro de la app, 13b notificaciones), que se
-construyen sabiendo qué vehículos están archivados.
+`REAL` para que 100 mi vuelvan a ser 100 mi. El paso 12 añadió el consumo
+de combustible (esquema v10): los repostajes tienen cantidad (litros, o kg con
+GNC), depósito lleno, "me salté uno" y carburante (con elección en los
+bifuel), con el triángulo importe / cantidad / precio en el formulario; el
+consumo se calcula, sin guardarse, por la cadena de llenos con los km del
+cuentakilómetros de cada repostaje, y se ve al guardar, en el detalle y en la
+nueva pestaña **Informes** de cada vehículo (consumo con su línea de
+cobertura, gasto en carburante y distancia frente al tiempo, con un filtro
+por fechas o por cuentakilómetros); la pestaña Kilometraje enseña también los
+días entre lecturas. Lo siguiente son los recordatorios (13a dentro de la
+app, 13b notificaciones), que se construyen sabiendo qué vehículos están
+archivados.
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -110,12 +120,12 @@ Hoja de ruta hasta la primera versión usable:
 | 9b | ~~Vincular una cuenta manualmente (navegador, OAuth + PKCE, token en el almacén seguro)~~ — hecho |
 | 10 | ~~Archivo de vehículos: motivo, fecha, km finales como lectura, solo lectura, reactivar (esquema v8)~~ — hecho |
 | 11 | ~~Unidades de medida: ajuste, almacenamiento en SI, un único formateador (esquema v9)~~ — hecho |
-| 12 | Consumo de combustible (cadena de llenos) y estadísticas de km entre lecturas |
+| 12 | ~~Consumo de combustible (cadena de llenos), campos del repostaje (esquema v10) e Informes por vehículo~~ — hecho |
 | 13a | Recordatorios dentro de la app (tabla, lista, estados, marcar como hecho; excluyendo los vehículos archivados) |
 | 13b | Notificaciones locales (`flutter_local_notifications`, enlaces profundos) |
 
 Después (14+), en el orden que se decida usando la app: mediciones, catálogo
-de mantenimiento, documentos, informes PDF.
+de mantenimiento, documentos, informes PDF (sobre los Informes del paso 12).
 
 Por qué importa la clave de firma: cada PC tiene su propia clave de debug, así
 que instalar desde otro PC obliga a desinstalar la app, y eso borra los datos.

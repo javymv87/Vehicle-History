@@ -19,6 +19,10 @@ import 'big_jump_confirmation.dart';
 /// before it pops: the app-wide [messenger], [router] (whose navigator
 /// shows the confirmation dialog), the [units] of the moment and the
 /// kept-alive [offer] controller. [km] and [currentKm] are in km.
+///
+/// [refuelSummary], after a refuel, is what it means for the consumption:
+/// the message then starts with it, so one snackbar says both
+/// (`Docs/03_features.md`, after saving a refuel).
 void showOdometerUpdateOffer({
   required ScaffoldMessengerState messenger,
   required GoRouter router,
@@ -29,10 +33,14 @@ void showOdometerUpdateOffer({
   required CalendarDate date,
   required double km,
   required double currentKm,
+  String? refuelSummary,
 }) {
+  final distance = units.distance.format(km);
   showOfferSnackBar(
     messenger,
-    l10n.updateOdometerOffer(units.distance.format(km)),
+    refuelSummary == null
+        ? l10n.updateOdometerOffer(distance)
+        : l10n.updateOdometerOfferAfterRefuel(refuelSummary, distance),
     actionLabel: l10n.actionUpdate,
     onAction: () async {
       final dialogContext =

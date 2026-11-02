@@ -53,3 +53,36 @@ String formatEuroCents(int cents, String locale) =>
 /// `1234,50` in Spanish, so it parses back to the same amount.
 String euroCentsInputText(int cents, String locale) =>
     NumberFormat('0.00', locale).format(cents / 100);
+
+/// Matches a price per unit as typed: digits, then optionally one separator
+/// and at most three decimals, as pump prices are shown (1,859 €/L).
+final RegExp _unitPricePattern = RegExp(r'^(\d+)(?:[.,](\d{0,3}))?$');
+
+/// Parses a price per unit in euros typed by the user (either decimal
+/// separator, at most three decimals, no sign and no thousands separator).
+///
+/// A price is a rate, never an amount: it is not stored, only used by the
+/// refuel form to compute the amount or the volume. Returns `null` for
+/// blank or malformed text.
+double? tryParseUnitPrice(String text) {
+  final match = _unitPricePattern.firstMatch(text.trim());
+  if (match == null) return null;
+  final euros = match.group(1)!;
+  if (euros.length > 6) return null;
+  final decimals = match.group(2) ?? '';
+  return double.parse('$euros.${decimals.isEmpty ? '0' : decimals}');
+}
+
+/// [euros] per unit as the price field shows it: three decimals with the
+/// separator of [locale] and no grouping, so it parses back.
+String unitPriceInputText(double euros, String locale) =>
+    NumberFormat('0.000', locale).format(euros);
+
+/// A rate in [euros] (a price per unit, a cost per distance) formatted as
+/// a euro value in [locale] with [decimals] decimals, e.g. `1,859 €`.
+String formatEuroRate(double euros, String locale, {int decimals = 2}) =>
+    NumberFormat.simpleCurrency(
+      locale: locale,
+      name: 'EUR',
+      decimalDigits: decimals,
+    ).format(euros);

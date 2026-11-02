@@ -59,5 +59,23 @@ void main() {
         const CalendarDate(2024, 3, 5),
       );
     });
+
+    test('counts and adds calendar days across month and year ends', () {
+      const a = CalendarDate(2025, 12, 30);
+      expect(a.daysUntil(const CalendarDate(2026, 1, 2)), 3);
+      expect(const CalendarDate(2026, 1, 2).daysUntil(a), -3);
+      expect(a.daysUntil(a), 0);
+      // Across the March daylight saving change: still whole days.
+      expect(
+        const CalendarDate(2026, 3, 28)
+            .daysUntil(const CalendarDate(2026, 3, 30)),
+        2,
+      );
+      expect(a.addDays(3), const CalendarDate(2026, 1, 2));
+      expect(
+        const CalendarDate(2024, 3, 1).addDays(-1),
+        const CalendarDate(2024, 2, 29),
+      );
+    });
   });
 }
