@@ -2162,5 +2162,18 @@
   "unitConsumptionMismatchHint": "This unit counts with a different volume than the one chosen above.",
   "@unitConsumptionMismatchHint": {
     "description": "Soft hint under the consumption tile when its volume differs from the chosen volume unit (e.g. gallons with L/100 km). Never blocks."
+  },
+  "errorFuelTypeConflict": "This vehicle has refuels of a fuel the new fuel type does not allow. Delete them first. Nothing was saved.",
+  "@errorFuelTypeConflict": {
+    "description": "Error when the fuel type of a vehicle cannot change because some of its refuels have a fuel the new type does not allow (count unknown)."
+  },
+  "errorFuelTypeConflictCount": "{count, plural, =1{This vehicle has 1 refuel of a fuel the new fuel type does not allow. Delete it first.} other{This vehicle has {count} refuels of a fuel the new fuel type does not allow. Delete them first.}} Nothing was saved.",
+  "@errorFuelTypeConflictCount": {
+    "description": "Error when the fuel type of a vehicle cannot change: count is the number of refuels whose fuel the new type does not allow.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

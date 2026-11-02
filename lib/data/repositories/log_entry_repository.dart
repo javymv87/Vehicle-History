@@ -3,6 +3,7 @@ import '../models/calendar_date.dart';
 import '../models/log_entry.dart';
 import '../models/log_entry_filter.dart';
 import '../models/log_entry_type.dart';
+import '../models/refuel.dart';
 
 /// The only access path to persisted history entries.
 ///
@@ -42,6 +43,14 @@ abstract interface class LogEntryRepository {
   /// `EntityNotFoundException`
   /// when the vehicle is missing or deleted.
   ///
+  /// [refuel] holds the refuel fields (schema v10). They are stored only for
+  /// a [LogEntryType.refuel] of a vehicle that is not electric, and dropped
+  /// otherwise; such a refuel without [refuel] gets the defaults (the
+  /// vehicle's primary fuel, a full tank, nothing missed). The volume is
+  /// rounded to `RefuelDetails.volumeDecimals`. Throws
+  /// `InvalidFieldException` for a negative volume or a fuel the vehicle's
+  /// fuel type does not allow.
+  ///
   /// [attachments] are the files staged by the entry form: they become the
   /// entry's attachments in the same transaction, their files moved out of
   /// the staging directory (and removed again if the transaction fails).
@@ -53,6 +62,7 @@ abstract interface class LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
   });
 
@@ -75,6 +85,7 @@ abstract interface class LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
   });

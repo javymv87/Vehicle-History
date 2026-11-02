@@ -271,8 +271,10 @@ class _VehicleFormState extends ConsumerState<_VehicleForm> {
         context.popOrGo(AppRoutes.vehicle(value.id), value.id);
       case ActionFailure(error: ActionError.duplicatePlate):
         setState(() => _plateError = l10n.errorDuplicatePlate);
-      case ActionFailure(:final error):
-        showErrorSnackBar(messenger, error.message(l10n));
+      case final ActionFailure<Object?> failure:
+        // The failure, not only its error: a fuel type conflict names how
+        // many refuels block the change.
+        showErrorSnackBar(messenger, failure.message(l10n));
     }
   }
 

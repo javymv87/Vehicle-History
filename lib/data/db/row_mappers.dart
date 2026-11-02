@@ -5,6 +5,7 @@ import '../models/audit_entry.dart';
 import '../models/log_entry.dart';
 import '../models/mileage_reading.dart';
 import '../models/owner.dart';
+import '../models/refuel.dart';
 import '../models/vehicle.dart';
 import 'app_database.dart';
 
@@ -155,14 +156,31 @@ extension LogEntryRowMapping on LogEntryRow {
         type: type,
         description: description,
         costCents: costCents,
+        refuel: _refuel,
         createdAt: createdAt.toUtc(),
         updatedAt: updatedAt.toUtc(),
       );
+
+  /// The refuel fields, present when the row has a fuel (schema v10: every
+  /// refuel of a non-electric vehicle). A missing flag reads as its default.
+  RefuelDetails? get _refuel => switch (fuel) {
+        final fuel? => RefuelDetails(
+            fuel: fuel,
+            volume: volume,
+            fullTank: fullTank ?? true,
+            missedPrevious: missedPrevious ?? false,
+          ),
+        null => null,
+      };
 }
 
 /// Maps the domain model to `log_entries` companions.
 extension LogEntryCompanionMapping on LogEntry {
   /// Full row for an insert. The row starts live (`deleted = 0`).
+  ///
+  /// The refuel columns (v10) are named only when the entry has refuel
+  /// fields: otherwise they keep their NULL default, which also lets the
+  /// migration tests insert an entry into an older schema.
   LogEntriesCompanion toInsertCompanion() => LogEntriesCompanion.insert(
         id: id,
         createdAt: createdAt,
@@ -173,7 +191,16 @@ extension LogEntryCompanionMapping on LogEntry {
         type: type,
         description: Value(description),
         costCents: Value(costCents),
+        volume: _refuelValue(refuel?.volume),
+        fullTank: _refuelValue(refuel?.fullTank),
+        missedPrevious: _refuelValue(refuel?.missedPrevious),
+        fuel: _refuelValue(refuel?.fuel),
       );
+
+  /// [value] for an insert of a refuel column: absent (NULL by default)
+  /// when the entry has no refuel fields.
+  Value<T?> _refuelValue<T>(T? value) =>
+      refuel == null ? const Value.absent() : Value(value);
 
   /// User-editable fields plus `updated_at`. Leaves `id`, `vehicle_id`,
   /// `created_at` and `deleted` untouched: an entry never moves to another
@@ -185,6 +212,10 @@ extension LogEntryCompanionMapping on LogEntry {
         type: Value(type),
         description: Value(description),
         costCents: Value(costCents),
+        volume: Value(refuel?.volume),
+        fullTank: Value(refuel?.fullTank),
+        missedPrevious: Value(refuel?.missedPrevious),
+        fuel: Value(refuel?.fuel),
       );
 }
 

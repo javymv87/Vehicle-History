@@ -34,6 +34,27 @@ class LogEntries extends Table with TechnicalColumns {
   /// Total cost in euro cents. Never negative.
   IntColumn get costCents => integer().nullable()();
 
+  /// Quantity of a refuel (schema v10): litres, or kilograms when [fuel] is
+  /// CNG, stored with 3 decimals; `NULL` when not recorded and on every
+  /// other entry type.
+  ///
+  /// The CHECK is a column constraint: the column was added by
+  /// `ALTER TABLE ... ADD COLUMN`, which cannot add a table constraint.
+  RealColumn get volume =>
+      real().nullable().customConstraint('NULL CHECK (volume >= 0)')();
+
+  /// Whether a refuel filled the tank (schema v10); `NULL` on every other
+  /// entry type and on the refuels of an electric vehicle.
+  BoolColumn get fullTank => boolean().nullable()();
+
+  /// Whether a refuel was recorded after a refuel the user skipped (schema
+  /// v10), breaking the consumption segment; `NULL` like [fullTank].
+  BoolColumn get missedPrevious => boolean().nullable()();
+
+  /// Fuel of a refuel as a stable text code (see [RefuelFuelConverter],
+  /// schema v10); `NULL` like [fullTank].
+  TextColumn get fuel => text().map(const RefuelFuelConverter()).nullable()();
+
   // Written as SQL rather than with `Column.check`, whose self-referencing
   // getter trips the `recursive_getters` lint. A NULL value passes a CHECK.
   @override

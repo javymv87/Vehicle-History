@@ -12,7 +12,8 @@ enum LogEntryType {
   /// Legal deadline: road tax, compulsory inspection, insurance.
   legalDue,
 
-  /// Refuelling. Its extra fields (litres, price per litre) come later.
+  /// Refuelling. Carries the refuel fields (`RefuelDetails`, schema v10:
+  /// volume, full tank, missed refuel, fuel) unless the vehicle is electric.
   refuel,
 
   /// Generic expense: tolls, car wash, accessories…

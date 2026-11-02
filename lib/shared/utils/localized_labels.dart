@@ -157,6 +157,17 @@ extension UnitLabel on UnitConversion {
   }
 }
 
+/// Localised message of an [ActionFailure], naming its count when the
+/// error has one.
+extension ActionFailureMessage on ActionFailure<Object?> {
+  /// The message of [error], with [count] where the message names it.
+  String message(AppLocalizations l10n) => switch ((error, count)) {
+        (ActionError.fuelTypeConflict, final int count) =>
+          l10n.errorFuelTypeConflictCount(count),
+        _ => error.message(l10n),
+      };
+}
+
 /// Localised message of an [ActionError].
 extension ActionErrorMessage on ActionError {
   /// The message shown to the user for this error, in the language of
@@ -170,6 +181,7 @@ extension ActionErrorMessage on ActionError {
         ActionError.ownerNotFound => l10n.errorOwnerNotFound,
         ActionError.vehicleNotFound => l10n.errorVehicleNotFound,
         ActionError.vehicleArchived => l10n.errorVehicleArchived,
+        ActionError.fuelTypeConflict => l10n.errorFuelTypeConflict,
         ActionError.entryNotFound => l10n.errorEntryNotFound,
         ActionError.readingNotFound => l10n.errorReadingNotFound,
         ActionError.attachmentNotFound => l10n.errorAttachmentNotFound,

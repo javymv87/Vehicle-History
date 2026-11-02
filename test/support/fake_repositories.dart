@@ -10,6 +10,7 @@ import 'package:vehicle_history/data/models/log_entry_filter.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/owner.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/trashed_vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
@@ -554,6 +555,16 @@ class FakeVehicleRepository implements VehicleRepository {
           throw EntityNotFoundException(AuditEntityType.vehicle, id);
         }
         store.requireActiveVehicle(id);
+        if (fuelType != current.fuelType) {
+          final allowed = fuelType.refuelFuels;
+          final conflicting = store.liveEntriesOf(id).where((entry) {
+            final fuel = entry.refuel?.fuel;
+            return fuel != null && !allowed.contains(fuel);
+          }).length;
+          if (conflicting > 0) {
+            throw VehicleFuelTypeConflictException(id, conflicting);
+          }
+        }
         final updated = current.copyWith(
           plate: plate.trim().toUpperCase(),
           kind: kind,
@@ -716,6 +727,25 @@ class FakeLogEntryRepository implements LogEntryRepository {
   @override
   Stream<LogEntry?> watchById(String id) => store.watch(() => _live(id));
 
+  /// The refuel fields stored for an entry of [type] on the vehicle
+  /// [vehicleId], as the Drift repository resolves them.
+  RefuelDetails? _refuelFor(
+    LogEntryType type,
+    RefuelDetails? refuel,
+    String vehicleId,
+  ) {
+    final fuelType = store.vehicles[vehicleId]?.fuelType;
+    final primary = fuelType?.primaryRefuelFuel;
+    if (type != LogEntryType.refuel || fuelType == null || primary == null) {
+      return null;
+    }
+    final details = refuel ?? RefuelDetails(fuel: primary);
+    if (!fuelType.refuelFuels.contains(details.fuel)) {
+      throw const InvalidFieldException('fuel', 'not allowed');
+    }
+    return details;
+  }
+
   /// The live entry with [id] of a live vehicle, or `null`.
   LogEntry? _live(String id) {
     final entry = store.entries[id];
@@ -735,6 +765,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
   }) =>
       store.write(() {
@@ -751,6 +782,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
           type: type,
           description: _clean(description),
           costCents: costCents,
+          refuel: _refuelFor(type, refuel, vehicleId),
           createdAt: created,
           updatedAt: created,
         );
@@ -769,6 +801,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     required LogEntryType type,
     String? description,
     int? costCents,
+    RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
   }) =>
@@ -784,6 +817,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
           type: type,
           description: _clean(description),
           costCents: costCents,
+          refuel: _refuelFor(type, refuel, current.vehicleId),
         );
         store.entries[id] = updated;
         store.deletedAttachments.addAll(removedAttachmentIds);

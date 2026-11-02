@@ -12,6 +12,7 @@ import '../models/audit_entry.dart';
 import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/log_entry_type.dart';
+import '../models/refuel.dart';
 import '../models/vehicle_kind.dart';
 import 'app_database.steps.dart';
 import 'attachments_table.dart';
@@ -192,7 +193,62 @@ class AppDatabase extends _$AppDatabase {
       await m.alterTable(TableMigration(schema.logEntries));
       await m.alterTable(TableMigration(schema.mileageReadings));
     },
+    // v10: the refuel fields of `log_entries` (`volume`, `full_tank`,
+    // `missed_previous`, `fuel`), as new nullable columns, then the fill of
+    // the refuels already recorded: each gets its vehicle's primary fuel, a
+    // full tank and no missed refuel; their volume stays empty, so none of
+    // them enters a consumption chain until the user completes it. No other
+    // value is touched.
+    from9To10: (m, schema) async {
+      final entries = schema.logEntries;
+      for (final column in [
+        entries.volume,
+        entries.fullTank,
+        entries.missedPrevious,
+        entries.fuel,
+      ]) {
+        await m.addColumn(entries, column);
+      }
+      await fillExistingRefuels(m.database);
+    },
   );
+
+  /// Fills the refuel fields of every refuel row, for the v9 → v10 upgrade.
+  ///
+  /// Every row of type `refuel`, **deleted ones and those of deleted or
+  /// archived vehicles included**, so a restore later is coherent: `fuel` =
+  /// the primary fuel of its vehicle (`FuelTypeRefuels.primaryRefuelFuel`:
+  /// petrol for petrol, hybrids and bi-fuel vehicles, diesel, other),
+  /// `full_tank` = 1 and `missed_previous` = 0. The refuels of an electric
+  /// vehicle keep all four fields NULL: they are just an expense.
+  ///
+  /// Plain SQL against the v10 shape, with no audit row and `updated_at`
+  /// untouched: the user did not write these values, the upgrade did, and
+  /// the stamp of the data (`last_modified_at`) must not move, or the Drive
+  /// guard would see a local change. Runs inside the upgrade transaction of
+  /// [runSafeUpgrade].
+  @visibleForTesting
+  static Future<void> fillExistingRefuels(GeneratedDatabase db) async {
+    final refuel = const LogEntryTypeConverter().toSql(LogEntryType.refuel);
+    // The vehicle fuel codes of FuelTypeConverter, mapped to RefuelFuel
+    // codes; electric (and only electric) maps to NULL.
+    await db.customStatement(
+      'UPDATE log_entries SET fuel = ('
+      'SELECT CASE vehicles.fuel_type '
+      "WHEN 'diesel' THEN 'diesel' "
+      "WHEN 'other' THEN 'other' "
+      "WHEN 'electric' THEN NULL "
+      "ELSE 'petrol' END "
+      'FROM vehicles WHERE vehicles.id = log_entries.vehicle_id'
+      ') WHERE type = ?',
+      [refuel],
+    );
+    await db.customStatement(
+      'UPDATE log_entries SET full_tank = 1, missed_previous = 0 '
+      'WHERE type = ? AND fuel IS NOT NULL',
+      [refuel],
+    );
+  }
 
   /// Tables carrying the soft-delete columns `deleted` and `deleted_at`.
   static const List<String> _softDeleteTables = [
@@ -265,7 +321,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// Opens the connection now, running any pending migration.
   ///

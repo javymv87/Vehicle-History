@@ -420,5 +420,7 @@
   "unitNameKmPerLitre": "Kilómetros por litro",
   "unitNameMpgUs": "Millas por galón (EE. UU.)",
   "unitNameMpgUk": "Millas por galón imperial",
-  "unitConsumptionMismatchHint": "Esta unidad usa un volumen distinto del elegido arriba."
+  "unitConsumptionMismatchHint": "Esta unidad usa un volumen distinto del elegido arriba.",
+  "errorFuelTypeConflict": "Este vehículo tiene repostajes de un carburante que el nuevo tipo de combustible no admite. Bórralos antes. No se ha guardado nada.",
+  "errorFuelTypeConflictCount": "{count, plural, =1{Este vehículo tiene 1 repostaje de un carburante que el nuevo tipo de combustible no admite. Bórralo antes.} other{Este vehículo tiene {count} repostajes de un carburante que el nuevo tipo de combustible no admite. Bórralos antes.}} No se ha guardado nada."
 }

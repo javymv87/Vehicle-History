@@ -420,5 +420,7 @@
   "unitNameKmPerLitre": "Chilometri per litro",
   "unitNameMpgUs": "Miglia per gallone (USA)",
   "unitNameMpgUk": "Miglia per gallone imperiale",
-  "unitConsumptionMismatchHint": "Questa unità usa un volume diverso da quello scelto sopra."
+  "unitConsumptionMismatchHint": "Questa unità usa un volume diverso da quello scelto sopra.",
+  "errorFuelTypeConflict": "Questo veicolo ha rifornimenti di un carburante che il nuovo tipo di alimentazione non ammette. Eliminali prima. Non è stato salvato nulla.",
+  "errorFuelTypeConflictCount": "{count, plural, =1{Questo veicolo ha 1 rifornimento di un carburante che il nuovo tipo di alimentazione non ammette. Eliminalo prima.} other{Questo veicolo ha {count} rifornimenti di un carburante che il nuovo tipo di alimentazione non ammette. Eliminali prima.}} Non è stato salvato nulla."
 }

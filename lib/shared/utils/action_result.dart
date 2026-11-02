@@ -33,6 +33,10 @@ enum ActionError {
   /// The vehicle involved is archived and read-only; nothing was written.
   vehicleArchived,
 
+  /// The vehicle's new fuel type does not allow the fuel of some of its
+  /// refuels ([ActionFailure.count] says how many); nothing was written.
+  fuelTypeConflict,
+
   /// The history entry involved is missing or deleted.
   entryNotFound,
 
@@ -144,6 +148,7 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
     EntityNotFoundException(entityType: AuditEntityType.attachment) =>
       ActionError.attachmentNotFound,
     VehicleArchivedException() => ActionError.vehicleArchived,
+    VehicleFuelTypeConflictException() => ActionError.fuelTypeConflict,
     AttachmentTooLargeException() => ActionError.attachmentTooLarge,
     AttachmentPickException(failure: AttachmentPickFailure.cameraDenied) =>
       ActionError.cameraDenied,
@@ -206,11 +211,16 @@ final class ActionSuccess<T> extends ActionResult<T> {
 
 /// The action failed; nothing was written.
 final class ActionFailure<T> extends ActionResult<T> {
-  /// Creates a failed outcome for [error].
-  const ActionFailure(this.error);
+  /// Creates a failed outcome for [error], with the [count] the message
+  /// names, if any.
+  const ActionFailure(this.error, {this.count});
 
   /// Why the action failed.
   final ActionError error;
+
+  /// How many things caused the failure, for the errors whose message says
+  /// it (the refuels of [ActionError.fuelTypeConflict]); `null` otherwise.
+  final int? count;
 }
 
 /// Runs [action] and wraps its outcome in an [ActionResult].
@@ -221,6 +231,12 @@ Future<ActionResult<T>> runAction<T>(Future<T> Function() action) async {
   try {
     return ActionSuccess(await action());
   } on Exception catch (error, stackTrace) {
-    return ActionFailure(actionErrorOf(error, stackTrace));
+    return ActionFailure(
+      actionErrorOf(error, stackTrace),
+      count: switch (error) {
+        VehicleFuelTypeConflictException(:final refuelCount) => refuelCount,
+        _ => null,
+      },
+    );
   }
 }

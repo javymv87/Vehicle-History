@@ -118,6 +118,25 @@ class VehicleArchivedException extends RepositoryException {
       'VehicleArchivedException(${entityType.name}, id: $entityId)';
 }
 
+/// The vehicle's fuel type cannot change to one that does not allow the
+/// fuel of some of its refuels (`Docs/02_data_model.md`, "Repostaje"): the
+/// user must delete those refuels first. Nothing was written.
+class VehicleFuelTypeConflictException extends RepositoryException {
+  /// Creates the exception for the vehicle [vehicleId], which has
+  /// [refuelCount] refuels of a fuel the new type does not allow.
+  const VehicleFuelTypeConflictException(this.vehicleId, this.refuelCount);
+
+  /// Id of the vehicle whose update was refused.
+  final String vehicleId;
+
+  /// How many live refuels have a fuel the new type does not allow.
+  final int refuelCount;
+
+  @override
+  String toString() => 'VehicleFuelTypeConflictException(id: $vehicleId, '
+      'refuels: $refuelCount)';
+}
+
 /// A file is larger than an attachment may be (`maxAttachmentBytes`,
 /// 25 MB). Nothing was stored.
 class AttachmentTooLargeException extends RepositoryException {

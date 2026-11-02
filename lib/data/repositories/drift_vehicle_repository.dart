@@ -9,6 +9,7 @@ import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/mileage_reading.dart';
 import '../models/trashed_vehicle.dart';
+import '../models/refuel.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_kind.dart';
 import 'mileage_reading_repository.dart';
@@ -193,6 +194,17 @@ class DriftVehicleRepository implements VehicleRepository {
     final now = utcNow(_clock);
     return _vehicles.transaction(() async {
       final current = await _requireActive(id);
+      // A refuel keeps the fuel it was recorded with: a type that does not
+      // allow it is refused until those refuels are deleted.
+      if (fuelType != current.fuelType) {
+        final conflicting = await _vehicles.countLiveRefuelsOutside(
+          id,
+          fuelType.refuelFuels.toSet(),
+        );
+        if (conflicting > 0) {
+          throw VehicleFuelTypeConflictException(id, conflicting);
+        }
+      }
       final updated = current.copyWith(
         plate: cleanPlate,
         kind: kind,

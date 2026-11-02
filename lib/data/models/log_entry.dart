@@ -1,6 +1,7 @@
 import 'calendar_date.dart';
 import 'copy_with_sentinel.dart';
 import 'log_entry_type.dart';
+import 'refuel.dart';
 
 /// One row of a vehicle's history: something that happened on a day.
 ///
@@ -17,6 +18,7 @@ class LogEntry {
     required this.type,
     this.description,
     this.costCents,
+    this.refuel,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -47,6 +49,10 @@ class LogEntry {
   /// which is different from a recorded cost of 0.
   final int? costCents;
 
+  /// The refuel fields (schema v10): set on the refuels of every vehicle but
+  /// an electric one, `null` on every other entry.
+  final RefuelDetails? refuel;
+
   /// When the entry was created, in UTC. Breaks ties between entries of the
   /// same day in the history order.
   final DateTime createdAt;
@@ -66,6 +72,7 @@ class LogEntry {
     LogEntryType? type,
     Object? description = unset,
     Object? costCents = unset,
+    Object? refuel = unset,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -80,6 +87,7 @@ class LogEntry {
           : description as String?,
       costCents:
           identical(costCents, unset) ? this.costCents : costCents as int?,
+      refuel: identical(refuel, unset) ? this.refuel : refuel as RefuelDetails?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -95,6 +103,7 @@ class LogEntry {
       other.type == type &&
       other.description == description &&
       other.costCents == costCents &&
+      other.refuel == refuel &&
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt;
 
@@ -107,6 +116,7 @@ class LogEntry {
         type,
         description,
         costCents,
+        refuel,
         createdAt,
         updatedAt,
       );
@@ -114,5 +124,5 @@ class LogEntry {
   @override
   String toString() => 'LogEntry(id: $id, vehicleId: $vehicleId, '
       'date: ${date.toIso8601String()}, type: ${type.name}, km: $km, '
-      'costCents: $costCents)';
+      'costCents: $costCents, refuel: $refuel)';
 }

@@ -2,8 +2,11 @@ import 'package:drift/drift.dart';
 
 import '../../models/archive_reason.dart';
 import '../../models/calendar_date.dart';
+import '../../models/log_entry_type.dart';
+import '../../models/refuel.dart';
 import '../../models/vehicle.dart';
 import '../app_database.dart';
+import '../converters.dart';
 import '../owners_table.dart';
 import '../row_mappers.dart';
 import '../vehicles_table.dart';
@@ -26,7 +29,7 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
   /// Condition of a current vehicle: live and not archived.
   ///
   /// The single filter behind every "current vehicles" read (the main list,
-  /// and the reminders of step 11): an archived vehicle keeps its history
+  /// and the reminders of step 13a): an archived vehicle keeps its history
   /// but is never current.
   static Expression<bool> isActive($VehiclesTable v) =>
       v.deleted.equals(false) & v.archivedAt.isNull();
@@ -130,6 +133,34 @@ class VehiclesDao extends DatabaseAccessor<AppDatabase>
           ..limit(1))
         .get();
     return rows.isNotEmpty;
+  }
+
+  /// Number of live refuels of the vehicle [vehicleId] whose fuel is not
+  /// one of [allowed]: the refuels a change of the vehicle's fuel type would
+  /// leave with a fuel it does not allow (`Docs/02_data_model.md`,
+  /// "Repostaje"). Refuels without a fuel (those of an electric vehicle) are
+  /// never counted.
+  Future<int> countLiveRefuelsOutside(
+    String vehicleId,
+    Set<RefuelFuel> allowed,
+  ) async {
+    final entries = attachedDatabase.logEntries;
+    final count = entries.id.count();
+    var condition = entries.vehicleId.equals(vehicleId) &
+        entries.deleted.equals(false) &
+        entries.type.equals(
+          const LogEntryTypeConverter().toSql(LogEntryType.refuel),
+        ) &
+        entries.fuel.isNotNull();
+    if (allowed.isNotEmpty) {
+      condition = condition &
+          entries.fuel.isNotIn([for (final fuel in allowed) fuel.code]);
+    }
+    final row = await (selectOnly(entries)
+          ..addColumns([count])
+          ..where(condition))
+        .getSingle();
+    return row.read(count) ?? 0;
   }
 
   /// Inserts [vehicle] as a new live row.
