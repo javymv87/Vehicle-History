@@ -7,14 +7,15 @@ Contiene las configuraciones generales de la app (tabla `Settings`, doc 02):
 - **Idioma** de la interfaz (ver abajo)
 - **Tema**: Sistema / Claro / Oscuro (predeterminado: Sistema — ver
   `07_design_and_theming.md`)
-- **Nube / Google Drive**:
-  - vincular / desvincular cuenta de Google
-  - estado de la última copia de seguridad (versión + fecha)
-  - acciones: Subir a la nube / Descargar de la nube
-  - activar/desactivar el uso de la nube
 - **Unidades** de medida: un preajuste (Internacional / Imperial) y las
   cinco magnitudes una a una (ver "Unidades de medida", abajo)
 - Posibles preferencias futuras (formato de fecha, etc.)
+
+Google Drive **no** está en Ajustes: vincular la cuenta, el estado, Subir a
+Drive, Restaurar desde Drive y "Usar datos móviles para la copia automática"
+están en la pantalla **Copia de seguridad** (`03_features.md`, U20, y
+`05_sync_and_storage.md`). No hay un interruptor para activar o desactivar la
+nube: sin cuenta vinculada no hay copia en Drive.
 
 **La moneda no es configurable**: es siempre el euro (ver doc 02). Del idioma
 elegido solo depende el *formato* con el que se muestra el importe.
@@ -54,7 +55,9 @@ v6): una fila por clave.
   | `drive_sync_account`, `drive_sync_local_stamp`, `drive_sync_upload_id`, `drive_sync_at`, `drive_sync_direction` | El último punto en común con la copia de Drive (cuenta, sello local o `none`, `upload_id`, instante, `upload` / `download`); incompleto = no hay | sin punto en común |
 
   Los valores también son códigos fijos. Un valor desconocido (por ejemplo,
-  escrito por una versión más nueva de la app) se lee como `system`.
+  escrito por una versión más nueva de la app) se lee como el de la columna
+  "Sin fila" (`system` para el idioma y el tema, la unidad SI para las
+  unidades, `false` para los datos móviles).
 - La tabla viaja dentro del paquete de copia como el resto de la base de
   datos: al importar un paquete llegan también su idioma y su tema, y la app
   cambia en ese mismo momento, sin reiniciar. Cada clave tiene un **ámbito**
@@ -86,8 +89,9 @@ Desde el paso 11 el usuario elige en qué unidades **escribe y lee** cada
 magnitud física. Lo que cambia es solo lo que se ve; lo que hay guardado no.
 
 - **La base de datos no conoce unidades.** Toda magnitud se guarda en SI:
-  distancias en **km**, volúmenes en **litros**, temperaturas en **°C**,
-  presiones en **bar**, consumos en **L/100 km**. Las tablas, los
+  distancias en **km**, volúmenes en **litros**, masas en **kg** (solo el
+  GNC de los repostajes), temperaturas en **°C**, presiones en **bar**,
+  consumos en **L/100 km** (kg/100 km para el GNC). Las tablas, los
   repositorios, las reglas de dominio (lecturas no decrecientes, umbral de
   50.000 km, etc.) y el paquete de copia trabajan siempre en esas unidades.
   Cambiar el ajuste **nunca toca un dato guardado**: dos teléfonos con
@@ -109,6 +113,14 @@ magnitud física. Lo que cambia es solo lo que se ve; lo que hay guardado no.
   3,785411784 L; 1 gal imperial = 4,54609 L; °F = °C × 9/5 + 32; 1 bar =
   14,503773773 psi. Los consumos se derivan de ellos (mpg EE. UU. con el
   galón estadounidense, mpg imperial con el británico).
+- **Masa: siempre kg.** La cantidad de un repostaje de GNC se escribe y se
+  muestra en kg, sin conversión ni ajuste. Su consumo sigue la forma del
+  ajuste de consumo: kg/100 km con L/100 km, km/kg con km/L, y también km/kg
+  con cualquier mpg (no hay "mpg" de gas), sin error.
+- **Precios y costes.** El precio por unidad de un repostaje se muestra por la
+  unidad que ve el usuario (€/L, €/gal, €/kg) y el coste por distancia en €
+  por 100 km o, con la distancia en millas, en € por milla. El formateador
+  los compone: ninguna pantalla escribe "/L" ni "/100 km" a mano.
 - **Cinco claves** en `settings` (tabla de arriba), una por magnitud; sin
   fila = unidad SI. Son una preferencia que viaja con los datos, como el
   idioma y el tema: importar un paquete trae también sus unidades.
@@ -128,13 +140,15 @@ magnitud física. Lo que cambia es solo lo que se ve; lo que hay guardado no.
   del cuentakilómetros (pestaña Kilometraje, lectura inicial, km finales
   del archivo), el km de cada entrada, la oferta "¿Actualizar el
   cuentakilómetros?", la confirmación del salto grande, el banner y el chip
-  de archivo, la cabecera del vehículo y las listas. Los campos llevan el
-  símbolo de la unidad como sufijo y aceptan **números enteros en esa
-  unidad**. Los umbrales que se enseñan al usuario se redondean a una cifra
-  amigable: la regla de los 50.000 km se muestra como "30.000 mi" en millas
-  (por dentro se siguen comparando 50.000 km). Temperatura, presión y consumo
-  no tienen pantallas todavía (pasos 12 y 14): existen el ajuste, el
-  formateador y sus pruebas.
+  de archivo, la cabecera del vehículo, las listas, el consumo y los
+  Informes. Los campos de distancia llevan el símbolo de la unidad como
+  sufijo y aceptan **números enteros en esa unidad**; el de la cantidad de un
+  repostaje admite decimales (se muestran 2). Los umbrales que se enseñan al
+  usuario se redondean a una cifra amigable: la regla de los 50.000 km se
+  muestra como "30.000 mi" en millas (por dentro se siguen comparando
+  50.000 km). Desde el paso 12 el volumen y el consumo tienen pantallas
+  (repostajes e Informes); temperatura y presión todavía no (paso 14 o
+  posterior): existen el ajuste, el formateador y sus pruebas.
 - La moneda sigue siendo el euro, fijo: con el volumen en galones se verá
   "€/gal", y es lo esperado.
 

@@ -2,7 +2,8 @@
 
 Offline-first Flutter app to track the full service history of one or more
 vehicles — maintenance, refuelling, expenses, inspections, deadlines and
-documents — with optional Google Drive backup and PDF reports.
+documents — with optional Google Drive backup and per-vehicle reports (PDF
+export planned).
 
 ## Overview
 
@@ -10,31 +11,33 @@ A single-user, offline-first mobile app (Android first, built with Flutter so
 iOS stays possible later) for keeping a complete digital history of one or more
 vehicles. It replaces the paper service booklet and the shoebox of receipts:
 log maintenance, repairs, refuelling, inspections, expenses, legal deadlines and
-documents, then get reminders and exportable PDF reports. Data lives on the
-device and can be backed up to Google Drive to move between phones.
+documents, then see per-vehicle reports (reminders and PDF export are
+planned). Data lives on the device and can be backed up to Google Drive to
+move between phones.
 
 ## Key features
 
 - Multiple vehicles — cars, vans, motorcycles and mopeds — each linked to an
-  owner (with owner documents: licence, ID, residence permit — with expiry
-  reminders)
+  owner, with documents attached to vehicles and owners (expiry dates and
+  reminders: planned)
 - Make and model picked from a bundled offline catalogue, or typed by hand
 - Unified log of dated entries: maintenance, repairs, refuelling, expenses,
-  inspections, legal deadlines, notes — each with mileage, cost, photos and
-  optional reminders
-- Per-vehicle maintenance rules from a shared catalogue, with km- and/or
-  time-based intervals ("first of the two wins")
-- Per-axle brake modelling (disc+pads / drum+shoes) with independent component
-  deadlines
-- Measurement checks (tyre tread, pad thickness, battery voltage…) with history
-  and low-threshold alerts
-- Self-contained fuel economy per fill-up, plus average-consumption and
-  fuel-spend reports
-- Independent odometer history for a km-driven-over-time report
-- Reports (expenses, by type, fuel, general) exportable to PDF — useful for
-  resale
-- Local notifications for time-based deadlines; visual highlighting for
-  km-based ones
+  inspections, legal deadlines, notes — each with mileage, cost and photos
+  (optional reminders: planned)
+- Fuel consumption by the full-tank chain, from the odometer km of each
+  refuel (bi-fuel LPG / CNG vehicles keep one chain per fuel), with the
+  amount / volume / price triangle in the refuel form
+- Independent odometer history with its rules
+- Per-vehicle Reports tab: consumption with an explicit coverage line, fuel
+  spend by month, distance over time — filtered by dates or odometer range
+- Units of measurement (km / miles, litres / gallons, …) with SI storage
+- Archived vehicles, a 30-day Trash and an audit log
+- Planned: per-vehicle maintenance rules from a shared catalogue, with km-
+  and/or time-based intervals ("first of the two wins"); per-axle brake
+  modelling (disc+pads / drum+shoes); measurement checks with low-threshold
+  alerts; PDF reports (expenses, by type, fuel, general) for resale; local
+  notifications for time-based deadlines and visual highlighting for km-based
+  ones
 - Optional Google Drive backup with a version guard; two account-linking modes
   (system account picker and manual OAuth for an app-only account)
 - Multilingual UI: Italian, Spanish, English
@@ -114,9 +117,16 @@ quantities (distance, volume, temperature, pressure, consumption) one by
 one; everything that shows or asks for a distance is typed and read in the
 chosen unit, while the database always stores km (and litres, °C, bar) and
 knows nothing about units, with the distance columns as `REAL` so that
-100 mi come back as 100 mi. Next is step 12 (fuel consumption per fill-up
-and km statistics between readings), then reminders (13a in the app, 13b
-local notifications), built knowing which vehicles are archived.
+100 mi come back as 100 mi. Step 12 added fuel consumption (schema v10):
+refuels carry a volume (litres, or kg for CNG), a full-tank flag, a
+missed-refuel flag and a fuel (chosen on bi-fuel vehicles), with the amount /
+volume / price triangle in the form; consumption is derived, never stored, by
+the full-tank chain from the odometer km of each refuel, and shows after
+saving, in the refuel detail and in each vehicle's new Reports tab
+(consumption with its coverage line, fuel spend and distance over time,
+filtered by dates or odometer range); the Mileage tab also shows the days
+between readings. Next are reminders (13a in the app, 13b local
+notifications), built knowing which vehicles are archived.
 
 Roadmap to the first usable version:
 
@@ -134,12 +144,13 @@ Roadmap to the first usable version:
 | 9b | ~~Link an account manually (browser, OAuth + PKCE, token in the secure storage)~~ — done |
 | 10 | ~~Archived vehicles: reason, date, final km as a reading, read-only, reactivate (schema v8)~~ — done |
 | 11 | ~~Units of measurement: setting, SI storage, a single formatter (schema v9)~~ — done |
-| 12 | Fuel consumption (full-tank chain) and km statistics between odometer readings |
+| 12 | ~~Fuel consumption (full-tank chain), refuel fields (schema v10) and per-vehicle Reports~~ — done |
 | 13a | Reminders inside the app (table, list, states, mark as done; archived vehicles excluded) |
 | 13b | Local notifications (`flutter_local_notifications`, deep links) |
 
 Then (14+), in an order decided while using the app: measurements, the
-maintenance catalogue, documents, PDF reports.
+maintenance catalogue, documents, PDF reports (built on the step-12
+Reports).
 
 Why the signing key matters: each PC has its own debug key, so installing
 from another PC forces an uninstall, which deletes the data.

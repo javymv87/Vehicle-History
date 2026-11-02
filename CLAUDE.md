@@ -139,13 +139,13 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v9: `owners`, `vehicles`, `audit_log`,
+Settled for the database (schema v10: `owners`, `vehicles`, `audit_log`,
 `log_entries`, `mileage_readings`, `settings`, `attachments`; v2 added the
 vehicle kind, make / model, model year and version; v3 added `log_entries`;
 v4 added `mileage_readings` with one initial reading per vehicle; v5 added
 `deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`;
 v8 added the archive columns of `vehicles`; v9 made the four distance
-columns `REAL`):
+columns `REAL`; v10 added the refuel columns of `log_entries`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -240,7 +240,46 @@ columns `REAL`):
   types in SQL (indexes `(vehicle_id, entry_date)`, `(vehicle_id, type)`),
   text in Dart through `LogEntryFilter.matchesText` / `foldForSearch`, since
   SQLite ignores neither accents nor non-ASCII case. `LogEntryFilter.matches`
-  is the reference both paths are tested against.
+  is the reference both paths are tested against. `LogEntryRepository` has
+  `watchByVehicle` and its one-shot twin `getByVehicle`.
+- **Refuels (step 12, schema v10)** (`Docs/02_data_model.md`, "Repostaje";
+  `Docs/04_maintenance_logic.md`, "Repostajes y consumos"). Four nullable
+  columns of `log_entries`, added by `ALTER TABLE … ADD COLUMN`: `volume`
+  (`REAL`, `NULL CHECK (volume >= 0)`, litres or **kg for CNG**, rounded to
+  3 decimals by the repository), `full_tank`, `missed_previous` (booleans)
+  and `fuel` (`RefuelFuel` codes `petrol`, `diesel`, `lpg`, `cng`, `other`
+  through `RefuelFuelConverter`). In the model they are one
+  `LogEntry.refuel` (`RefuelDetails`, `lib/data/models/refuel.dart`), `null`
+  for every other type and for an electric vehicle's refuels; the insert
+  companion leaves the four columns out when it is `null`. The vehicle's
+  `FuelType` decides the fuels (`FuelTypeRefuels`: `refuelFuels`,
+  `primaryRefuelFuel`, `hasFuelChoice`); `DriftLogEntryRepository` resolves
+  them inside the transaction (`vehicleFuelTypeOf`, next to
+  `vehicleStateOf`), defaults a refuel without fields to the primary fuel
+  and a full tank, refuses a foreign fuel or a negative volume, and clears
+  the fields when the type changes. `VehicleRepository.update` refuses a fuel
+  type that does not allow the fuel of a live refuel
+  (`VehicleFuelTypeConflictException` → `ActionError.fuelTypeConflict`,
+  whose `ActionFailure.count` the message names). The v9 → v10 step fills
+  every existing refuel (deleted ones too) with its vehicle's primary fuel,
+  `full_tank = 1`, `missed_previous = 0` (`AppDatabase.fillExistingRefuels`,
+  plain SQL, no audit row, `updated_at` untouched so the data stamp does not
+  move). The price per unit and the consumption are never stored.
+- **Consumption** (`lib/data/models/fuel_consumption.dart`, pure Dart):
+  `FuelChain.build` / `FuelChain.allOf` derive the full-tank chain of each
+  fuel on every read (`fuelChainsProvider`, `features/reports/`); a node is
+  a full tank with a volume; `FuelSegment` has its `SegmentProblem` (missed
+  refuel, missing volume or km, no distance, no volume) and the suspicious
+  flag (≥ 3 computable segments, > 40 % from the chain's average);
+  `ChainSummary` averages total over total; `RefuelRole` says what one
+  refuel is (closes a segment, first full tank, partial, …). The reports'
+  filter and figures are in `report_filter.dart`: `DateRangeFilter` /
+  `KmRangeFilter` (a segment belongs only when its opening **and** closing
+  refuel fall inside), `ConsumptionReport` (coverage: X = the valid
+  segments, Y = the filter's real extent, `uncoveredKm` = Y − X),
+  `FuelSpendReport`, `DistanceReport`. The refuel form's amount / volume /
+  price link is `RefuelTriangle` (`features/entries/controllers/`), pure and
+  unit-tested; the soft checks are `RefuelChecks`.
 - **Future dates** of entries: only `legalDue`, `expense` and `note`
   (`LogEntryType.allowsFutureDate`); work types must be dated today or
   earlier, in the form and the repository. "Today" is
@@ -274,7 +313,7 @@ columns `REAL`):
   (`NULL CHECK (archived_km >= 0)`), all `NULL` while active. *Active* =
   `deleted = 0 AND archived_at IS NULL`: the one expression
   `VehiclesDao.isActive`, behind `watchActive` (the main list) and, negated
-  over live rows, `watchArchived`; step 11 reuses it. `getById` /
+  over live rows, `watchArchived`; step 13a reuses it. `getById` /
   `watchById` / `watchByOwner` return archived vehicles too.
   `VehicleRepository.archive` runs in one transaction: with a km it first
   calls `MileageReadingRepository.create` (a nested drift transaction, so
@@ -349,7 +388,14 @@ columns `REAL`):
   `toDisplay` / `toSI`); symbols are ARB strings. Widgets get it through
   `unitFormatterOf(context, ref)` in `build` (it watches the kept
   `unitPreferencesProvider`, next to the language and theme providers) and
-  `readUnitFormatter` in callbacks and `didChangeDependencies`. Distance
+  `readUnitFormatter` in callbacks and `didChangeDependencies`. Since step
+  12 it also has `mass` (kg, fixed, CNG only), `gasConsumption` (kg/100 km
+  or km/kg after the shape of the consumption setting; mpg falls back to
+  km/kg), `fuelQuantity` / `fuelConsumption` per `RefuelFuel`,
+  `formatUnitPrice` / `unitPriceSymbol` / `unitPriceToSI` (€/L, €/gal, €/kg)
+  and `formatCostPerDistance` (€/100 km, or €/mi in miles); a price per unit
+  is parsed by `tryParseUnitPrice` (`money.dart`, up to 3 decimals: a rate,
+  never stored, so the integer-cents rule is untouched). Distance
   fields accept whole numbers in the chosen unit, show the symbol as
   `suffixText` and parse with `sameAs:` the reading they are compared
   against, so re-typing a shown value never falls below it by rounding.
@@ -537,8 +583,9 @@ so a Windows checkout produces the same bytes as CI.
 
 Releases: the Android `versionCode` (the build number after `+` in
 `pubspec.yaml`) must increase with every release. **Version convention:**
-every merged roadmap step bumps the minor version and the build number
-together (step 6 = `0.6.0+6`, then `0.7.0+7`, …), and updates `appVersion`
+every merged roadmap step bumps the minor version and increments the build
+number by one (step 6 = `0.6.0+6`; after the 0.8.1 and 9b releases the two
+no longer match: step 12 = `0.12.0+14`), and updates `appVersion`
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
 they differ.
 
@@ -699,10 +746,13 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
   both ids are in the path; an entry reached through another vehicle's path
   is not found. Odometer readings follow the same pattern
   (`/vehicles/:id/mileage/new`, `…/mileage/:readingId/edit`). The vehicle
-  page has four tabs (`VehicleTab`: history, mileage, documents, details),
-  opened through the `tab` query parameter (`AppRoutes.vehicle(id, tab: …)`,
-  e.g. `?tab=mileage`), and owns its FAB: "Update km" on Mileage, "Add
-  document" on Documents, "New entry" otherwise. The image viewer is the
+  page has five tabs (`VehicleTab`: history, mileage, reports, documents,
+  details), opened through the `tab` query parameter
+  (`AppRoutes.vehicle(id, tab: …)`, e.g. `?tab=mileage`), and owns its FAB:
+  "Update km" on Mileage, "Add document" on Documents, none on the
+  read-only Reports, "New entry" otherwise. The Reports filter
+  (`reportFilterProvider`, screen state, never stored) is kept alive by the
+  vehicle page while it is open. The image viewer is the
   top-level route `/attachments/:attachmentId` (`AppRoutes.attachment`). An action that outlives its page (the odometer offer) asks the
   open vehicle page for a tab through `vehicleTabRequestProvider`.
 - Screens are opened with `context.push`, so Back returns to where the user
@@ -758,10 +808,20 @@ decision, not a refactor.
   as history, with an optional low threshold that triggers an alert.
 
 ### Fuel economy
-- Computed **per fill-up and self-contained**: km driven ÷ litres for that
-  fill-up. It is **not** derived from the distance between two consecutive
-  fill-ups.
-- Total fuel spend is **not** auto-computed. The user stays in control.
+Decided in step 12; it replaces the earlier per-fill-up rule (trip km ÷
+litres, no automatic total).
+- Computed by the **full-tank chain**, per fuel: a segment runs from one full
+  tank with a volume to the next one of the same fuel; its km is the
+  difference of the odometer km recorded on the two refuels, its volume the
+  closing refuel's plus every refuel in between. Derived on every read,
+  **never stored**.
+- A segment with a missed refuel, a refuel without volume or km inside it,
+  or no distance or volume is **listed but never averaged**, and nothing of
+  it is estimated. A segment far from the average is flagged, never
+  excluded; only the user sets "missed refuel", in the form.
+- The vehicle average is total volume ÷ total km of the computable segments.
+- The fuel spend in Reports is the sum of the amounts the user typed: it
+  infers nothing.
 
 ### Archived vehicles
 - Archive ≠ Trash: the Trash is a mistake (purged after 30 days), the
@@ -772,7 +832,7 @@ decision, not a refactor.
   actions are Reactivate (always allowed, no confirmation, touches no
   reading) and Move to Trash.
 - Archived vehicles are excluded from everything "current" (main list,
-  default selections and, in step 11, reminders) through the single
+  default selections and, in step 13a, reminders) through the single
   `VehiclesDao.isActive` filter. The owner page still lists them, folded.
 - The final km of an archive **is** an odometer reading, inserted by the
   normal reading path under its rules; `archived_km` is only its snapshot.
@@ -818,7 +878,9 @@ decision, not a refactor.
 - Material 3, with **one seed colour** generating both the light and the dark
   palette.
 - Default to the OS theme, with a user override in settings.
-- Reports (expenses, by type, fuel, general) are exportable to PDF.
+- Each vehicle has an in-app, read-only Reports tab since step 12
+  (consumption, fuel spend, distance over time). The PDF reports (expenses,
+  by type, fuel, general) come later, built on them.
 - Time-based deadlines produce local notifications; km-based ones are surfaced
   through visual highlighting, not notifications.
 
@@ -868,8 +930,9 @@ expensive and the user cannot spot it by eye.
 - **Repositories — always.** Unit tests against an in-memory Drift database.
 - **Domain logic — always, thoroughly.** Due-date computation (km, time, and
   the "first of the two to fall due wins" rule), per-axle brake sub-deadlines,
-  per-fill-up fuel economy, the odometer rules (no reading lower than the last
-  one, deletion only of the most recent) and the backup version guard.
+  the full-tank-chain consumption, the odometer rules (no reading lower than
+  the last one, deletion only of the most recent) and the backup version
+  guard.
 - **Schema migrations — always**, against the committed schema dumps.
 - **Widgets — sparingly.** One smoke test per screen that it builds, plus a
   test for genuinely tricky interaction. Do not write widget tests that merely
@@ -977,8 +1040,9 @@ string by hand.
 ### Physical quantities
 
 All physical quantities are stored in SI: distances in **km**, volumes in
-**litres**, temperatures in **°C**, pressures in **bar**, fuel consumption
-in **L/100 km**. The database, the repositories, the domain rules and the
+**litres**, masses in **kg** (CNG refuels, whose `volume` column holds kg),
+temperatures in **°C**, pressures in **bar**, fuel consumption in
+**L/100 km** (kg/100 km for CNG). The database, the repositories, the domain rules and the
 backup package never see any other unit. Units are a UI concern handled
 exclusively by the unit formatter (`UnitFormatter`, §2 "Units of
 measurement"): user input is parsed through it and every displayed value
