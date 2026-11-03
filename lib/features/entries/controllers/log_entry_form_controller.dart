@@ -60,6 +60,7 @@ class LogEntryDraft {
     this.refuel,
     this.addedAttachments = const [],
     this.removedAttachmentIds = const {},
+    this.closesReminderId,
   });
 
   /// Day of the event.
@@ -85,6 +86,10 @@ class LogEntryDraft {
 
   /// Saved attachments removed in the form, soft-deleted on save.
   final Set<String> removedAttachmentIds;
+
+  /// The reminder this entry closes ("Closes the reminder"), in the same
+  /// transaction; `null` for none.
+  final String? closesReminderId;
 }
 
 /// State of the entry form, loaded once when the form opens so the fields
@@ -124,7 +129,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
   }
 
   /// Creates or updates the entry from [draft], with its attachment
-  /// changes, in one transaction.
+  /// changes and the reminder it closes, in one transaction.
   ///
   /// Returns the saved entry, or the reason it was not saved (for example
   /// [ActionError.vehicleNotFound]).
@@ -143,6 +148,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
           refuel: draft.refuel,
           addedAttachments: draft.addedAttachments,
           removedAttachmentIds: draft.removedAttachmentIds,
+          closesReminderId: draft.closesReminderId,
         );
       }
       return repository.create(
@@ -154,6 +160,7 @@ class LogEntryFormController extends AsyncNotifier<LogEntryFormData> {
         costCents: draft.costCents,
         refuel: draft.refuel,
         attachments: draft.addedAttachments,
+        closesReminderId: draft.closesReminderId,
       );
     });
   }

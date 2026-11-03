@@ -17,6 +17,9 @@ abstract interface class ReminderRepository {
   /// vehicle.
   Stream<List<Reminder>> watchByVehicle(String vehicleId);
 
+  /// Returns what [watchByVehicle] emits, once.
+  Future<List<Reminder>> getByVehicle(String vehicleId);
+
   /// Emits the live, open reminders of every active vehicle (live and not
   /// archived), each with its vehicle: the Reminders page of Home and its
   /// badge.

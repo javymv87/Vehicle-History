@@ -32,6 +32,26 @@ abstract final class AppRoutes {
         : '$path?tab=${tab.queryValue}';
   }
 
+  /// The reminders of every active vehicle, a destination of the
+  /// navigation bar.
+  static const String reminders = '/reminders';
+
+  /// Form that creates a reminder for the vehicle with [vehicleId].
+  static String newReminder(String vehicleId) =>
+      '${vehicle(vehicleId)}/reminders/new';
+
+  /// Detail of the reminder [reminderId] of the vehicle with [vehicleId].
+  ///
+  /// Both ids travel in the path, so a notification (step 13b) can open it
+  /// directly.
+  static String reminder(String vehicleId, String reminderId) =>
+      '${vehicle(vehicleId)}/reminders/${Uri.encodeComponent(reminderId)}';
+
+  /// Form that edits the reminder [reminderId] of the vehicle with
+  /// [vehicleId].
+  static String editReminder(String vehicleId, String reminderId) =>
+      '${reminder(vehicleId, reminderId)}/edit';
+
   /// Form that edits the vehicle with [id].
   static String editVehicle(String id) => '${vehicle(id)}/edit';
 

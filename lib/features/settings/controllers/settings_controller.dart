@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/data_providers.dart';
 import '../../../data/models/app_preferences.dart';
+import '../../../data/models/reminder_status.dart';
 import '../../../data/models/units.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../../../l10n/app_localizations.dart';
@@ -55,6 +56,20 @@ final unitPreferencesProvider = StreamProvider<UnitPreferences>((ref) {
   return ref
       .watch(settingsRepositoryProvider)
       .watchUnitPreferences()
+      .handleError(_logReadFailure);
+});
+
+/// The global reminder lead stored in Settings (`reminder_lead_days`,
+/// `reminder_lead_km`), read like [unitPreferencesProvider]: until it is
+/// read, and after a read error, the reminders use [ReminderLead]'s
+/// defaults.
+final reminderLeadProvider = StreamProvider<ReminderLead>((ref) {
+  if (ref.watch(databaseReadyProvider) is! AsyncData) {
+    return const Stream.empty();
+  }
+  return ref
+      .watch(settingsRepositoryProvider)
+      .watchReminderLead()
       .handleError(_logReadFailure);
 });
 
@@ -147,6 +162,16 @@ class SettingsController extends Notifier<void> {
   /// Stores [unit] as the unit of pressure.
   Future<ActionResult<void>> setPressureUnit(PressureUnit unit) => runAction(
         () => ref.read(settingsRepositoryProvider).writePressureUnit(unit),
+      );
+
+  /// Stores [days] as the global reminder lead in days.
+  Future<ActionResult<void>> setReminderLeadDays(int days) => runAction(
+        () => ref.read(settingsRepositoryProvider).writeReminderLeadDays(days),
+      );
+
+  /// Stores [km] (SI) as the global reminder lead in distance.
+  Future<ActionResult<void>> setReminderLeadKm(double km) => runAction(
+        () => ref.read(settingsRepositoryProvider).writeReminderLeadKm(km),
       );
 
   /// Stores [unit] as the unit of fuel consumption.

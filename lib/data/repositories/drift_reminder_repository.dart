@@ -49,6 +49,10 @@ class DriftReminderRepository implements ReminderRepository {
       _reminders.watchLiveByVehicle(vehicleId);
 
   @override
+  Future<List<Reminder>> getByVehicle(String vehicleId) =>
+      _reminders.getLiveByVehicle(vehicleId);
+
+  @override
   Stream<List<ActiveReminder>> watchActiveAcrossVehicles() =>
       _reminders.watchOpenOfActiveVehicles();
 

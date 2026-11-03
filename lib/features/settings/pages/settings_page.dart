@@ -8,12 +8,14 @@ import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/choice_dialog.dart';
+import '../widgets/reminders_section.dart';
 import '../widgets/units_section.dart';
 
 /// The Settings page (U21): the interface language and the light / dark
 /// mode, each a tile with the current value that opens a radio-button
-/// dialog, then the units of measurement ([UnitsSection]). Opened from the
-/// overflow menu of the home lists.
+/// dialog, then the units of measurement ([UnitsSection]) and the global
+/// reminder lead ([RemindersSection]). Opened from the overflow menu of the
+/// home lists.
 ///
 /// A choice is stored at once and the whole app follows it, this page
 /// included, without a restart.
@@ -47,6 +49,7 @@ class SettingsPage extends ConsumerWidget {
           ),
           const Divider(),
           const UnitsSection(),
+          const RemindersSection(),
         ],
       ),
     );

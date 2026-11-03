@@ -12,6 +12,7 @@ import 'package:vehicle_history/data/drive/drive_sync_service.dart';
 import 'catalog_fixtures.dart';
 import 'fake_backup.dart';
 import 'fake_drive.dart';
+import 'fake_reminders.dart';
 import 'fake_repositories.dart';
 import 'memory_attachment_store.dart';
 
@@ -69,11 +70,14 @@ class BackupFakes {
 /// with [backup] (fresh fakes by default) behind the Backup page.
 List<Override> fakeDataOverrides(FakeStore store, {BackupFakes? backup}) {
   final fakes = backup ?? BackupFakes();
+  final entries = FakeLogEntryRepository(store);
   return [
     databaseReadyProvider.overrideWith((ref) async {}),
     ownerRepositoryProvider.overrideWithValue(FakeOwnerRepository(store)),
     vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository(store)),
-    logEntryRepositoryProvider.overrideWithValue(FakeLogEntryRepository(store)),
+    logEntryRepositoryProvider.overrideWithValue(entries),
+    reminderRepositoryProvider
+        .overrideWithValue(FakeReminderRepository(store, entries)),
     mileageReadingRepositoryProvider
         .overrideWithValue(FakeMileageReadingRepository(store)),
     vehicleCatalogProvider.overrideWith((ref) async => vehicleCatalogFixture()),

@@ -11,6 +11,7 @@ import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../attachments/controllers/attachment_list_controller.dart';
+import '../../reminders/controllers/reminder_list_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import 'log_entry_filter_sheet.dart';
 import 'log_entry_tile.dart';
@@ -191,6 +192,10 @@ class _HistoryList extends ConsumerWidget {
     // The paperclip counts (U24); none while they load.
     final counts =
         ref.watch(entryAttachmentCountsProvider(vehicleId)).value ?? const {};
+    // The reminder icon; none while the ids load.
+    final closing =
+        ref.watch(reminderClosingEntryIdsProvider(vehicleId)).value ??
+            const <String>{};
     return ListView.builder(
       // Room at the bottom so the FAB never covers the last entry.
       padding: const EdgeInsets.only(bottom: 88),
@@ -201,6 +206,7 @@ class _HistoryList extends ConsumerWidget {
         _EntryItem(:final entry) => LogEntryTile(
             entry: entry,
             attachmentCount: counts[entry.id] ?? 0,
+            closesReminder: closing.contains(entry.id),
             onTap: () => context.push(AppRoutes.entry(vehicleId, entry.id)),
           ),
       },

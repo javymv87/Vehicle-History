@@ -140,6 +140,9 @@ void main() {
     /// Scrolls the section into view.
     Future<void> reveal(WidgetTester tester) async {
       await tester.scrollUntilVisible(find.text('Fuel consumption'), 200);
+      // The reminders section below lets the scroll overshoot: bring the
+      // presets back under the app bar.
+      await tester.ensureVisible(find.byKey(const ValueKey('unit-preset')));
       await tester.pumpAndSettle();
     }
 
@@ -249,6 +252,27 @@ void main() {
 
       await choose(tester, 'Fuel consumption', 'Miles per US gallon (mpg)');
       expect(find.byKey(const ValueKey('unit-consumption-hint')), findsNothing);
+    });
+  });
+
+  group('reminders', () {
+    testWidgets('the leads read 30 days and 1,000 km, and are stored',
+        (tester) async {
+      await pumpSettings(tester);
+      final days = find.text('Warn 30 days before');
+      await tester.scrollUntilVisible(days, 200);
+      expect(find.text('Warn 1,000 km before'), findsOneWidget);
+
+      await tester.tap(days);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('whole-number-field')),
+        '15',
+      );
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(fakes.settings.values[SettingKey.reminderLeadDays], '15');
+      expect(find.text('Warn 15 days before'), findsOneWidget);
     });
   });
 }

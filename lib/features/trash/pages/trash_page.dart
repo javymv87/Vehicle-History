@@ -131,16 +131,7 @@ class _TrashList extends ConsumerWidget {
     final confirmed = await confirmAction(
       context,
       title: l10n.purgeVehicleTitle(item.vehicle.displayNameWithPlate(l10n)),
-      message: item.contents.attachmentCount == 0
-          ? l10n.purgeVehicleMessage(
-              item.contents.entryCount,
-              item.contents.readingCount,
-            )
-          : l10n.purgeVehicleMessageWithAttachments(
-              item.contents.entryCount,
-              item.contents.readingCount,
-              item.contents.attachmentCount,
-            ),
+      message: item.contents.purgeMessage(l10n),
       confirmLabel: l10n.actionPurge,
       destructive: true,
     );

@@ -23,6 +23,7 @@ import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
 import '../../reports/controllers/report_filter_controller.dart';
+import '../../reminders/widgets/vehicle_reminders_view.dart';
 import '../../reports/widgets/reports_view.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/vehicle_archive_controller.dart';
@@ -33,8 +34,8 @@ import '../controllers/vehicle_tab_controller.dart';
 import '../widgets/archive_banner.dart';
 import '../widgets/archive_dialog.dart';
 
-/// The page of one vehicle: its history first, then its odometer readings,
-/// its reports, its documents and its details. The vehicle id comes from the path; an
+/// The page of one vehicle: its history first, then its reminders, its
+/// odometer readings, its reports, its documents and its details. The vehicle id comes from the path; an
 /// unknown or deleted id shows a not-found page. An archived vehicle opens
 /// read-only: a banner under the app bar, no add, edit or delete affordance
 /// anywhere, only "Reactivate" and "Move to Trash".
@@ -75,9 +76,9 @@ class VehicleDetailPage extends ConsumerWidget {
 }
 
 /// The loaded vehicle page (`Docs/03_features.md`, U1–U2, U11–U15, U25): a
-/// compact header, then five tabs, History (the default), Mileage, Reports,
-/// Documents and Details, and a button that adds what the tab shows (none
-/// on the read-only Reports). The
+/// compact header, then six tabs, History (the default), Reminders,
+/// Mileage, Reports, Documents and Details, and a button that adds what the
+/// tab shows (none on the read-only Reports). The
 /// overflow menu archives the vehicle, or reactivates it, and moves it to
 /// the Trash.
 class _VehicleDetailView extends ConsumerStatefulWidget {
@@ -142,16 +143,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
     final confirmed = await confirmDelete(
       context,
       title: l10n.deleteVehicleTitle(vehicle.displayNameWithPlate(l10n)),
-      message: contents.attachmentCount == 0
-          ? l10n.deleteVehicleMessage(
-              contents.entryCount,
-              contents.readingCount,
-            )
-          : l10n.deleteVehicleMessageWithAttachments(
-              contents.entryCount,
-              contents.readingCount,
-              contents.attachmentCount,
-            ),
+      message: contents.deleteMessage(l10n),
     );
     if (!confirmed || !mounted) return;
 
@@ -284,6 +276,13 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addEntry),
                 ),
+              VehicleTab.reminders => FloatingActionButton.extended(
+                  heroTag: AppRoutes.newReminder(vehicle.id),
+                  onPressed: () =>
+                      context.push(AppRoutes.newReminder(vehicle.id)),
+                  icon: const Icon(Icons.add_alert_outlined),
+                  label: Text(l10n.newReminder),
+                ),
               // Read-only: nothing to add from the reports.
               VehicleTab.reports => null,
               VehicleTab.mileage => FloatingActionButton.extended(
@@ -310,11 +309,12 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
           _VehicleHeader(vehicle: vehicle),
           TabBar(
             controller: _tabs,
-            // Five tabs do not fit at 360 dp: they scroll.
+            // Six tabs do not fit at 360 dp: they scroll.
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: l10n.tabHistory),
+              Tab(text: l10n.tabReminders),
               Tab(text: l10n.tabMileage),
               Tab(text: l10n.tabReports),
               Tab(text: l10n.tabDocuments),
@@ -326,6 +326,7 @@ class _VehicleDetailViewState extends ConsumerState<_VehicleDetailView>
               controller: _tabs,
               children: [
                 LogEntryHistoryView(vehicleId: vehicle.id),
+                VehicleRemindersView(vehicleId: vehicle.id),
                 MileageHistoryView(vehicleId: vehicle.id),
                 ReportsView(vehicleId: vehicle.id),
                 ListView(
