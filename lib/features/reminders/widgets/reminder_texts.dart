@@ -6,6 +6,7 @@ import '../../../data/models/calendar_date.dart';
 import '../../../data/models/reminder.dart';
 import '../../../data/models/reminder_kind.dart';
 import '../../../data/models/reminder_status.dart';
+import '../../../data/models/vehicle.dart';
 import '../../../data/repositories/repository_exceptions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
@@ -70,50 +71,29 @@ String _sentence(String text, AppLocalizations l10n) =>
 String joinParts(AppLocalizations l10n, Iterable<String> parts) =>
     parts.where((part) => part.isNotEmpty).join(l10n.partsSeparator);
 
-/// The due text of the date axis of [due]: "due 12 Mar 2027", "due today"
-/// or "overdue by 3 days"; `null` without a date axis.
-String? dueDateText(ReminderDue due, AppLocalizations l10n) {
-  final date = due.effectiveDate;
-  final days = due.remainingDays;
-  if (date == null || days == null) return null;
-  if (days < 0) return l10n.reminderOverdueDays(-days);
-  if (days == 0) return l10n.reminderDueToday;
-  return l10n.reminderDueOn(date.toLocalDateTime());
-}
+/// The vehicle of a reminder as one line: "Fiat Punto · FS548KS", or the
+/// plate alone without make and model.
+String vehicleLine(Vehicle vehicle, AppLocalizations l10n) =>
+    joinParts(l10n, [vehicle.makeAndModel ?? '', vehicle.plate]);
 
-/// The due text of the km axis of [due]: "in 850 km" or "overdue by
-/// 120 km"; `null` without a km axis.
-String? dueDistanceText(
-  ReminderDue due,
-  AppLocalizations l10n,
-  UnitFormatter units,
-) {
-  final remaining = due.remainingKm;
-  if (remaining == null) return null;
-  return remaining <= 0
-      ? l10n.reminderOverdueDistance(units.distance.format(-remaining))
-      : l10n.reminderDueInDistance(units.distance.format(remaining));
-}
-
-/// The due line of a row: both axes, or the completion day of a completed
-/// one-shot reminder, e.g. "Due 12 Mar 2027 · in 1,250 km".
-String reminderDueLine(
+/// Where the postponement of [reminder] goes: "Postponed until 30 Nov
+/// 2026", "… until 98,000 km", or both.
+String snoozedUntilText(
   Reminder reminder,
-  ReminderDue due,
   AppLocalizations l10n,
   UnitFormatter units,
 ) {
-  final completedAt = reminder.completedAt;
-  if (completedAt != null) {
-    return _sentence(l10n.reminderCompletedOn(completedAt.toLocal()), l10n);
-  }
-  return _sentence(
-    joinParts(l10n, [
-      dueDateText(due, l10n) ?? '',
-      dueDistanceText(due, l10n, units) ?? '',
-    ]),
-    l10n,
-  );
+  final date = reminder.snoozeUntilDate?.toLocalDateTime();
+  final km = reminder.snoozeUntilKm;
+  final distance = km == null ? null : units.distance.format(km);
+  return switch ((date, distance)) {
+    (final DateTime date, final String distance) =>
+      l10n.reminderSnoozedUntilBoth(date, distance),
+    (final DateTime date, null) => l10n.reminderSnoozedUntilDate(date),
+    (null, final String distance) =>
+      l10n.reminderSnoozedUntilDistance(distance),
+    (null, null) => '',
+  };
 }
 
 /// An interval of [months]: whole years when a multiple of 12 ("2 years",

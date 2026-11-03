@@ -11,48 +11,6 @@ import '../../settings/controllers/settings_controller.dart';
 import '../controllers/reminder_list_controller.dart';
 import 'reminder_texts.dart';
 
-/// The status of a reminder in its colour, always with its icon and its
-/// name (never the colour alone), followed by [detail] when given.
-class ReminderStatusLine extends StatelessWidget {
-  /// Creates the line for [status].
-  const ReminderStatusLine({super.key, required this.status, this.detail});
-
-  /// The status shown.
-  final ReminderStatus status;
-
-  /// What follows the status name, such as the due line.
-  final String? detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final style = reminderStatusStyle(status, theme);
-    final detail = this.detail;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(style.icon, size: 18, color: style.color),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            detail == null || detail.isEmpty
-                ? status.label(l10n)
-                : joinParts(l10n, [status.label(l10n), detail]),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: style.color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// One reminder row (`Docs/08_recordatorios.md`): the kind icon in a
 /// 40 dp circle, the title, the status in its colour with its icon and the
 /// due axes ("Overdue · 3 days ago", "Up to date · in 12,000 km ·
@@ -129,7 +87,7 @@ class ReminderTile extends ConsumerWidget {
                     ),
                     if (showVehicle)
                       Text(
-                        vehicle.displayNameWithPlate(l10n),
+                        vehicleLine(vehicle, l10n),
                         style:
                             theme.textTheme.bodyMedium?.copyWith(color: muted),
                       ),

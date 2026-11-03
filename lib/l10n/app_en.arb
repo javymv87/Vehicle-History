@@ -3414,28 +3414,9 @@
   "@reminderStatusCompleted": {
     "description": "Status of a closed one-shot reminder."
   },
-  "reminderDueOn": "due {date}",
-  "@reminderDueOn": {
-    "description": "Due line: the due date.",
-    "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
   "reminderDueToday": "due today",
   "@reminderDueToday": {
     "description": "Due line: due today."
-  },
-  "reminderOverdueDays": "{days, plural, =1{overdue by 1 day} other{overdue by {days} days}}",
-  "@reminderOverdueDays": {
-    "description": "Due line: days past the due date.",
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
   },
   "reminderDueInDistance": "in {distance}",
   "@reminderDueInDistance": {
@@ -3446,25 +3427,6 @@
       }
     }
   },
-  "reminderOverdueDistance": "overdue by {distance}",
-  "@reminderOverdueDistance": {
-    "description": "Due line: distance past the due km, formatted with its unit.",
-    "placeholders": {
-      "distance": {
-        "type": "String"
-      }
-    }
-  },
-  "reminderCompletedOn": "completed on {date}",
-  "@reminderCompletedOn": {
-    "description": "Due line of a completed one-shot reminder.",
-    "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
   "reminderChipCustom": "Custom",
   "@reminderChipCustom": {
     "description": "Chip: the reference criterion is overridden."
@@ -3472,10 +3434,6 @@
   "reminderChipSnoozed": "Postponed",
   "@reminderChipSnoozed": {
     "description": "Chip: this occurrence is postponed."
-  },
-  "reminderLaxerWarning": "The applied criterion is less strict than the reference",
-  "@reminderLaxerWarning": {
-    "description": "Warning icon label: the override falls due later than the reference or turns an axis off."
   },
   "newReminder": "New reminder",
   "@newReminder": {
@@ -3497,8 +3455,8 @@
   "@reminderKindPickerTitle": {
     "description": "Title of the kind picker."
   },
-  "reminderKindOther": "Other…",
-  "@reminderKindOther": {
+  "reminderKindPickerOther": "Other…",
+  "@reminderKindPickerOther": {
     "description": "Kind picker: the pinned free option."
   },
   "reminderKindShowAll": "Show all",
@@ -3626,17 +3584,9 @@
   "@deleteReminderMessage": {
     "description": "Confirmation message before deleting a reminder."
   },
-  "reminderNextDue": "Next due",
-  "@reminderNextDue": {
-    "description": "Reminder detail: section of the next due values."
-  },
   "reminderAxisDate": "By date",
   "@reminderAxisDate": {
     "description": "Reminder detail: the time axis."
-  },
-  "reminderAxisDistance": "By distance",
-  "@reminderAxisDistance": {
-    "description": "Reminder detail: the distance axis."
   },
   "reminderCriterion": "Criterion",
   "@reminderCriterion": {
@@ -3645,29 +3595,6 @@
   "reminderAppliedCriterion": "Applied criterion",
   "@reminderAppliedCriterion": {
     "description": "Reminder detail: the overriding criterion."
-  },
-  "reminderReferenceCriterion": "Reference criterion",
-  "@reminderReferenceCriterion": {
-    "description": "Reminder detail: the manual's criterion under an override."
-  },
-  "reminderReferenceDueDate": "By the manufacturer it would be due {date}",
-  "@reminderReferenceDueDate": {
-    "description": "Reminder detail: the reference due date under an override.",
-    "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
-  "reminderReferenceDueDistance": "By the manufacturer it would be due at {distance}",
-  "@reminderReferenceDueDistance": {
-    "description": "Reminder detail: the reference due odometer under an override.",
-    "placeholders": {
-      "distance": {
-        "type": "String"
-      }
-    }
   },
   "reminderOneShotOn": "one date: {date}",
   "@reminderOneShotOn": {
@@ -3679,15 +3606,6 @@
       }
     }
   },
-  "reminderReason": "Reason: {reason}",
-  "@reminderReason": {
-    "description": "The owner's reason of an override or a snooze.",
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "reminderOverriddenOn": "customised on {date}",
   "@reminderOverriddenOn": {
     "description": "Reminder detail: when the override was set.",
@@ -3695,15 +3613,6 @@
       "date": {
         "type": "DateTime",
         "format": "yMMMd"
-      }
-    }
-  },
-  "reminderSnoozedUntil": "Postponed to {until}",
-  "@reminderSnoozedUntil": {
-    "description": "Reminder detail: the snooze date and / or odometer.",
-    "placeholders": {
-      "until": {
-        "type": "String"
       }
     }
   },
@@ -3722,10 +3631,6 @@
   "reminderSourceManual": "Created by hand",
   "@reminderSourceManual": {
     "description": "Reminder detail: typed in the app."
-  },
-  "reminderLeadLabel": "Warning",
-  "@reminderLeadLabel": {
-    "description": "Reminder detail: the reminder's own lead."
   },
   "reminderLeadDaysValue": "{days, plural, =1{1 day before} other{{days} days before}}",
   "@reminderLeadDaysValue": {
@@ -3818,10 +3723,6 @@
   "@reminderActionRestoreReference": {
     "description": "Action: remove the override."
   },
-  "reminderMarkDoneTitle": "Mark as done",
-  "@reminderMarkDoneTitle": {
-    "description": "Title of the mark-done dialog."
-  },
   "reminderMarkDoneIntro": "An entry of type {type} is saved, and the reminder counts from it.",
   "@reminderMarkDoneIntro": {
     "description": "Mark-done dialog: what it writes; type = the entry type name.",
@@ -3830,10 +3731,6 @@
         "type": "String"
       }
     }
-  },
-  "reminderSnoozeIntro": "This time only: the criterion does not change.",
-  "@reminderSnoozeIntro": {
-    "description": "Snooze dialog intro."
   },
   "reminderSnoozeUntilDate": "Until (date)",
   "@reminderSnoozeUntilDate": {
@@ -3863,10 +3760,6 @@
         "type": "String"
       }
     }
-  },
-  "reminderOverrideIntro": "The reference stays and is still shown next to the applied criterion.",
-  "@reminderOverrideIntro": {
-    "description": "Override dialog intro."
   },
   "reminderDisableAxis": "No limit",
   "@reminderDisableAxis": {
@@ -3983,7 +3876,7 @@
       }
     }
   },
-  "settingsReminderLeadHelp": "Each reminder can have its own warning.",
+  "settingsReminderLeadHelp": "Each reminder can have its own alert.",
   "@settingsReminderLeadHelp": {
     "description": "Settings: help of the reminders section."
   },

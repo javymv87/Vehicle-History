@@ -106,7 +106,7 @@ void main() {
       expect(find.text('Up to date'), findsNothing);
       expect(find.text('Engine oil'), findsOneWidget);
       expect(find.text('Coolant'), findsNothing);
-      expect(find.text('Fiat Punto (AB123CD)'), findsOneWidget);
+      expect(find.text('Fiat Punto · AB123CD'), findsOneWidget);
       // The date is a month past; the km are still ahead.
       expect(
         find.textContaining(RegExp(r'^Overdue · \d+ days ago · in ')),
@@ -137,7 +137,7 @@ void main() {
       expect(find.text('Engine oil'), findsOneWidget);
       expect(find.text('Coolant'), findsOneWidget);
       // The vehicle is the page's own: rows do not repeat it.
-      expect(find.text('Fiat Punto (AB123CD)'), findsNothing);
+      expect(find.text('Fiat Punto · AB123CD'), findsNothing);
       expect(
         find.widgetWithText(FloatingActionButton, 'New reminder'),
         findsOneWidget,
@@ -247,23 +247,105 @@ void main() {
   });
 
   group('detail', () {
-    testWidgets('shows both criteria of an override and the history',
+    /// Opens the detail of the reminder [id].
+    Future<void> openDetail(WidgetTester tester, String id) => pumpApp(
+          tester,
+          store,
+          location: AppRoutes.reminder(vehicleId, id),
+        );
+
+    testWidgets('without override: status, both axes, reference, last time',
         (tester) async {
-      addOil(overridden: true);
-      await pumpApp(
-        tester,
-        store,
-        location: AppRoutes.reminder(vehicleId, 'rem-oil'),
-      );
-      expect(find.text('Applied criterion'), findsOneWidget);
-      expect(find.text('Every 80,000 km · no time limit'), findsOneWidget);
-      expect(find.text('Reference criterion'), findsOneWidget);
-      expect(find.text('Every 15,000 km or 1 year'), findsOneWidget);
+      addOil();
+      await openDetail(tester, 'rem-oil');
+      expect(find.text('Fiat Punto · AB123CD'), findsOneWidget);
+      expect(find.text('Created by hand'), findsOneWidget);
       expect(
-        find.text('The applied criterion is less strict than the reference'),
+        find.descendant(
+          of: find.byKey(const ValueKey('reminder-status-card')),
+          matching: find.text('Overdue'),
+        ),
         findsOneWidget,
       );
-      await tester.scrollUntilVisible(find.text('Reminder history'), 200);
+      // Two axes side by side, each with what is left.
+      expect(find.text('BY KM'), findsOneWidget);
+      expect(find.text('BY DATE'), findsOneWidget);
+      expect(find.text('25,000 km'), findsOneWidget);
+      expect(find.text('12,655 km left'), findsOneWidget);
+      expect(find.text('CRITERION'), findsOneWidget);
+      expect(find.text('Every 15,000 km or 1 year'), findsOneWidget);
+      expect(find.text('Your reference'), findsOneWidget);
+      expect(find.text('LAST TIME'), findsOneWidget);
+      expect(find.textContaining('10,000 km'), findsOneWidget);
+      // No grey per-field labels, no separate due block.
+      expect(find.text('Next due'), findsNothing);
+      expect(find.text('Odometer'), findsNothing);
+    });
+
+    testWidgets('with a laxer override: applied over reference, chip, restore',
+        (tester) async {
+      addOil(overridden: true);
+      await openDetail(tester, 'rem-oil');
+      expect(find.text('APPLIED CRITERION'), findsOneWidget);
+      expect(find.text('Less strict'), findsOneWidget);
+      expect(find.text('Every 80,000 km · no time limit'), findsOneWidget);
+      expect(find.text('Reference: every 15,000 km or 1 year'), findsOneWidget);
+      // Only the axes that differ say what the reference would do.
+      expect(
+        find.textContaining('By time it would be due on'),
+        findsOneWidget,
+      );
+      expect(find.text('By km it would be due at 25,000 km'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Restore reference'), findsOne);
+      // One axis left: the hero and what is left, with the axis turned off.
+      expect(find.text('90,000 km'), findsOneWidget);
+      expect(find.text('77,655 km left · no time limit'), findsOneWidget);
+    });
+
+    testWidgets('postponed: the chip and where it goes, with its reason',
+        (tester) async {
+      store.addReminder(
+        addCoolant().copyWith(
+          snoozeUntilDate: today.addMonths(60),
+          snoozeReason: 'Garage closed',
+        ),
+      );
+      await openDetail(tester, 'rem-coolant');
+      expect(find.text('Postponed'), findsOneWidget);
+      expect(find.textContaining('Postponed until'), findsOneWidget);
+      expect(find.textContaining('Garage closed'), findsOneWidget);
+    });
+
+    testWidgets('a one-shot: its date as the hero, no last time',
+        (tester) async {
+      store.addReminder(
+        Reminder(
+          id: 'rem-tax',
+          vehicleId: vehicleId,
+          kind: ReminderKind.roadTax,
+          title: 'Road tax',
+          dueDate: today.addDays(10),
+          createdAt: store.now,
+          updatedAt: store.now,
+        ),
+      );
+      await openDetail(tester, 'rem-tax');
+      expect(find.text('Due soon'), findsOneWidget);
+      expect(find.text('10 days left'), findsOneWidget);
+      expect(find.text('LAST TIME'), findsNothing);
+      expect(find.text('CRITERION'), findsNothing);
+    });
+
+    testWidgets('the history is folded and opens in place', (tester) async {
+      // The store records the create change.
+      addOil();
+      await openDetail(tester, 'rem-oil');
+      final row = find.byKey(const ValueKey('reminder-history-row'));
+      await tester.scrollUntilVisible(row, 200);
+      expect(find.text('1 change'), findsOneWidget);
+      expect(find.textContaining('· Created'), findsNothing);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
       expect(find.textContaining('· Created'), findsOneWidget);
     });
 

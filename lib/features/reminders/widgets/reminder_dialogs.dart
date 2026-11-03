@@ -181,14 +181,14 @@ class _MarkDoneDialogState extends ConsumerState<_MarkDoneDialog> {
         NumberFormat.simpleCurrency(locale: l10n.localeName, name: 'EUR');
     return AlertDialog(
       scrollable: true,
-      title: Text(l10n.reminderMarkDoneTitle),
+      title: Text(l10n.reminderActionMarkDone),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l10n.reminderMarkDoneIntro(type.label(l10n))),
+            _Context(l10n.reminderMarkDoneIntro(type.label(l10n))),
             const SizedBox(height: 16),
             InkWell(
               onTap: _saving ? null : _pickDate,
@@ -423,7 +423,15 @@ class _SnoozeDialogState extends ConsumerState<_SnoozeDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l10n.reminderSnoozeIntro),
+            _Context(
+              l10n.reminderSnoozeCurrentDue(
+                joinParts(l10n, [
+                  if (due.dueDate case final date?)
+                    l10n.dateValue(date.toLocalDateTime()),
+                  if (dueKm != null) _units.distance.format(dueKm),
+                ]),
+              ),
+            ),
             if (due.dueDate != null) ...[
               const SizedBox(height: 16),
               InkWell(
@@ -645,11 +653,7 @@ class _OverrideDialogState extends ConsumerState<_OverrideDialog> {
     final theme = Theme.of(context);
     return AlertDialog(
       scrollable: true,
-      title: Text(
-        widget.reminder.overrideActive
-            ? l10n.reminderActionEditOverride
-            : l10n.reminderActionOverride,
-      ),
+      title: Text(l10n.reminderActionCustomise),
       content: Form(
         key: _formKey,
         // The summary line follows every keystroke.
@@ -658,33 +662,43 @@ class _OverrideDialogState extends ConsumerState<_OverrideDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l10n.reminderOverrideIntro),
+            _Context(() {
+              final reminder = widget.reminder;
+              final reference = criterionText(
+                km: reminder.refIntervalKm,
+                months: reminder.refIntervalMonths,
+                sentence: false,
+                l10n: l10n,
+                units: _units,
+              );
+              return reminder.source == ReminderSource.generated
+                  ? l10n.reminderManufacturerCriterion(reference)
+                  : l10n.reminderReferenceLine(reference);
+            }()),
             const SizedBox(height: 16),
-            TextFormField(
-              key: const ValueKey('override-km'),
-              controller: _km,
-              enabled: !_saving && !_kmOff,
-              decoration: InputDecoration(
-                labelText: l10n.reminderFieldIntervalDistance,
-                suffixText: _units.distance.symbol,
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (value) {
-                if (_kmOff) return null;
-                final km = _typedKm;
-                return km == null || km <= 0
-                    ? l10n.validationWholeNumberAboveZero
-                    : null;
-              },
-            ),
-            SwitchListTile(
-              key: const ValueKey('override-km-off'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.reminderDisableAxis),
-              value: _kmOff,
+            _AxisRow(
+              switchKey: const ValueKey('override-km-off'),
+              off: _kmOff,
               onChanged:
                   _saving ? null : (value) => setState(() => _kmOff = value),
+              field: TextFormField(
+                key: const ValueKey('override-km'),
+                controller: _km,
+                enabled: !_saving && !_kmOff,
+                decoration: InputDecoration(
+                  labelText: l10n.reminderFieldIntervalDistance,
+                  suffixText: _units.distance.symbol,
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (_kmOff) return null;
+                  final km = _typedKm;
+                  return km == null || km <= 0
+                      ? l10n.validationWholeNumberAboveZero
+                      : null;
+                },
+              ),
             ),
             if (_needsAnchorKm)
               TextFormField(
@@ -709,33 +723,32 @@ class _OverrideDialogState extends ConsumerState<_OverrideDialog> {
                 },
               ),
             const SizedBox(height: 8),
-            TextFormField(
-              key: const ValueKey('override-months'),
-              controller: _months,
-              enabled: !_saving && !_monthsOff,
-              decoration: InputDecoration(
-                labelText: l10n.reminderFieldIntervalMonths,
-                suffixText: l10n.unitMonthsSuffix,
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (value) {
-                if (_monthsOff) return null;
-                final months = _typedMonths;
-                return months == null || months <= 0
-                    ? l10n.validationWholeNumberAboveZero
-                    : null;
-              },
-            ),
-            SwitchListTile(
-              key: const ValueKey('override-months-off'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.reminderDisableAxis),
-              value: _monthsOff,
+            _AxisRow(
+              switchKey: const ValueKey('override-months-off'),
+              off: _monthsOff,
               onChanged: _saving
                   ? null
                   : (value) => setState(() => _monthsOff = value),
+              field: TextFormField(
+                key: const ValueKey('override-months'),
+                controller: _months,
+                enabled: !_saving && !_monthsOff,
+                decoration: InputDecoration(
+                  labelText: l10n.reminderFieldIntervalMonths,
+                  suffixText: l10n.unitMonthsSuffix,
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (_monthsOff) return null;
+                  final months = _typedMonths;
+                  return months == null || months <= 0
+                      ? l10n.validationWholeNumberAboveZero
+                      : null;
+                },
+              ),
             ),
+            const SizedBox(height: 8),
             TextFormField(
               key: const ValueKey('override-reason'),
               controller: _reason,
@@ -764,7 +777,61 @@ class _OverrideDialogState extends ConsumerState<_OverrideDialog> {
         ),
         FilledButton(
           onPressed: _saving ? null : _confirm,
-          child: Text(l10n.actionSave),
+          child: Text(l10n.reminderActionCustomise),
+        ),
+      ],
+    );
+  }
+}
+
+/// The muted sentence of context at the top of a reminder dialog.
+class _Context extends StatelessWidget {
+  const _Context(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+/// One axis of the customise dialog: its [field] and, at the end, a "No
+/// limit" switch that turns the axis off.
+class _AxisRow extends StatelessWidget {
+  const _AxisRow({
+    required this.switchKey,
+    required this.off,
+    required this.onChanged,
+    required this.field,
+  });
+
+  final Key switchKey;
+  final bool off;
+  final ValueChanged<bool>? onChanged;
+  final Widget field;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(child: field),
+        const SizedBox(width: 12),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.reminderDisableAxis, style: theme.textTheme.labelSmall),
+            Switch(key: switchKey, value: off, onChanged: onChanged),
+          ],
         ),
       ],
     );
