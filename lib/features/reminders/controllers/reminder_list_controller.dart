@@ -19,6 +19,7 @@ class ReminderView {
     required this.reminder,
     required this.due,
     required this.vehicle,
+    this.lead = const ReminderLead(),
   });
 
   /// Computes the view of [reminder] on [today], with its [vehicle]'s
@@ -38,6 +39,7 @@ class ReminderView {
           lead: lead,
         ),
         vehicle: vehicle,
+        lead: lead,
       );
 
   /// The reminder.
@@ -48,6 +50,35 @@ class ReminderView {
 
   /// Its vehicle.
   final Vehicle vehicle;
+
+  /// The global warning the status was computed with; the reminder's own,
+  /// when set, takes precedence on each axis.
+  final ReminderLead lead;
+}
+
+/// The Reminders page of Home: what needs attention, and how many open
+/// reminders are fine.
+class ReminderAgenda {
+  /// Creates the agenda.
+  const ReminderAgenda({required this.due, required this.okCount});
+
+  /// Splits [views] (open reminders, most urgent first) into the overdue
+  /// and due-soon ones, in their order, and the count of the others.
+  factory ReminderAgenda.of(List<ReminderView> views) {
+    final due = [
+      for (final view in views)
+        if (view.due.status == ReminderStatus.overdue ||
+            view.due.status == ReminderStatus.dueSoon)
+          view,
+    ];
+    return ReminderAgenda(due: due, okCount: views.length - due.length);
+  }
+
+  /// Overdue and due-soon reminders, most urgent first.
+  final List<ReminderView> due;
+
+  /// Open reminders that are up to date (not listed on Home).
+  final int okCount;
 }
 
 /// Sorts [views] by urgency (`compareByUrgency`): overdue first, then by
@@ -65,9 +96,8 @@ final reminderTodayProvider = Provider.autoDispose<CalendarDate>(
 ReminderLead _leadOf(Ref ref) =>
     ref.watch(reminderLeadProvider).value ?? const ReminderLead();
 
-/// The live, open reminders of every active vehicle, most urgent first:
-/// the Reminders page of Home. Archived vehicles and the Trash are left out
-/// by the repository.
+/// The live, open reminders of every active vehicle, most urgent first.
+/// Archived vehicles and the Trash are left out by the repository.
 final activeRemindersProvider =
     StreamProvider.autoDispose<List<ReminderView>>((ref) {
   final lead = _leadOf(ref);
@@ -85,18 +115,17 @@ final activeRemindersProvider =
       );
 });
 
-/// The badge of the Reminders destination: overdue plus due-soon reminders
-/// of the active vehicles; 0 while they load.
-final reminderBadgeCountProvider = Provider.autoDispose<int>((ref) {
-  final views = ref.watch(activeRemindersProvider).value ?? const [];
-  return views
-      .where(
-        (view) =>
-            view.due.status == ReminderStatus.overdue ||
-            view.due.status == ReminderStatus.dueSoon,
-      )
-      .length;
-});
+/// The Reminders page of Home (`Docs/08_recordatorios.md`): an agenda of
+/// the overdue and due-soon reminders of the active vehicles.
+final reminderAgendaProvider = Provider.autoDispose<AsyncValue<ReminderAgenda>>(
+  (ref) => ref.watch(activeRemindersProvider).whenData(ReminderAgenda.of),
+);
+
+/// The badge of the Reminders destination: the length of the agenda
+/// (overdue plus due soon); 0 while it loads.
+final reminderBadgeCountProvider = Provider.autoDispose<int>(
+  (ref) => ref.watch(reminderAgendaProvider).value?.due.length ?? 0,
+);
 
 /// The live reminders of the vehicle with this id, completed ones
 /// included, most urgent first: the Reminders tab. Waits for the vehicle,

@@ -77,28 +77,41 @@ void main() {
   }
 
   group('Reminders page of Home', () {
-    testWidgets('says where reminders are created when there are none',
-        (tester) async {
+    testWidgets('with no reminder says where they are created', (tester) async {
       await pumpApp(tester, store, location: AppRoutes.reminders);
+      expect(find.text('Nothing due'), findsOneWidget);
       expect(
-        find.textContaining('Reminders tab of each vehicle'),
+        find.text("Create reminders from each vehicle's tab"),
         findsOneWidget,
       );
       // No add button: a reminder belongs to a vehicle.
       expect(find.byType(FloatingActionButton), findsNothing);
     });
 
-    testWidgets('groups by status, names the vehicle and badges the overdue',
+    testWidgets('with nothing due counts the reminders up to date',
+        (tester) async {
+      addCoolant();
+      await pumpApp(tester, store, location: AppRoutes.reminders);
+      expect(find.text('Nothing due'), findsOneWidget);
+      expect(find.text('1 reminder up to date'), findsOneWidget);
+      expect(find.text('Coolant'), findsNothing);
+    });
+
+    testWidgets('lists only what is due, names the vehicle and badges it',
         (tester) async {
       addOil();
       addCoolant();
       await pumpApp(tester, store, location: AppRoutes.reminders);
       expect(find.text('Overdue'), findsOneWidget);
-      expect(find.text('Up to date'), findsOneWidget);
+      expect(find.text('Up to date'), findsNothing);
       expect(find.text('Engine oil'), findsOneWidget);
-      expect(find.text('Coolant'), findsOneWidget);
-      expect(find.text('Fiat Punto (AB123CD)'), findsNWidgets(2));
-      expect(find.textContaining('Overdue by'), findsOneWidget);
+      expect(find.text('Coolant'), findsNothing);
+      expect(find.text('Fiat Punto (AB123CD)'), findsOneWidget);
+      // The date is a month past; the km are still ahead.
+      expect(
+        find.textContaining(RegExp(r'^Overdue · \d+ days ago · in ')),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byType(NavigationBar),
@@ -110,15 +123,21 @@ void main() {
   });
 
   group('Reminders tab of the vehicle', () {
-    testWidgets('lists the reminders with the New reminder button',
+    testWidgets('lists every section with the New reminder button',
         (tester) async {
       addOil();
+      addCoolant();
       await pumpApp(
         tester,
         store,
         location: AppRoutes.vehicle(vehicleId, tab: VehicleTab.reminders),
       );
+      expect(find.text('Overdue'), findsOneWidget);
+      expect(find.text('Up to date'), findsWidgets);
       expect(find.text('Engine oil'), findsOneWidget);
+      expect(find.text('Coolant'), findsOneWidget);
+      // The vehicle is the page's own: rows do not repeat it.
+      expect(find.text('Fiat Punto (AB123CD)'), findsNothing);
       expect(
         find.widgetWithText(FloatingActionButton, 'New reminder'),
         findsOneWidget,
@@ -237,9 +256,9 @@ void main() {
         location: AppRoutes.reminder(vehicleId, 'rem-oil'),
       );
       expect(find.text('Applied criterion'), findsOneWidget);
-      expect(find.text('Every 80,000 km · time off'), findsOneWidget);
+      expect(find.text('Every 80,000 km · no time limit'), findsOneWidget);
       expect(find.text('Reference criterion'), findsOneWidget);
-      expect(find.text('Every 15,000 km · every 12 months'), findsOneWidget);
+      expect(find.text('Every 15,000 km or 1 year'), findsOneWidget);
       expect(
         find.text('The applied criterion is less strict than the reference'),
         findsOneWidget,

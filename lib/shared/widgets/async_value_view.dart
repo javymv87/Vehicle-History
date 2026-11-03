@@ -41,6 +41,7 @@ class MessageView extends StatelessWidget {
     super.key,
     required this.icon,
     required this.message,
+    this.detail,
     this.action,
   });
 
@@ -49,6 +50,9 @@ class MessageView extends StatelessWidget {
 
   /// The message.
   final String message;
+
+  /// Optional muted line under the message.
+  final String? detail;
 
   /// Optional button below the message.
   final Widget? action;
@@ -70,6 +74,16 @@ class MessageView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge,
             ),
+            if (detail case final detail?) ...[
+              const SizedBox(height: 4),
+              Text(
+                detail,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             if (action != null) ...[
               const SizedBox(height: 24),
               action!,

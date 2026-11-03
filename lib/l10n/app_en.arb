@@ -3074,10 +3074,6 @@
   "@tabReminders": {
     "description": "Vehicle page: tab with the reminders of the vehicle."
   },
-  "remindersEmpty": "No reminders yet. Create them from the Reminders tab of each vehicle.",
-  "@remindersEmpty": {
-    "description": "Reminders page with no reminder of any active vehicle."
-  },
   "vehicleRemindersEmpty": "This vehicle has no reminders.",
   "@vehicleRemindersEmpty": {
     "description": "Reminders tab of a vehicle with none."
@@ -3103,11 +3099,310 @@
       }
     }
   },
+  "reminderEvery": "every {interval}",
+  "@reminderEvery": {
+    "description": "Criterion with one interval, lower case (shown sentence-cased): the interval is a distance with its unit or a period (\"12 months\", \"2 years\").",
+    "placeholders": {
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderEveryEither": "every {first} or {second}",
+  "@reminderEveryEither": {
+    "description": "Criterion with both intervals, the first to fall due wins: the distance with its unit, then the period.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPeriodDays": "{days, plural, =1{1 day} other{{days} days}}",
+  "@reminderPeriodDays": {
+    "description": "A number of days, after another axis in a row (\"in 12,000 km · 12 days\").",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderPeriodMonths": "{months, plural, =1{1 month} other{{months} months}}",
+  "@reminderPeriodMonths": {
+    "description": "A number of months: an interval that is not a whole number of years, or the time left after another axis.",
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderPeriodYears": "{years, plural, =1{1 year} other{{years} years}}",
+  "@reminderPeriodYears": {
+    "description": "An interval of a whole number of years (months multiple of 12).",
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderNoTimeLimit": "no time limit",
+  "@reminderNoTimeLimit": {
+    "description": "A time axis turned off by a customised criterion."
+  },
+  "reminderNoDistanceLimit": "no {unit} limit",
+  "@reminderNoDistanceLimit": {
+    "description": "A distance axis turned off by a customised criterion; unit is the distance symbol (km, mi).",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderRemainingDays": "{days, plural, =1{1 day left} other{{days} days left}}",
+  "@reminderRemainingDays": {
+    "description": "Reminder detail: days left to the due date (under 60 days).",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderRemainingMonths": "{months, plural, =1{1 month left} other{{months} months left}}",
+  "@reminderRemainingMonths": {
+    "description": "Reminder detail: whole months left to the due date (60 days or more).",
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderRemainingDistance": "{distance} left",
+  "@reminderRemainingDistance": {
+    "description": "Reminder detail: distance left to the due odometer, with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderAgoDays": "{days, plural, =1{1 day ago} other{{days} days ago}}",
+  "@reminderAgoDays": {
+    "description": "Overdue: days since the due date (under 60 days).",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderAgoMonths": "{months, plural, =1{1 month ago} other{{months} months ago}}",
+  "@reminderAgoMonths": {
+    "description": "Overdue: whole months since the due date (60 days or more).",
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderAgoDistance": "{distance} ago",
+  "@reminderAgoDistance": {
+    "description": "Overdue: distance driven past the due odometer, with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderInDays": "{days, plural, =1{in 1 day} other{in {days} days}}",
+  "@reminderInDays": {
+    "description": "Reminder row: days to the due date (under 60 days).",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderInMonths": "{months, plural, =1{in 1 month} other{in {months} months}}",
+  "@reminderInMonths": {
+    "description": "Reminder row: whole months to the due date (60 days or more).",
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderStatusHeadlineDueSoon": "Due soon",
+  "@reminderStatusHeadlineDueSoon": {
+    "description": "Reminder detail: first line of the status card of a reminder within its warning."
+  },
+  "reminderAxisByDistance": "By {unit}",
+  "@reminderAxisByDistance": {
+    "description": "Reminder detail: column of the distance axis; unit is the distance symbol.",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderReferenceByTime": "By time it would be due on {date}",
+  "@reminderReferenceByTime": {
+    "description": "Reminder detail, customised criterion: the due date by the reference, when it differs.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderReferenceByDistance": "By {unit} it would be due at {distance}",
+  "@reminderReferenceByDistance": {
+    "description": "Reminder detail, customised criterion: the due odometer by the reference, when it differs; unit is the distance symbol.",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderManufacturerSays": "Per the manufacturer",
+  "@reminderManufacturerSays": {
+    "description": "Reminder detail: under the criterion of a reminder loaded from the manual."
+  },
+  "reminderOwnReference": "Your reference",
+  "@reminderOwnReference": {
+    "description": "Reminder detail: under the criterion of a reminder created by hand."
+  },
+  "reminderManufacturerCriterion": "Manufacturer: {criterion}",
+  "@reminderManufacturerCriterion": {
+    "description": "The reference criterion of a reminder loaded from the manual, next to a customised one.",
+    "placeholders": {
+      "criterion": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderReferenceLine": "Reference: {criterion}",
+  "@reminderReferenceLine": {
+    "description": "The reference criterion of a reminder created by hand, next to a customised one.",
+    "placeholders": {
+      "criterion": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderChipLaxer": "Less strict",
+  "@reminderChipLaxer": {
+    "description": "Chip: the customised criterion falls due later than the reference on some axis."
+  },
+  "reminderSnoozedUntilDate": "Postponed until {date}",
+  "@reminderSnoozedUntilDate": {
+    "description": "Reminder detail: a postponement to a day.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderSnoozedUntilDistance": "Postponed until {distance}",
+  "@reminderSnoozedUntilDistance": {
+    "description": "Reminder detail: a postponement to an odometer, with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderSnoozedUntilBoth": "Postponed until {date} or {distance}",
+  "@reminderSnoozedUntilBoth": {
+    "description": "Reminder detail: a postponement to a day and an odometer.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderLeadLine": "Alert: {lead}",
+  "@reminderLeadLine": {
+    "description": "Reminder detail: the reminder's own warning, e.g. \"15 days before · 500 km before\".",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderHistoryCount": "{count, plural, =1{1 change} other{{count} changes}}",
+  "@reminderHistoryCount": {
+    "description": "Reminder detail: the folded history row.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderAgendaEmpty": "Nothing due",
+  "@reminderAgendaEmpty": {
+    "description": "Home reminders, nothing overdue or due soon."
+  },
+  "reminderAgendaOkCount": "{count, plural, =1{1 reminder up to date} other{{count} reminders up to date}}",
+  "@reminderAgendaOkCount": {
+    "description": "Home reminders, nothing due: how many are up to date.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderAgendaNone": "Create reminders from each vehicle's tab",
+  "@reminderAgendaNone": {
+    "description": "Home reminders, no reminder at all: where they are created."
+  },
+  "reminderFormSectionKind": "Type and title",
+  "@reminderFormSectionKind": {
+    "description": "Reminder form: card of the type and the title."
+  },
+  "reminderFormSectionLead": "Alert",
+  "@reminderFormSectionLead": {
+    "description": "Reminder form: card of the reminder's own warning."
+  },
+  "reminderFormSectionNotes": "Notes",
+  "@reminderFormSectionNotes": {
+    "description": "Reminder form: card of the note and the manual reference."
+  },
+  "reminderAnchorKmRequiredHelp": "Required with a {unit} interval",
+  "@reminderAnchorKmRequiredHelp": {
+    "description": "Reminder form: helper of the odometer of the last time; unit is the distance symbol.",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderSnoozeCurrentDue": "Currently due: {due}",
+  "@reminderSnoozeCurrentDue": {
+    "description": "Postpone dialog: the current due day and / or odometer.",
+    "placeholders": {
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderActionCustomise": "Customise",
+  "@reminderActionCustomise": {
+    "description": "Customise-criterion dialog: title and button."
+  },
   "reminderStatusOverdue": "Overdue",
   "@reminderStatusOverdue": {
     "description": "Status of a reminder past its date or km."
   },
-  "reminderStatusDueSoon": "Due soon",
+  "reminderStatusDueSoon": "Soon",
   "@reminderStatusDueSoon": {
     "description": "Status of a reminder within its warning."
   },
@@ -3374,32 +3669,6 @@
       }
     }
   },
-  "reminderEveryDistance": "every {distance}",
-  "@reminderEveryDistance": {
-    "description": "Criterion summary: km interval with its unit.",
-    "placeholders": {
-      "distance": {
-        "type": "String"
-      }
-    }
-  },
-  "reminderEveryMonths": "{months, plural, =1{every month} other{every {months} months}}",
-  "@reminderEveryMonths": {
-    "description": "Criterion summary: months interval.",
-    "placeholders": {
-      "months": {
-        "type": "int"
-      }
-    }
-  },
-  "reminderDistanceDisabled": "distance off",
-  "@reminderDistanceDisabled": {
-    "description": "Criterion summary: the km axis is turned off by the override."
-  },
-  "reminderTimeDisabled": "time off",
-  "@reminderTimeDisabled": {
-    "description": "Criterion summary: the time axis is turned off by the override."
-  },
   "reminderOneShotOn": "one date: {date}",
   "@reminderOneShotOn": {
     "description": "Criterion summary of a one-shot reminder.",
@@ -3419,7 +3688,7 @@
       }
     }
   },
-  "reminderOverriddenOn": "Customised on {date}",
+  "reminderOverriddenOn": "customised on {date}",
   "@reminderOverriddenOn": {
     "description": "Reminder detail: when the override was set.",
     "placeholders": {
@@ -3446,7 +3715,7 @@
   "@reminderAnchorEntryLink": {
     "description": "Reminder detail: opens the entry that last closed it."
   },
-  "reminderSourceGenerated": "Loaded from the manual",
+  "reminderSourceGenerated": "From the manual",
   "@reminderSourceGenerated": {
     "description": "Reminder detail: written by the loading procedure."
   },
@@ -3599,7 +3868,7 @@
   "@reminderOverrideIntro": {
     "description": "Override dialog intro."
   },
-  "reminderDisableAxis": "Turn this criterion off",
+  "reminderDisableAxis": "No limit",
   "@reminderDisableAxis": {
     "description": "Override dialog: switch that disables an axis."
   },
