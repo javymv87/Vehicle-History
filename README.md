@@ -135,8 +135,11 @@ a reason, never losing the reference), postpone with a reason, a history of
 every change, the status computed on every read, closing through an entry
 ("Closes the reminder" or "Mark done") and the warning lead in Settings;
 archived vehicles are left out. Reminders are loaded from the manual by a
-documented procedure that writes into an exported package. Next are local
-notifications (13b).
+documented procedure that writes into an exported package. Version 0.13.1
+reworked those screens: Home lists only what is overdue or due soon, the
+reminder detail is one card per question with a status card tinted by the
+state, and the texts follow shared rules (years for multiples of 12 months,
+"left / ago"). Next are local notifications (13b).
 
 Roadmap to the first usable version:
 

@@ -210,40 +210,87 @@ solo lectura), escribe su fila del historial de operaciones y su fila de
 
 ## Pantallas
 
-- **Inicio:** tercer destino **Recordatorios**, entre Vehículos y
-  Propietarios, con un **distintivo** = vencidos + próximos de los vehículos
-  activos (sin distintivo con 0). Lista los recordatorios abiertos de todos
-  los vehículos activos, agrupados en **Vencidos / Próximos / Al día** (los
-  más urgentes primero: por días que faltan y luego por km). Cada fila: icono
-  del tipo, título, vehículo, la línea de estado ("Vencido · Vencido hace 3
-  días · en 850 km") y las etiquetas **Personalizado** (con el icono de aviso
-  si es menos exigente) y **Pospuesto**. Sin botón de añadir: el texto vacío
-  remite a la pestaña de cada vehículo.
-- **Vehículo:** pestaña **Recordatorios** justo después de Historial
-  (`?tab=reminders`), con las mismas filas sin la línea del vehículo y los
-  completados plegados en "Completados (n)". Botón flotante **Nuevo
+Revisadas en la versión 0.13.1 con la regla del doc 07: una tarjeta por
+pregunta, la más importante arriba, sin etiquetas que repitan lo que el valor
+ya dice.
+
+- **Inicio → Recordatorios (agenda):** tercer destino, entre Vehículos y
+  Propietarios. Lista **solo lo que pide atención**: los vencidos y los
+  próximos de los vehículos activos, en las secciones **Vencidos /
+  Próximos**, los más urgentes primero. Los recordatorios al día no se
+  listan aquí: viven en la pestaña de su vehículo. El **distintivo** cuenta
+  lo mismo que la lista (sin distintivo con 0). Sin nada pendiente: "Nada
+  pendiente" y debajo "N recordatorios al día", o, si no hay ninguno, "Crea
+  recordatorios desde la pestaña de cada vehículo". Sin botón de añadir.
+- **Vehículo → Recordatorios:** pestaña justo después de Historial
+  (`?tab=reminders`) con el **plan completo**: Vencidos / Próximos / Al día y
+  los completados plegados en "Completados (n)". Botón flotante **Nuevo
   recordatorio**; en un vehículo archivado todo se ve y no hay acciones.
-- **Formulario:** selector de tipo a pantalla completa con búsqueda,
-  agrupado, filtrado por el vehículo, con "Mostrar todos" y **"Otro…"** fijo
-  abajo (tipo `other` con título libre); los tipos que el vehículo ya tiene
-  no aparecen. Título (relleno con el nombre del tipo), **Periódico / Fecha
-  única**, intervalos (al menos uno), ancla de día (hoy por defecto) y de km
-  (la lectura actual por defecto, obligatoria con intervalo de km), aviso
-  propio ("Usar el ajuste general" si vacío), nota y referencia del manual.
-  Al editar, una línea dice que el criterio aplicado se cambia desde el
-  detalle. Si una entrada ya lo cerró, el tipo y Periódico / Fecha única
-  aparecen desactivados con una línea que lo explica ("Para otro tipo, crea
-  un recordatorio nuevo").
-- **Detalle:** estado en color con icono; **Próximo vencimiento** por fecha y
-  por km con lo que falta; con override, **Criterio aplicado** en grande,
-  motivo y fecha, y **Criterio de referencia** debajo con "Según el
-  fabricante vencería el … / a los …" y el aviso si es menos exigente; el
-  aplazamiento con su motivo; **Última vez** con enlace a la entrada; aviso
-  propio, nota, referencia del manual y origen ("Cargado desde el manual" /
-  "Creado a mano"); **Historial del recordatorio** ("3 nov 2026 · Criterio
-  personalizado · Cada 80.000 km · tiempo desactivado · «motivo»"). Acciones:
-  Marcar hecho, Editar, Posponer / Quitar aplazamiento, Personalizar / Editar
-  criterio, Restaurar referencia y Eliminar.
+- **Fila** (las dos listas): icono del tipo en un círculo de 40 dp; título;
+  una segunda línea en el color del estado con su icono, con la palabra del
+  estado y los ejes, primero el que va peor y, si van igual, el más cerca de
+  vencer medido en su propio aviso ("Vencido · hace 3 días", "Pronto · en
+  850 km", "Al día · en 12.000 km · 10 meses": el segundo eje, si el primero
+  también está por venir, va sin "en"); en Inicio, una tercera línea gris con
+  el vehículo ("Fiat Punto · FS548KS"). A la derecha, apiladas, las etiquetas
+  **Personalizado** (con el icono de aviso si es menos exigente) y
+  **Pospuesto**. Alto mínimo 72 dp, sin separadores, 4 dp entre filas.
+- **Detalle**, de arriba abajo, con 20 dp entre bloques y a los lados:
+  1. **Barra:** el título del recordatorio; acciones **Marcar hecho** y
+     **Editar**; en el menú, Posponer / Quitar aplazamiento, Personalizar /
+     Editar criterio, Restaurar referencia y Eliminar.
+  2. **Cabecera:** icono del tipo en un círculo de 48 dp, el vehículo
+     ("Fiat Punto · FS548KS") y debajo, en gris, el origen: "Creado a mano"
+     o "Del manual", seguido de la referencia del manual si la hay ("Del
+     manual · p. 174"). El título no se repite.
+  3. **Tarjeta de estado**, teñida del color del estado (verde al día, ámbar
+     pronto, rojo vencido; siempre con icono): "Al día" / "Vence pronto" /
+     "Vencido" y el próximo vencimiento como cifra grande. Con un eje, su
+     valor y debajo lo que falta ("faltan 100.000 km · sin límite de
+     tiempo"); con dos, dos columnas **Por km** / **Por fecha**, cada una con
+     su valor y lo que falta. Un recordatorio de fecha única completado
+     enseña "Completado" y su día.
+  4. **Tarjeta de criterio:** sin override, "CRITERIO", la referencia en una
+     línea ("Cada 15.000 km o 1 año") y "Según el fabricante" (cargado del
+     manual) o "Tu referencia" (creado a mano). Con override, "CRITERIO
+     APLICADO" con la etiqueta **Menos exigente** si lo es, el criterio
+     aplicado ("Cada 100.000 km · sin límite de tiempo"), el motivo y la
+     fecha ("«motivo» · personalizado el 3 nov 2026"), una línea divisoria,
+     la referencia en gris ("Fabricante: cada 100.000 km o 5 años", o
+     "Referencia: …" si se creó a mano), solo para los ejes que cambian lo
+     que diría la referencia ("Por tiempo vencería el …", "Por km vencería a
+     los …") y el botón **Restaurar referencia** (también en el menú). Si
+     está pospuesto, la etiqueta **Pospuesto** y una línea "Pospuesto hasta
+     el 30 nov 2026 · «taller cerrado»"; si tiene aviso propio, "Aviso: 15
+     días antes · 500 km antes". En un recordatorio de fecha única la
+     tarjeta solo aparece con aplazamiento o aviso propio, y dice "Fecha
+     única" sin repetir la fecha.
+  5. **Última vez** (solo periódicos): "3 nov 2026 · 200.000 km" y **Ver la
+     entrada** si la entrada sigue existiendo.
+  6. **Nota**, en un párrafo gris, solo si la hay.
+  7. **Historial del recordatorio:** una fila con borde, plegada, con el
+     número de cambios ("2 cambios"); se abre en el sitio con una línea por
+     cambio ("3 nov 2026 · Criterio personalizado · Cada 80.000 km · sin
+     límite de tiempo · «motivo»").
+- **Formulario:** cuatro tarjetas separadas 20 dp. **Tipo y título:**
+  selector de tipo a pantalla completa con búsqueda, agrupado, filtrado por
+  el vehículo, con "Mostrar todos" y **"Otro…"** fijo abajo (tipo `other` con
+  título libre); los tipos que el vehículo ya tiene no aparecen; título
+  relleno con el nombre del tipo. **Criterio:** **Periódico / Fecha única**;
+  intervalos (al menos uno), ancla de día (hoy por defecto) y de km (la
+  lectura actual por defecto; ayuda "Obligatorio con intervalo de km"), o la
+  fecha única. Al editar, una línea dice que el criterio aplicado se cambia
+  desde el detalle; si una entrada ya lo cerró, el tipo y Periódico / Fecha
+  única aparecen desactivados con una línea que lo explica ("Para otro tipo,
+  crea un recordatorio nuevo"). **Aviso:** días y distancia, con "Usar el
+  ajuste general" si vacíos. **Notas:** nota y referencia del manual.
+- **Diálogos** (Marcar hecho, Posponer, Personalizar): el título es el verbo;
+  arriba, una frase gris de contexto (qué entrada se guardará; el
+  vencimiento actual; la referencia); los campos; el motivo siempre el
+  último; botón principal con el verbo ("Marcar hecho", "Posponer",
+  "Personalizar") y "Cancelar". En Personalizar cada eje es una fila con su
+  campo y un interruptor **Sin límite**, y debajo una línea dice qué cambia.
+  Restaurar referencia pide confirmación.
 - **Entradas:** en mantenimiento, reparación, vencimiento legal y gasto, si
   el vehículo tiene recordatorios que ese tipo cierra, el campo opcional
   **Cierra el recordatorio** ("Ninguno" por defecto). Al guardar, la entrada
@@ -251,8 +298,24 @@ solo lectura), escribe su fila del historial de operaciones y su fila de
   bajo el campo y no se guarda nada. Una entrada que ya cerró uno muestra
   "Cerró: …" en solo lectura, sin forma de desvincularla. Sin oferta después
   de guardar: el campo es la vía explícita (CLAUDE.md, "keep it manual").
-- **Historial:** un pequeño icono en la fila de la entrada que cerró por
-  última vez un recordatorio vivo.
+- **Historial de entradas:** un pequeño icono en la fila de la entrada que
+  cerró por última vez un recordatorio vivo.
+
+### Reglas de formato
+
+- Los meses múltiplos de 12 se escriben en años ("1 año", "5 años"); los
+  demás, en meses ("18 meses"). En todas partes: detalle, filas, historial,
+  diálogos.
+- Intervalos: "Cada 15.000 km o 12 meses" (los dos), "Cada 15.000 km",
+  "Cada 2 años". Un eje desactivado por un override: "sin límite de tiempo"
+  / "sin límite de km".
+- Lo que falta: "faltan 850 km", "faltan 12 días", "faltan 4 meses" (meses
+  de calendario completos, redondeando hacia abajo, a partir de 60 días; días
+  por debajo). Vencido: "hace 3 días", "hace 7 meses", "hace 1.200 km". El
+  mismo día (o el km exacto): "vence hoy".
+- En las filas: "en 850 km", "en 12 días", "en 10 meses".
+- Todo con días de calendario: la hora del día nunca interviene.
+- Los símbolos de unidad salen del formateador de unidades (km o mi).
 
 ## Papelera, archivo y copia de seguridad
 

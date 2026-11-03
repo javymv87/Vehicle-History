@@ -641,7 +641,8 @@ number by one (step 6 = `0.6.0+6`; after the 0.8.1 and 9b releases the two
 no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
 `appVersion`
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
-they differ.
+they differ. A revision between steps bumps the patch version and the build
+number instead (the reminder screens rework after step 13a = `0.13.1+16`).
 
 Signing (Android): `android/app/build.gradle.kts` loads
 `android/key.properties` **if present** and signs **both `debug` and
