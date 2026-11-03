@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/app_database.dart';
 import 'package:vehicle_history/data/models/app_preferences.dart';
+import 'package:vehicle_history/data/models/reminder_status.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/units.dart';
 import 'package:vehicle_history/data/repositories/settings_repository.dart';
@@ -189,6 +190,33 @@ void main() {
       for (final key in SettingKey.unitKeys) {
         expect(key.scope, SettingScope.shared, reason: key.code);
       }
+    });
+  });
+
+  group('reminder lead', () {
+    test('absent rows read as 30 days and 1000 km', () async {
+      expect(await settings.watchReminderLead().first, const ReminderLead());
+    });
+
+    test('each value is stored as plain text and emitted', () async {
+      final emitted = <ReminderLead>[];
+      final sub = settings.watchReminderLead().listen(emitted.add);
+      await settings.writeReminderLeadDays(15);
+      await settings.writeReminderLeadKm(1609.344);
+      expect(await settings.read(SettingKey.reminderLeadKm), '1609.344');
+      await settings.writeReminderLeadKm(500);
+      await pumpEventQueue();
+      await sub.cancel();
+      expect(await settings.read(SettingKey.reminderLeadDays), '15');
+      expect(await settings.read(SettingKey.reminderLeadKm), '500');
+      expect(emitted.last, const ReminderLead(days: 15, km: 500));
+    });
+
+    test('the two keys travel with the data, like the units', () {
+      expect(SettingKey.reminderLeadDays.code, 'reminder_lead_days');
+      expect(SettingKey.reminderLeadKm.code, 'reminder_lead_km');
+      expect(SettingKey.reminderLeadDays.scope, SettingScope.shared);
+      expect(SettingKey.reminderLeadKm.scope, SettingScope.shared);
     });
   });
 }

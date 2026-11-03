@@ -7,6 +7,8 @@ import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/log_entry_type.dart';
 import '../models/refuel.dart';
+import '../models/reminder.dart';
+import '../models/reminder_kind.dart';
 import '../models/vehicle_kind.dart';
 
 /// Stores a [CalendarDate] as ISO-8601 `yyyy-MM-dd` text.
@@ -171,8 +173,8 @@ class LogEntryTypeConverter extends TypeConverter<LogEntryType, String> {
 ///
 /// The column has no CHECK constraint, so a new entity type (such as
 /// `logEntry`, added with schema v3, `mileageReading`, added with v4, or
-/// `database`, added with v6, or `attachment`, added with v7) needs only a
-/// new code here.
+/// `database`, added with v6, `attachment`, added with v7, or `reminder`,
+/// added with v11) needs only a new code here.
 class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
   /// Creates the converter. Stateless, so a single const instance is shared.
   const AuditEntityTypeConverter();
@@ -185,6 +187,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         'mileageReading' => AuditEntityType.mileageReading,
         'database' => AuditEntityType.database,
         'attachment' => AuditEntityType.attachment,
+        'reminder' => AuditEntityType.reminder,
         // Only reachable with a corrupted or foreign database file.
         _ => throw StateError('Unknown audit entity type in database: $fromDb'),
       };
@@ -197,6 +200,7 @@ class AuditEntityTypeConverter extends TypeConverter<AuditEntityType, String> {
         AuditEntityType.mileageReading => 'mileageReading',
         AuditEntityType.database => 'database',
         AuditEntityType.attachment => 'attachment',
+        AuditEntityType.reminder => 'reminder',
       };
 }
 
@@ -281,4 +285,51 @@ class AttachmentKindConverter extends TypeConverter<AttachmentKind, String> {
         AttachmentKind.pdf => 'pdf',
         AttachmentKind.other => 'other',
       };
+}
+
+/// Stores a [ReminderKind] as its stable text code ([ReminderKind.code],
+/// schema v11).
+class ReminderKindConverter extends TypeConverter<ReminderKind, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const ReminderKindConverter();
+
+  @override
+  ReminderKind fromSql(String fromDb) =>
+      ReminderKind.fromCode(fromDb) ??
+      // Only reachable with a corrupted or foreign database file.
+      (throw StateError('Unknown reminder kind in database: $fromDb'));
+
+  @override
+  String toSql(ReminderKind value) => value.code;
+}
+
+/// Stores a [ReminderSource] as its stable text code (schema v11).
+class ReminderSourceConverter extends TypeConverter<ReminderSource, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const ReminderSourceConverter();
+
+  @override
+  ReminderSource fromSql(String fromDb) =>
+      ReminderSource.fromCode(fromDb) ??
+      // Only reachable with a corrupted or foreign database file.
+      (throw StateError('Unknown reminder source in database: $fromDb'));
+
+  @override
+  String toSql(ReminderSource value) => value.code;
+}
+
+/// Stores a [ReminderChangeType] as its stable text code (schema v11).
+class ReminderChangeTypeConverter
+    extends TypeConverter<ReminderChangeType, String> {
+  /// Creates the converter. Stateless, so a single const instance is shared.
+  const ReminderChangeTypeConverter();
+
+  @override
+  ReminderChangeType fromSql(String fromDb) =>
+      ReminderChangeType.fromCode(fromDb) ??
+      // Only reachable with a corrupted or foreign database file.
+      (throw StateError('Unknown reminder change type in database: $fromDb'));
+
+  @override
+  String toSql(ReminderChangeType value) => value.code;
 }

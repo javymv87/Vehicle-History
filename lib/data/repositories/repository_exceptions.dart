@@ -1,4 +1,5 @@
 import '../models/audit_entry.dart';
+import '../models/reminder_kind.dart';
 
 /// Base type of every error a repository throws on purpose.
 ///
@@ -41,6 +42,22 @@ class InvalidFieldException extends RepositoryException {
   /// [reason] of a reading with fewer km than the last reading of its
   /// vehicle: the odometer never goes backwards.
   static const String belowLastReading = 'must not be below the last reading';
+
+  /// [reason] of an entry closing a reminder dated before the reminder's
+  /// anchor day: the anchor never moves backwards.
+  static const String beforeAnchor = 'must not be before the last time done';
+
+  /// [reason] of an entry closing a reminder with fewer km than the
+  /// reminder's anchor km.
+  static const String belowAnchor = 'must not be below the last time done';
+
+  /// [reason] of a snooze that does not postpone: on its axis it is not
+  /// later than the due value of the applied criterion.
+  static const String notLater = 'must be later than the current due value';
+
+  /// [reason] of a missing value the rule needs, such as the km of an
+  /// entry closing a reminder with a km interval.
+  static const String required = 'required';
 
   /// Name of the offending field, as in the domain model (e.g. `plate`).
   final String field;
@@ -184,4 +201,67 @@ class MileageReadingRuleException extends RepositoryException {
   @override
   String toString() =>
       'MileageReadingRuleException(id: $readingId, rule: ${rule.name})';
+}
+
+/// A live, open reminder of the same kind already exists on the vehicle
+/// (`Docs/04_maintenance_logic.md`: an assigned type does not appear again
+/// for the same vehicle). Nothing was written.
+class ReminderKindAlreadyUsedException extends RepositoryException {
+  /// Creates the exception for [kind] on the vehicle [vehicleId].
+  const ReminderKindAlreadyUsedException(this.vehicleId, this.kind);
+
+  /// Vehicle that already has a reminder of [kind].
+  final String vehicleId;
+
+  /// The kind in use.
+  final ReminderKind kind;
+
+  @override
+  String toString() =>
+      'ReminderKindAlreadyUsedException(vehicle: $vehicleId, ${kind.code})';
+}
+
+/// Why a reminder operation was refused (`Docs/08_recordatorios.md`).
+enum ReminderRule {
+  /// A one-shot reminder has no criterion to override.
+  oneShot,
+
+  /// A completed one-shot reminder is read-only; it can only be deleted.
+  completed,
+
+  /// The closing entry belongs to another vehicle.
+  entryOfOtherVehicle,
+
+  /// The closing entry's type cannot close a reminder of this kind
+  /// (`ReminderKind.closingEntryTypes`).
+  entryTypeCannotClose,
+
+  /// "Restore reference" on a reminder whose criterion is not overridden.
+  notOverridden,
+
+  /// "Remove postponement" on a reminder that is not postponed.
+  notSnoozed,
+
+  /// A change of kind, or between recurring and one-shot, of a reminder an
+  /// entry has already closed: its history belongs to that kind, so a new
+  /// reminder is created instead.
+  alreadyClosed,
+}
+
+/// A reminder operation was refused by one of the rules of
+/// `Docs/08_recordatorios.md`. Nothing was written.
+class ReminderRuleException extends RepositoryException {
+  /// Creates the exception for the reminder with [reminderId], refused by
+  /// [rule].
+  const ReminderRuleException(this.reminderId, this.rule);
+
+  /// Id of the reminder the operation targeted.
+  final String reminderId;
+
+  /// The rule that refused the operation.
+  final ReminderRule rule;
+
+  @override
+  String toString() =>
+      'ReminderRuleException(id: $reminderId, rule: ${rule.name})';
 }

@@ -6,6 +6,9 @@ enum VehicleTab {
   /// The history entries, the default tab.
   history('history'),
 
+  /// The reminders of the vehicle (step 13a), right after the history.
+  reminders('reminders'),
+
   /// The odometer readings.
   mileage('mileage'),
 

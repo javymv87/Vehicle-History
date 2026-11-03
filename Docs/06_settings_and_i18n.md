@@ -9,6 +9,10 @@ Contiene las configuraciones generales de la app (tabla `Settings`, doc 02):
   `07_design_and_theming.md`)
 - **Unidades** de medida: un preajuste (Internacional / Imperial) y las
   cinco magnitudes una a una (ver "Unidades de medida", abajo)
+- **Recordatorios** (desde el paso 13a): el aviso anticipado general, "Avisar
+  N días antes" y "Avisar N km antes" (la distancia en la unidad elegida,
+  número entero; se guarda en km). Cada recordatorio puede tener el suyo
+  (ver `08_recordatorios.md`)
 - Posibles preferencias futuras (formato de fecha, etc.)
 
 Google Drive **no** está en Ajustes: vincular la cuenta, el estado, Subir a
@@ -48,6 +52,8 @@ v6): una fila por clave.
   | `unit_temperature` | `c`, `f` | `c` |
   | `unit_pressure` | `bar`, `psi` | `bar` |
   | `unit_consumption` | `l_100km`, `km_l`, `mpg_us`, `mpg_uk` | `l_100km` |
+  | `reminder_lead_days` | Días de aviso antes de un vencimiento por fecha: número entero ≥ 0 | `30` |
+  | `reminder_lead_km` | Km de aviso antes de un vencimiento por km: número ≥ 0, en km, como texto | `1000` |
   | `drive_account` | Email de la cuenta de Google vinculada (no es un secreto: los tokens nunca van a esta tabla) | sin cuenta |
   | `drive_auth_mode` | `system` (cuenta del teléfono) / `manual` (vinculada en el navegador; su refresh token está en `flutter_secure_storage`) | `system` |
   | `drive_device_id` | UUID de este teléfono en las copias que sube | se crea al primer uso |
@@ -57,12 +63,13 @@ v6): una fila por clave.
   Los valores también son códigos fijos. Un valor desconocido (por ejemplo,
   escrito por una versión más nueva de la app) se lee como el de la columna
   "Sin fila" (`system` para el idioma y el tema, la unidad SI para las
-  unidades, `false` para los datos móviles).
+  unidades, el valor por defecto para el aviso de los recordatorios, `false`
+  para los datos móviles).
 - La tabla viaja dentro del paquete de copia como el resto de la base de
   datos: al importar un paquete llegan también su idioma y su tema, y la app
   cambia en ese mismo momento, sin reiniciar. Cada clave tiene un **ámbito**
-  (`SettingScope`): las compartidas (`last_export_at`, `language`, `theme`
-  y las cinco `unit_*`) llegan con el paquete; las del teléfono (`drive_account`,
+  (`SettingScope`): las compartidas (`last_export_at`, `language`, `theme`,
+  las cinco `unit_*` y las dos `reminder_lead_*`) llegan con el paquete; las del teléfono (`drive_account`,
   `drive_auth_mode`, `drive_device_id`, `drive_mobile_data`) se conservan;
   las del punto en
   común (`drive_sync_*`) se borran (ver `05_sync_and_storage.md`).

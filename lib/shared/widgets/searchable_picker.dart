@@ -34,7 +34,12 @@ final class PickedOther<T> extends PickerResult<T> {
 /// [otherLabel] is the last option ("Other make…"), pinned at the bottom so
 /// it is always visible: the list helps, it never blocks. While the search
 /// box is empty, [headers] maps an item index to a section title shown above
-/// that item.
+/// that item. With [sectionOf] instead, a section title is shown above every
+/// item whose section differs from the previous one's, while searching too.
+///
+/// With [showAllLabel] and [searchAll], a switch under the search box swaps
+/// [search] (the items that apply) for [searchAll] (every item): the list
+/// helps, it never hides an item for good.
 ///
 /// It is a full-screen dialog rather than a route: it is a transient choice
 /// inside a form, with nothing to deep-link to.
@@ -45,6 +50,9 @@ Future<PickerResult<T>?> showSearchablePicker<T>({
   required String Function(T item) labelOf,
   required String otherLabel,
   Map<int, String> headers = const {},
+  String Function(T item)? sectionOf,
+  String? showAllLabel,
+  List<T> Function(String query)? searchAll,
 }) {
   return showDialog<PickerResult<T>>(
     context: context,
@@ -55,6 +63,9 @@ Future<PickerResult<T>?> showSearchablePicker<T>({
         labelOf: labelOf,
         otherLabel: otherLabel,
         headers: headers,
+        sectionOf: sectionOf,
+        showAllLabel: showAllLabel,
+        searchAll: searchAll,
       ),
     ),
   );
@@ -68,6 +79,9 @@ class _SearchablePicker<T> extends StatefulWidget {
     required this.labelOf,
     required this.otherLabel,
     required this.headers,
+    required this.sectionOf,
+    required this.showAllLabel,
+    required this.searchAll,
   });
 
   final String title;
@@ -75,6 +89,9 @@ class _SearchablePicker<T> extends StatefulWidget {
   final String Function(T item) labelOf;
   final String otherLabel;
   final Map<int, String> headers;
+  final String Function(T item)? sectionOf;
+  final String? showAllLabel;
+  final List<T> Function(String query)? searchAll;
 
   @override
   State<_SearchablePicker<T>> createState() => _SearchablePickerState<T>();
@@ -82,7 +99,15 @@ class _SearchablePicker<T> extends StatefulWidget {
 
 class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
   final _query = TextEditingController();
-  late List<T> _results = widget.search('');
+
+  /// Whether the "show all" switch is on.
+  bool _showAll = false;
+
+  late List<T> _results = _run('');
+
+  /// The items matching [query], from every item when "show all" is on.
+  List<T> _run(String query) =>
+      (_showAll ? widget.searchAll ?? widget.search : widget.search)(query);
 
   @override
   void dispose() {
@@ -92,7 +117,7 @@ class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
 
   /// Re-runs the search for the text now in the search box.
   void _onQueryChanged(String query) {
-    setState(() => _results = widget.search(query));
+    setState(() => _results = _run(query));
   }
 
   @override
@@ -100,6 +125,8 @@ class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final showHeaders = _query.text.trim().isEmpty;
+    final sectionOf = widget.sectionOf;
+    final showAllLabel = widget.showAllLabel;
     return Scaffold(
       appBar: AppBar(
         leading: const CloseButton(),
@@ -121,6 +148,15 @@ class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
               onChanged: _onQueryChanged,
             ),
           ),
+          if (showAllLabel != null && widget.searchAll != null)
+            SwitchListTile(
+              title: Text(showAllLabel),
+              value: _showAll,
+              onChanged: (value) {
+                _showAll = value;
+                _onQueryChanged(_query.text);
+              },
+            ),
           Expanded(
             child: _results.isEmpty
                 ? Center(
@@ -140,7 +176,16 @@ class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
                         title: Text(widget.labelOf(item)),
                         onTap: () => Navigator.of(context).pop(Picked(item)),
                       );
-                      final header = showHeaders ? widget.headers[index] : null;
+                      final String? header;
+                      if (sectionOf != null) {
+                        final section = sectionOf(item);
+                        header = index == 0 ||
+                                sectionOf(_results[index - 1]) != section
+                            ? section
+                            : null;
+                      } else {
+                        header = showHeaders ? widget.headers[index] : null;
+                      }
                       if (header == null) return tile;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

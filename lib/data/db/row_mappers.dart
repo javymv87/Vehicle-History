@@ -6,6 +6,7 @@ import '../models/log_entry.dart';
 import '../models/mileage_reading.dart';
 import '../models/owner.dart';
 import '../models/refuel.dart';
+import '../models/reminder.dart';
 import '../models/vehicle.dart';
 import 'app_database.dart';
 
@@ -314,5 +315,147 @@ extension AttachmentCompanionMapping on Attachment {
         sizeBytes: sizeBytes,
         caption: Value(caption),
         sortOrder: sortOrder,
+      );
+}
+
+/// Maps a `reminders` row to the domain model.
+extension ReminderRowMapping on ReminderRow {
+  /// Converts this row into a [Reminder]. Timestamps are forced to UTC.
+  Reminder toModel() => Reminder(
+        id: id,
+        vehicleId: vehicleId,
+        kind: kind,
+        title: title,
+        note: note,
+        source: source,
+        manualRef: manualRef,
+        refIntervalKm: refIntervalKm,
+        refIntervalMonths: refIntervalMonths,
+        dueDate: dueDate,
+        lastDoneDate: lastDoneDate,
+        lastDoneKm: lastDoneKm,
+        lastEntryId: lastEntryId,
+        overrideActive: overrideActive,
+        appliedIntervalKm: appliedIntervalKm,
+        appliedIntervalMonths: appliedIntervalMonths,
+        overrideReason: overrideReason,
+        overrideAt: overrideAt?.toUtc(),
+        leadDays: leadDays,
+        leadKm: leadKm,
+        snoozeUntilDate: snoozeUntilDate,
+        snoozeUntilKm: snoozeUntilKm,
+        snoozeReason: snoozeReason,
+        completedAt: completedAt?.toUtc(),
+        createdAt: createdAt.toUtc(),
+        updatedAt: updatedAt.toUtc(),
+      );
+}
+
+/// Maps the domain model to `reminders` companions.
+extension ReminderCompanionMapping on Reminder {
+  /// Full row for an insert. The row starts live (`deleted = 0`).
+  RemindersCompanion toInsertCompanion() => RemindersCompanion.insert(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vehicleId: vehicleId,
+        kind: kind,
+        title: title,
+        note: Value(note),
+        source: source,
+        manualRef: Value(manualRef),
+        refIntervalKm: Value(refIntervalKm),
+        refIntervalMonths: Value(refIntervalMonths),
+        dueDate: Value(dueDate),
+        lastDoneDate: Value(lastDoneDate),
+        lastDoneKm: Value(lastDoneKm),
+        lastEntryId: Value(lastEntryId),
+        overrideActive: Value(overrideActive),
+        appliedIntervalKm: Value(appliedIntervalKm),
+        appliedIntervalMonths: Value(appliedIntervalMonths),
+        overrideReason: Value(overrideReason),
+        overrideAt: Value(overrideAt),
+        leadDays: Value(leadDays),
+        leadKm: Value(leadKm),
+        snoozeUntilDate: Value(snoozeUntilDate),
+        snoozeUntilKm: Value(snoozeUntilKm),
+        snoozeReason: Value(snoozeReason),
+        completedAt: Value(completedAt),
+      );
+
+  /// Every field but `id`, `vehicle_id`, `source`, `created_at` and the
+  /// soft-delete pair: a reminder never moves to another vehicle, and every
+  /// action of the repository writes the whole state it computed.
+  RemindersCompanion toUpdateCompanion() => RemindersCompanion(
+        updatedAt: Value(updatedAt),
+        kind: Value(kind),
+        title: Value(title),
+        note: Value(note),
+        manualRef: Value(manualRef),
+        refIntervalKm: Value(refIntervalKm),
+        refIntervalMonths: Value(refIntervalMonths),
+        dueDate: Value(dueDate),
+        lastDoneDate: Value(lastDoneDate),
+        lastDoneKm: Value(lastDoneKm),
+        lastEntryId: Value(lastEntryId),
+        overrideActive: Value(overrideActive),
+        appliedIntervalKm: Value(appliedIntervalKm),
+        appliedIntervalMonths: Value(appliedIntervalMonths),
+        overrideReason: Value(overrideReason),
+        overrideAt: Value(overrideAt),
+        leadDays: Value(leadDays),
+        leadKm: Value(leadKm),
+        snoozeUntilDate: Value(snoozeUntilDate),
+        snoozeUntilKm: Value(snoozeUntilKm),
+        snoozeReason: Value(snoozeReason),
+        completedAt: Value(completedAt),
+      );
+}
+
+/// Maps a `reminder_changes` row to the domain model.
+extension ReminderChangeRowMapping on ReminderChangeRow {
+  /// Converts this row into a [ReminderChange]. The instant is forced to
+  /// UTC.
+  ReminderChange toModel() => ReminderChange(
+        id: id,
+        reminderId: reminderId,
+        changedAt: changedAt.toUtc(),
+        type: changeType,
+        reason: reason,
+        entryId: entryId,
+        dueDate: dueDate,
+        lastDoneDate: lastDoneDate,
+        lastDoneKm: lastDoneKm,
+        refIntervalKm: refIntervalKm,
+        refIntervalMonths: refIntervalMonths,
+        overrideActive: overrideActive,
+        appliedIntervalKm: appliedIntervalKm,
+        appliedIntervalMonths: appliedIntervalMonths,
+        snoozeUntilDate: snoozeUntilDate,
+        snoozeUntilKm: snoozeUntilKm,
+      );
+}
+
+/// Maps the domain model to a `reminder_changes` companion.
+extension ReminderChangeCompanionMapping on ReminderChange {
+  /// Full row for an insert.
+  ReminderChangesCompanion toInsertCompanion() =>
+      ReminderChangesCompanion.insert(
+        id: id,
+        reminderId: reminderId,
+        changedAt: changedAt,
+        changeType: type,
+        reason: Value(reason),
+        entryId: Value(entryId),
+        dueDate: Value(dueDate),
+        lastDoneDate: Value(lastDoneDate),
+        lastDoneKm: Value(lastDoneKm),
+        refIntervalKm: Value(refIntervalKm),
+        refIntervalMonths: Value(refIntervalMonths),
+        overrideActive: overrideActive,
+        appliedIntervalKm: Value(appliedIntervalKm),
+        appliedIntervalMonths: Value(appliedIntervalMonths),
+        snoozeUntilDate: Value(snoozeUntilDate),
+        snoozeUntilKm: Value(snoozeUntilKm),
       );
 }

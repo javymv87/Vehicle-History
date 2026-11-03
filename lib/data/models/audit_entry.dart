@@ -19,6 +19,10 @@ enum AuditEntityType {
 
   /// An `Attachment`: a file of an entry, a vehicle or an owner (v7).
   attachment,
+
+  /// A `Reminder` of a vehicle (v11). Its `reminder_changes` rows get no
+  /// audit row: they are a history themselves.
+  reminder,
 }
 
 /// Kind of write an [AuditEntry] records.
@@ -36,9 +40,10 @@ enum AuditOperation {
   restore,
 
   /// A soft-deleted entity was removed from disk for good: from the Trash,
-  /// or by the 30-day cleanup at app start. Recorded for vehicles and
-  /// owners only; the entries and readings removed with a vehicle get no
-  /// row of their own.
+  /// or by the 30-day cleanup at app start. Recorded for every vehicle and
+  /// owner removed, and for the entries, readings, attachments and
+  /// reminders the cleanup removes on their own; what goes with a removed
+  /// parent gets no row of its own.
   purge,
 
   /// The whole database was replaced by the one in a backup package.

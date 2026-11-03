@@ -8,6 +8,7 @@ import '../converters.dart';
 import '../log_entries_table.dart';
 import '../mileage_readings_table.dart';
 import '../owners_table.dart';
+import '../reminders_table.dart';
 import '../row_mappers.dart';
 import '../vehicles_table.dart';
 
@@ -28,7 +29,15 @@ typedef PurgedRows = ({int rows, List<String> files});
 /// The only place that removes rows from disk. Every other DAO only flags
 /// rows as deleted. Accepts and returns domain models only.
 @DriftAccessor(
-  tables: [Vehicles, Owners, LogEntries, MileageReadings, Attachments],
+  tables: [
+    Vehicles,
+    Owners,
+    LogEntries,
+    MileageReadings,
+    Attachments,
+    Reminders,
+    ReminderChanges,
+  ],
 )
 class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
   /// Creates the DAO on [db]. Obtain it through `AppDatabase.trashDao`.
@@ -58,6 +67,20 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
         ..where(
           mileageReadings.vehicleId.equalsExp(vehicles.id) &
               mileageReadings.deleted.equals(false),
+        ),
+    );
+  }
+
+  /// Number of live reminders (completed ones included) of the vehicle in
+  /// the current row of the outer query, as a correlated subquery.
+  Expression<int> get _liveReminderCount {
+    final count = reminders.id.count();
+    return subqueryExpression<int>(
+      selectOnly(reminders)
+        ..addColumns([count])
+        ..where(
+          reminders.vehicleId.equalsExp(vehicles.id) &
+              reminders.deleted.equals(false),
         ),
     );
   }
@@ -103,8 +126,8 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
   }
 
   /// Emits the soft-deleted vehicles, most recently deleted first, each with
-  /// its owner and the counts of its live entries, readings and
-  /// attachments.
+  /// its owner and the counts of its live entries, readings, attachments
+  /// and reminders.
   ///
   /// The owner is joined whatever its own state. A deleted vehicle without
   /// `deleted_at` cannot exist from schema v5 on; it would sort last and
@@ -113,10 +136,11 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
     final entryCount = _liveEntryCount;
     final readingCount = _liveReadingCount;
     final attachmentCount = _liveAttachmentCount(vehicles.id);
+    final reminderCount = _liveReminderCount;
     final query = select(vehicles).join([
       innerJoin(owners, owners.id.equalsExp(vehicles.ownerId)),
     ])
-      ..addColumns([entryCount, readingCount, attachmentCount])
+      ..addColumns([entryCount, readingCount, attachmentCount, reminderCount])
       ..where(vehicles.deleted.equals(true))
       ..orderBy([
         OrderingTerm.desc(vehicles.deletedAt),
@@ -134,15 +158,16 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
                   entryCount: row.read(entryCount) ?? 0,
                   readingCount: row.read(readingCount) ?? 0,
                   attachmentCount: row.read(attachmentCount) ?? 0,
+                  reminderCount: row.read(reminderCount) ?? 0,
                 ),
               ),
           ],
         );
   }
 
-  /// Counts the live entries, readings and attachments (its own and its
-  /// live entries') of the vehicle [vehicleId], whatever the state of the
-  /// vehicle.
+  /// Counts the live entries, readings, attachments (its own and its live
+  /// entries') and reminders of the vehicle [vehicleId], whatever the state
+  /// of the vehicle.
   Future<VehicleContents> countLiveContents(String vehicleId) async {
     final entries = logEntries.id.count();
     final readings = mileageReadings.id.count();
@@ -165,10 +190,19 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
           ..addColumns([attachmentCount])
           ..limit(1))
         .getSingleOrNull();
+    final reminderTotal = reminders.id.count();
+    final reminderRow = await (selectOnly(reminders)
+          ..addColumns([reminderTotal])
+          ..where(
+            reminders.vehicleId.equals(vehicleId) &
+                reminders.deleted.equals(false),
+          ))
+        .getSingle();
     return VehicleContents(
       entryCount: entryRow.read(entries) ?? 0,
       readingCount: readingRow.read(readings) ?? 0,
       attachmentCount: attachmentRow?.read(attachmentCount) ?? 0,
+      reminderCount: reminderRow.read(reminderTotal) ?? 0,
     );
   }
 
@@ -220,6 +254,20 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
     return [for (final r in rows) (id: r.id, deletedAt: r.deletedAt!.toUtc())];
   }
 
+  /// Returns the soft-deleted reminders whose vehicle is live, with their
+  /// deletion instant. Rows without `deleted_at` are left out.
+  Future<List<DeletedRow>> getDeletedRemindersOfLiveVehicles() async {
+    final rows = await (select(reminders)
+          ..where(
+            (r) =>
+                r.deleted.equals(true) &
+                r.deletedAt.isNotNull() &
+                r.vehicleId.isInQuery(_liveVehicleIds()),
+          ))
+        .get();
+    return [for (final r in rows) (id: r.id, deletedAt: r.deletedAt!.toUtc())];
+  }
+
   /// Returns the soft-deleted owners that no vehicle row references, live
   /// or deleted, with their deletion instant. Rows without `deleted_at` are
   /// left out.
@@ -243,10 +291,12 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
         ..where(vehicles.deleted.equals(false));
 
   /// Removes from disk the soft-deleted vehicle [vehicleId] and **every**
-  /// entry, reading and attachment row that belongs to it (its own
-  /// attachments and its entries'), whatever their own flags.
+  /// reminder (with its history), entry, reading and attachment row that
+  /// belongs to it (its own attachments and its entries'), whatever their
+  /// own flags.
   ///
-  /// Children go first: the foreign keys of entries and readings are
+  /// Children go first, the reminders' history before the reminders: the
+  /// foreign keys of reminder changes, reminders, entries and readings are
   /// `ON DELETE RESTRICT`. Returns the relative paths of the attachment
   /// files whose rows were removed, or `null`, with nothing removed at all,
   /// when the vehicle is missing or still live. Call it inside a transaction
@@ -256,6 +306,13 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
           ..where((v) => v.id.equals(vehicleId) & v.deleted.equals(true)))
         .getSingleOrNull();
     if (isTrashed == null) return null;
+    final reminderIds = selectOnly(reminders)
+      ..addColumns([reminders.id])
+      ..where(reminders.vehicleId.equals(vehicleId));
+    await (delete(reminderChanges)
+          ..where((c) => c.reminderId.isInQuery(reminderIds)))
+        .go();
+    await (delete(reminders)..where((r) => r.vehicleId.equals(vehicleId))).go();
     final files = await _deleteAttachmentsWhere(
       _ofVehicle(Variable(vehicleId)),
     );
@@ -318,6 +375,25 @@ class TrashDao extends DatabaseAccessor<AppDatabase> with _$TrashDaoMixin {
   Future<int> purgeReadings(Iterable<String> ids) => (delete(mileageReadings)
         ..where((r) => r.id.isIn(ids) & r.deleted.equals(true)))
       .go();
+
+  /// Removes from disk the soft-deleted reminders with [ids], each with its
+  /// whole history (`reminder_changes`). Live reminders are never touched.
+  /// Returns the number of reminders removed.
+  Future<int> purgeReminders(Iterable<String> ids) async {
+    final deletedIds = [
+      for (final r in await (selectOnly(reminders)
+            ..addColumns([reminders.id])
+            ..where(reminders.id.isIn(ids) & reminders.deleted.equals(true)))
+          .get())
+        r.read(reminders.id)!,
+    ];
+    if (deletedIds.isEmpty) return 0;
+    await (delete(reminderChanges)..where((c) => c.reminderId.isIn(deletedIds)))
+        .go();
+    return (delete(reminders)
+          ..where((r) => r.id.isIn(deletedIds) & r.deleted.equals(true)))
+        .go();
+  }
 
   /// Removes from disk the soft-deleted owner [ownerId], with every
   /// attachment row of theirs whatever its flag. Live owners are never

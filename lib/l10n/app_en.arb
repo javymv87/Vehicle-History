@@ -2677,5 +2677,1181 @@
   "valueNone": "—",
   "@valueNone": {
     "description": "Shown for a figure that cannot be computed."
+  },
+  "reminderKindEngineOil": "Engine oil",
+  "@reminderKindEngineOil": {
+    "description": "Name of the reminder kind `engine_oil`."
+  },
+  "reminderKindOilFilter": "Oil filter",
+  "@reminderKindOilFilter": {
+    "description": "Name of the reminder kind `oil_filter`."
+  },
+  "reminderKindAirFilter": "Air filter",
+  "@reminderKindAirFilter": {
+    "description": "Name of the reminder kind `air_filter`."
+  },
+  "reminderKindFuelFilter": "Fuel filter",
+  "@reminderKindFuelFilter": {
+    "description": "Name of the reminder kind `fuel_filter`."
+  },
+  "reminderKindCabinFilter": "Cabin filter",
+  "@reminderKindCabinFilter": {
+    "description": "Name of the reminder kind `cabin_filter`."
+  },
+  "reminderKindSparkPlugs": "Spark plugs",
+  "@reminderKindSparkPlugs": {
+    "description": "Name of the reminder kind `spark_plugs`."
+  },
+  "reminderKindGlowPlugs": "Glow plugs",
+  "@reminderKindGlowPlugs": {
+    "description": "Name of the reminder kind `glow_plugs`."
+  },
+  "reminderKindTimingBelt": "Timing belt",
+  "@reminderKindTimingBelt": {
+    "description": "Name of the reminder kind `timing_belt`."
+  },
+  "reminderKindTimingChainCheck": "Timing chain check",
+  "@reminderKindTimingChainCheck": {
+    "description": "Name of the reminder kind `timing_chain_check`."
+  },
+  "reminderKindAuxiliaryBelt": "Auxiliary belt",
+  "@reminderKindAuxiliaryBelt": {
+    "description": "Name of the reminder kind `auxiliary_belt`."
+  },
+  "reminderKindValveClearance": "Valve clearance",
+  "@reminderKindValveClearance": {
+    "description": "Name of the reminder kind `valve_clearance`."
+  },
+  "reminderKindCrankcaseBreather": "Crankcase breather",
+  "@reminderKindCrankcaseBreather": {
+    "description": "Name of the reminder kind `crankcase_breather`."
+  },
+  "reminderKindThrottleBodyClean": "Throttle body cleaning",
+  "@reminderKindThrottleBodyClean": {
+    "description": "Name of the reminder kind `throttle_body_clean`."
+  },
+  "reminderKindDpfCheck": "Particulate filter (DPF) check",
+  "@reminderKindDpfCheck": {
+    "description": "Name of the reminder kind `dpf_check`."
+  },
+  "reminderKindAdblueRefill": "AdBlue refill",
+  "@reminderKindAdblueRefill": {
+    "description": "Name of the reminder kind `adblue_refill`."
+  },
+  "reminderKindEngineMountsCheck": "Engine mounts check",
+  "@reminderKindEngineMountsCheck": {
+    "description": "Name of the reminder kind `engine_mounts_check`."
+  },
+  "reminderKindCoolant": "Coolant",
+  "@reminderKindCoolant": {
+    "description": "Name of the reminder kind `coolant`."
+  },
+  "reminderKindRadiatorCheck": "Radiator check",
+  "@reminderKindRadiatorCheck": {
+    "description": "Name of the reminder kind `radiator_check`."
+  },
+  "reminderKindCoolingHoses": "Cooling hoses",
+  "@reminderKindCoolingHoses": {
+    "description": "Name of the reminder kind `cooling_hoses`."
+  },
+  "reminderKindGearboxOil": "Gearbox oil",
+  "@reminderKindGearboxOil": {
+    "description": "Name of the reminder kind `gearbox_oil`."
+  },
+  "reminderKindTransmissionFluid": "Automatic transmission fluid",
+  "@reminderKindTransmissionFluid": {
+    "description": "Name of the reminder kind `transmission_fluid`."
+  },
+  "reminderKindClutchFluid": "Clutch fluid",
+  "@reminderKindClutchFluid": {
+    "description": "Name of the reminder kind `clutch_fluid`."
+  },
+  "reminderKindClutchCheck": "Clutch check",
+  "@reminderKindClutchCheck": {
+    "description": "Name of the reminder kind `clutch_check`."
+  },
+  "reminderKindDifferentialOil": "Differential oil",
+  "@reminderKindDifferentialOil": {
+    "description": "Name of the reminder kind `differential_oil`."
+  },
+  "reminderKindTransferCaseOil": "Transfer case oil",
+  "@reminderKindTransferCaseOil": {
+    "description": "Name of the reminder kind `transfer_case_oil`."
+  },
+  "reminderKindCvBootsCheck": "Drive shaft boots check",
+  "@reminderKindCvBootsCheck": {
+    "description": "Name of the reminder kind `cv_boots_check`."
+  },
+  "reminderKindDriveChainLube": "Chain lubrication",
+  "@reminderKindDriveChainLube": {
+    "description": "Name of the reminder kind `drive_chain_lube`."
+  },
+  "reminderKindDriveChainKit": "Chain and sprockets",
+  "@reminderKindDriveChainKit": {
+    "description": "Name of the reminder kind `drive_chain_kit`."
+  },
+  "reminderKindDriveBelt": "Drive belt",
+  "@reminderKindDriveBelt": {
+    "description": "Name of the reminder kind `drive_belt`."
+  },
+  "reminderKindCvtRollersBelt": "Variator rollers and belt",
+  "@reminderKindCvtRollersBelt": {
+    "description": "Name of the reminder kind `cvt_rollers_belt`."
+  },
+  "reminderKindFinalDriveOil": "Final drive oil",
+  "@reminderKindFinalDriveOil": {
+    "description": "Name of the reminder kind `final_drive_oil`."
+  },
+  "reminderKindReductionGearOil": "Reduction gear oil",
+  "@reminderKindReductionGearOil": {
+    "description": "Name of the reminder kind `reduction_gear_oil`."
+  },
+  "reminderKindBrakeFluid": "Brake fluid",
+  "@reminderKindBrakeFluid": {
+    "description": "Name of the reminder kind `brake_fluid`."
+  },
+  "reminderKindBrakePadsFront": "Front brake pads",
+  "@reminderKindBrakePadsFront": {
+    "description": "Name of the reminder kind `brake_pads_front`."
+  },
+  "reminderKindBrakePadsRear": "Rear brake pads",
+  "@reminderKindBrakePadsRear": {
+    "description": "Name of the reminder kind `brake_pads_rear`."
+  },
+  "reminderKindBrakeDiscsFront": "Front brake discs",
+  "@reminderKindBrakeDiscsFront": {
+    "description": "Name of the reminder kind `brake_discs_front`."
+  },
+  "reminderKindBrakeDiscsRear": "Rear brake discs",
+  "@reminderKindBrakeDiscsRear": {
+    "description": "Name of the reminder kind `brake_discs_rear`."
+  },
+  "reminderKindBrakeShoesFront": "Front brake shoes",
+  "@reminderKindBrakeShoesFront": {
+    "description": "Name of the reminder kind `brake_shoes_front`."
+  },
+  "reminderKindBrakeShoesRear": "Rear brake shoes",
+  "@reminderKindBrakeShoesRear": {
+    "description": "Name of the reminder kind `brake_shoes_rear`."
+  },
+  "reminderKindBrakeDrumsFront": "Front brake drums",
+  "@reminderKindBrakeDrumsFront": {
+    "description": "Name of the reminder kind `brake_drums_front`."
+  },
+  "reminderKindBrakeDrumsRear": "Rear brake drums",
+  "@reminderKindBrakeDrumsRear": {
+    "description": "Name of the reminder kind `brake_drums_rear`."
+  },
+  "reminderKindParkingBrakeAdjust": "Parking brake adjustment",
+  "@reminderKindParkingBrakeAdjust": {
+    "description": "Name of the reminder kind `parking_brake_adjust`."
+  },
+  "reminderKindBrakeHoses": "Brake hoses",
+  "@reminderKindBrakeHoses": {
+    "description": "Name of the reminder kind `brake_hoses`."
+  },
+  "reminderKindShockAbsorbers": "Shock absorbers",
+  "@reminderKindShockAbsorbers": {
+    "description": "Name of the reminder kind `shock_absorbers`."
+  },
+  "reminderKindForkOil": "Fork oil",
+  "@reminderKindForkOil": {
+    "description": "Name of the reminder kind `fork_oil`."
+  },
+  "reminderKindSteeringHeadBearings": "Steering head bearings",
+  "@reminderKindSteeringHeadBearings": {
+    "description": "Name of the reminder kind `steering_head_bearings`."
+  },
+  "reminderKindSwingarmPivot": "Swingarm pivot",
+  "@reminderKindSwingarmPivot": {
+    "description": "Name of the reminder kind `swingarm_pivot`."
+  },
+  "reminderKindWheelBearings": "Wheel bearings",
+  "@reminderKindWheelBearings": {
+    "description": "Name of the reminder kind `wheel_bearings`."
+  },
+  "reminderKindBallJointsTieRods": "Ball joints and tie rods",
+  "@reminderKindBallJointsTieRods": {
+    "description": "Name of the reminder kind `ball_joints_tie_rods`."
+  },
+  "reminderKindPowerSteeringFluid": "Power steering fluid",
+  "@reminderKindPowerSteeringFluid": {
+    "description": "Name of the reminder kind `power_steering_fluid`."
+  },
+  "reminderKindWheelAlignment": "Wheel alignment",
+  "@reminderKindWheelAlignment": {
+    "description": "Name of the reminder kind `wheel_alignment`."
+  },
+  "reminderKindTyresReplace": "Tyre replacement",
+  "@reminderKindTyresReplace": {
+    "description": "Name of the reminder kind `tyres_replace`."
+  },
+  "reminderKindTyresRotation": "Tyre rotation",
+  "@reminderKindTyresRotation": {
+    "description": "Name of the reminder kind `tyres_rotation`."
+  },
+  "reminderKindTyresSeasonalSwap": "Seasonal tyre swap",
+  "@reminderKindTyresSeasonalSwap": {
+    "description": "Name of the reminder kind `tyres_seasonal_swap`."
+  },
+  "reminderKindTyrePressureCheck": "Tyre pressure check",
+  "@reminderKindTyrePressureCheck": {
+    "description": "Name of the reminder kind `tyre_pressure_check`."
+  },
+  "reminderKindWheelBalancing": "Wheel balancing",
+  "@reminderKindWheelBalancing": {
+    "description": "Name of the reminder kind `wheel_balancing`."
+  },
+  "reminderKindBattery12v": "12 V battery",
+  "@reminderKindBattery12v": {
+    "description": "Name of the reminder kind `battery_12v`."
+  },
+  "reminderKindBatteryCheck": "Battery check",
+  "@reminderKindBatteryCheck": {
+    "description": "Name of the reminder kind `battery_check`."
+  },
+  "reminderKindLightsCheck": "Lights check",
+  "@reminderKindLightsCheck": {
+    "description": "Name of the reminder kind `lights_check`."
+  },
+  "reminderKindWiperBlades": "Wiper blades",
+  "@reminderKindWiperBlades": {
+    "description": "Name of the reminder kind `wiper_blades`."
+  },
+  "reminderKindWasherFluid": "Washer fluid",
+  "@reminderKindWasherFluid": {
+    "description": "Name of the reminder kind `washer_fluid`."
+  },
+  "reminderKindAcGasRecharge": "Air conditioning recharge",
+  "@reminderKindAcGasRecharge": {
+    "description": "Name of the reminder kind `ac_gas_recharge`."
+  },
+  "reminderKindAcSystemDisinfect": "Air conditioning disinfection",
+  "@reminderKindAcSystemDisinfect": {
+    "description": "Name of the reminder kind `ac_system_disinfect`."
+  },
+  "reminderKindKeyFobBattery": "Key fob battery",
+  "@reminderKindKeyFobBattery": {
+    "description": "Name of the reminder kind `key_fob_battery`."
+  },
+  "reminderKindFuelLinesCheck": "Fuel lines check",
+  "@reminderKindFuelLinesCheck": {
+    "description": "Name of the reminder kind `fuel_lines_check`."
+  },
+  "reminderKindExhaustCheck": "Exhaust check",
+  "@reminderKindExhaustCheck": {
+    "description": "Name of the reminder kind `exhaust_check`."
+  },
+  "reminderKindEvapSystemCheck": "Evaporative system check",
+  "@reminderKindEvapSystemCheck": {
+    "description": "Name of the reminder kind `evap_system_check`."
+  },
+  "reminderKindFuelInjectorClean": "Injector cleaning",
+  "@reminderKindFuelInjectorClean": {
+    "description": "Name of the reminder kind `fuel_injector_clean`."
+  },
+  "reminderKindLpgFilter": "LPG filter",
+  "@reminderKindLpgFilter": {
+    "description": "Name of the reminder kind `lpg_filter`."
+  },
+  "reminderKindLpgInjectorsCheck": "LPG injectors check",
+  "@reminderKindLpgInjectorsCheck": {
+    "description": "Name of the reminder kind `lpg_injectors_check`."
+  },
+  "reminderKindLpgTankReplace": "LPG tank replacement",
+  "@reminderKindLpgTankReplace": {
+    "description": "Name of the reminder kind `lpg_tank_replace`."
+  },
+  "reminderKindCngFilter": "CNG filter",
+  "@reminderKindCngFilter": {
+    "description": "Name of the reminder kind `cng_filter`."
+  },
+  "reminderKindCngCylinderInspection": "CNG cylinder inspection",
+  "@reminderKindCngCylinderInspection": {
+    "description": "Name of the reminder kind `cng_cylinder_inspection`."
+  },
+  "reminderKindGasSystemInspection": "Gas system inspection",
+  "@reminderKindGasSystemInspection": {
+    "description": "Name of the reminder kind `gas_system_inspection`."
+  },
+  "reminderKindHvBatteryCheck": "High-voltage battery check",
+  "@reminderKindHvBatteryCheck": {
+    "description": "Name of the reminder kind `hv_battery_check`."
+  },
+  "reminderKindHvBatteryCoolant": "High-voltage battery coolant",
+  "@reminderKindHvBatteryCoolant": {
+    "description": "Name of the reminder kind `hv_battery_coolant`."
+  },
+  "reminderKindChargingPortCheck": "Charging port check",
+  "@reminderKindChargingPortCheck": {
+    "description": "Name of the reminder kind `charging_port_check`."
+  },
+  "reminderKindInspection": "Roadworthiness test",
+  "@reminderKindInspection": {
+    "description": "Name of the reminder kind `inspection`."
+  },
+  "reminderKindRoadTax": "Road tax",
+  "@reminderKindRoadTax": {
+    "description": "Name of the reminder kind `road_tax`."
+  },
+  "reminderKindInsurance": "Insurance",
+  "@reminderKindInsurance": {
+    "description": "Name of the reminder kind `insurance`."
+  },
+  "reminderKindSuperbollo": "Superbollo",
+  "@reminderKindSuperbollo": {
+    "description": "Name of the reminder kind `superbollo`."
+  },
+  "reminderKindOtherDocument": "Other document",
+  "@reminderKindOtherDocument": {
+    "description": "Name of the reminder kind `other_document`."
+  },
+  "reminderKindScheduledService": "Scheduled service",
+  "@reminderKindScheduledService": {
+    "description": "Name of the reminder kind `scheduled_service`."
+  },
+  "reminderKindInspectionChecklist": "Annual checklist",
+  "@reminderKindInspectionChecklist": {
+    "description": "Name of the reminder kind `inspection_checklist`."
+  },
+  "reminderKindOther": "Other",
+  "@reminderKindOther": {
+    "description": "Name of the reminder kind `other`."
+  },
+  "reminderGroupEngine": "Engine",
+  "@reminderGroupEngine": {
+    "description": "Header of the reminder kind group `engine` in the picker."
+  },
+  "reminderGroupCooling": "Cooling",
+  "@reminderGroupCooling": {
+    "description": "Header of the reminder kind group `cooling` in the picker."
+  },
+  "reminderGroupTransmission": "Transmission",
+  "@reminderGroupTransmission": {
+    "description": "Header of the reminder kind group `transmission` in the picker."
+  },
+  "reminderGroupBrakes": "Brakes",
+  "@reminderGroupBrakes": {
+    "description": "Header of the reminder kind group `brakes` in the picker."
+  },
+  "reminderGroupSuspension": "Suspension and steering",
+  "@reminderGroupSuspension": {
+    "description": "Header of the reminder kind group `suspension` in the picker."
+  },
+  "reminderGroupWheels": "Tyres and wheels",
+  "@reminderGroupWheels": {
+    "description": "Header of the reminder kind group `wheels` in the picker."
+  },
+  "reminderGroupElectrical": "Electrical system",
+  "@reminderGroupElectrical": {
+    "description": "Header of the reminder kind group `electrical` in the picker."
+  },
+  "reminderGroupFuelExhaust": "Fuel and exhaust",
+  "@reminderGroupFuelExhaust": {
+    "description": "Header of the reminder kind group `fuelExhaust` in the picker."
+  },
+  "reminderGroupGasSystem": "LPG / CNG system",
+  "@reminderGroupGasSystem": {
+    "description": "Header of the reminder kind group `gasSystem` in the picker."
+  },
+  "reminderGroupHighVoltage": "High voltage",
+  "@reminderGroupHighVoltage": {
+    "description": "Header of the reminder kind group `highVoltage` in the picker."
+  },
+  "reminderGroupLegal": "Legal deadlines",
+  "@reminderGroupLegal": {
+    "description": "Header of the reminder kind group `legal` in the picker."
+  },
+  "reminderGroupGeneral": "General",
+  "@reminderGroupGeneral": {
+    "description": "Header of the reminder kind group `general` in the picker."
+  },
+  "remindersTitle": "Reminders",
+  "@remindersTitle": {
+    "description": "Title of the Reminders page and its navigation bar destination."
+  },
+  "tabReminders": "Reminders",
+  "@tabReminders": {
+    "description": "Vehicle page: tab with the reminders of the vehicle."
+  },
+  "remindersEmpty": "No reminders yet. Create them from the Reminders tab of each vehicle.",
+  "@remindersEmpty": {
+    "description": "Reminders page with no reminder of any active vehicle."
+  },
+  "vehicleRemindersEmpty": "This vehicle has no reminders.",
+  "@vehicleRemindersEmpty": {
+    "description": "Reminders tab of a vehicle with none."
+  },
+  "reminderSectionOverdue": "Overdue",
+  "@reminderSectionOverdue": {
+    "description": "Header of the overdue reminders."
+  },
+  "reminderSectionDueSoon": "Due soon",
+  "@reminderSectionDueSoon": {
+    "description": "Header of the reminders due soon."
+  },
+  "reminderSectionOk": "Up to date",
+  "@reminderSectionOk": {
+    "description": "Header of the reminders with nothing to do yet."
+  },
+  "reminderSectionCompleted": "Completed ({count})",
+  "@reminderSectionCompleted": {
+    "description": "Folded section of a vehicle with its completed one-shot reminders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderStatusOverdue": "Overdue",
+  "@reminderStatusOverdue": {
+    "description": "Status of a reminder past its date or km."
+  },
+  "reminderStatusDueSoon": "Due soon",
+  "@reminderStatusDueSoon": {
+    "description": "Status of a reminder within its warning."
+  },
+  "reminderStatusOk": "Up to date",
+  "@reminderStatusOk": {
+    "description": "Status of a reminder with nothing to do yet."
+  },
+  "reminderStatusCompleted": "Completed",
+  "@reminderStatusCompleted": {
+    "description": "Status of a closed one-shot reminder."
+  },
+  "reminderDueOn": "due {date}",
+  "@reminderDueOn": {
+    "description": "Due line: the due date.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderDueToday": "due today",
+  "@reminderDueToday": {
+    "description": "Due line: due today."
+  },
+  "reminderOverdueDays": "{days, plural, =1{overdue by 1 day} other{overdue by {days} days}}",
+  "@reminderOverdueDays": {
+    "description": "Due line: days past the due date.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderDueInDistance": "in {distance}",
+  "@reminderDueInDistance": {
+    "description": "Due line: distance left, formatted with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderOverdueDistance": "overdue by {distance}",
+  "@reminderOverdueDistance": {
+    "description": "Due line: distance past the due km, formatted with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCompletedOn": "completed on {date}",
+  "@reminderCompletedOn": {
+    "description": "Due line of a completed one-shot reminder.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderChipCustom": "Custom",
+  "@reminderChipCustom": {
+    "description": "Chip: the reference criterion is overridden."
+  },
+  "reminderChipSnoozed": "Postponed",
+  "@reminderChipSnoozed": {
+    "description": "Chip: this occurrence is postponed."
+  },
+  "reminderLaxerWarning": "The applied criterion is less strict than the reference",
+  "@reminderLaxerWarning": {
+    "description": "Warning icon label: the override falls due later than the reference or turns an axis off."
+  },
+  "newReminder": "New reminder",
+  "@newReminder": {
+    "description": "Button and form title that create a reminder."
+  },
+  "reminderNotFound": "This reminder does not exist or was deleted.",
+  "@reminderNotFound": {
+    "description": "Page of a reminder id that matches nothing."
+  },
+  "reminderFormEditTitle": "Edit reminder",
+  "@reminderFormEditTitle": {
+    "description": "Title of the form that edits a reminder."
+  },
+  "reminderFieldKind": "Type",
+  "@reminderFieldKind": {
+    "description": "Reminder form: the kind field."
+  },
+  "reminderKindPickerTitle": "Reminder type",
+  "@reminderKindPickerTitle": {
+    "description": "Title of the kind picker."
+  },
+  "reminderKindOther": "Other…",
+  "@reminderKindOther": {
+    "description": "Kind picker: the pinned free option."
+  },
+  "reminderKindShowAll": "Show all",
+  "@reminderKindShowAll": {
+    "description": "Kind picker: show the kinds that do not apply to the vehicle too."
+  },
+  "reminderFieldTitle": "Title",
+  "@reminderFieldTitle": {
+    "description": "Reminder form: title field."
+  },
+  "reminderModePeriodic": "Recurring",
+  "@reminderModePeriodic": {
+    "description": "Reminder form: recurring reminder."
+  },
+  "reminderModeOneShot": "One date",
+  "@reminderModeOneShot": {
+    "description": "Reminder form: one-shot reminder with a due date."
+  },
+  "reminderKindLockedHint": "An entry has already closed this reminder, so its type and mode cannot change. For another type, create a new reminder.",
+  "@reminderKindLockedHint": {
+    "description": "Reminder form, when editing a reminder an entry has closed: why the type and the recurring / one-date choice are disabled."
+  },
+  "reminderFieldIntervalDistance": "Every (distance)",
+  "@reminderFieldIntervalDistance": {
+    "description": "Reminder form: km interval; the unit is the suffix."
+  },
+  "reminderFieldIntervalMonths": "Every (months)",
+  "@reminderFieldIntervalMonths": {
+    "description": "Reminder form: months interval."
+  },
+  "reminderIntervalHelp": "Fill in one or both: whichever comes first is due.",
+  "@reminderIntervalHelp": {
+    "description": "Reminder form: help under the intervals."
+  },
+  "reminderFieldAnchorDate": "Last done on",
+  "@reminderFieldAnchorDate": {
+    "description": "Reminder form: day of the last intervention."
+  },
+  "reminderFieldAnchorDistance": "Odometer last time",
+  "@reminderFieldAnchorDistance": {
+    "description": "Reminder form: odometer at the last intervention."
+  },
+  "reminderFieldDueDate": "Due date",
+  "@reminderFieldDueDate": {
+    "description": "Reminder form: due date of a one-shot reminder."
+  },
+  "reminderFieldLeadDays": "Warn (days before)",
+  "@reminderFieldLeadDays": {
+    "description": "Reminder form: own lead in days."
+  },
+  "reminderFieldLeadDistance": "Warn (distance before)",
+  "@reminderFieldLeadDistance": {
+    "description": "Reminder form: own lead in distance; the unit is the suffix."
+  },
+  "reminderLeadUseGlobal": "Use the general setting",
+  "@reminderLeadUseGlobal": {
+    "description": "Reminder form: hint of an empty lead field."
+  },
+  "reminderFieldNote": "Note",
+  "@reminderFieldNote": {
+    "description": "Reminder form and detail: free note."
+  },
+  "reminderFieldManualRef": "Manual reference",
+  "@reminderFieldManualRef": {
+    "description": "Reminder form and detail: where in the manual it comes from."
+  },
+  "reminderAppliedHint": "A custom criterion is changed from the reminder's page; here you edit the reference.",
+  "@reminderAppliedHint": {
+    "description": "Reminder form in edit mode: where the applied criterion is changed."
+  },
+  "unitDaysSuffix": "days",
+  "@unitDaysSuffix": {
+    "description": "Suffix of a field counted in days."
+  },
+  "unitMonthsSuffix": "months",
+  "@unitMonthsSuffix": {
+    "description": "Suffix of a field counted in months."
+  },
+  "validationReminderKindRequired": "Choose the type",
+  "@validationReminderKindRequired": {
+    "description": "Reminder form: no kind chosen."
+  },
+  "validationReminderTitleRequired": "Write a title",
+  "@validationReminderTitleRequired": {
+    "description": "Reminder form: blank title."
+  },
+  "validationReminderIntervalRequired": "Fill in at least one interval",
+  "@validationReminderIntervalRequired": {
+    "description": "Reminder form: recurring reminder without interval."
+  },
+  "validationWholeNumberAboveZero": "Enter a whole number above 0",
+  "@validationWholeNumberAboveZero": {
+    "description": "An interval that is not a whole number above 0."
+  },
+  "validationWholeNumber": "Enter a whole number (0 or more)",
+  "@validationWholeNumber": {
+    "description": "A lead that is not a whole number of at least 0."
+  },
+  "validationReminderAnchorKmRequired": "Required with a distance interval",
+  "@validationReminderAnchorKmRequired": {
+    "description": "Reminder form: km interval without the odometer of the last time."
+  },
+  "validationDateNotFuture": "The date cannot be after today",
+  "@validationDateNotFuture": {
+    "description": "A day that must be today or earlier."
+  },
+  "reminderSaved": "Reminder saved",
+  "@reminderSaved": {
+    "description": "Toast after saving a reminder."
+  },
+  "reminderDeleted": "Reminder deleted",
+  "@reminderDeleted": {
+    "description": "Toast with Undo after deleting a reminder."
+  },
+  "deleteReminderTitle": "Delete {title}?",
+  "@deleteReminderTitle": {
+    "description": "Confirmation title before deleting a reminder.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteReminderMessage": "Only the reminder is deleted: the history entries stay as they are.",
+  "@deleteReminderMessage": {
+    "description": "Confirmation message before deleting a reminder."
+  },
+  "reminderNextDue": "Next due",
+  "@reminderNextDue": {
+    "description": "Reminder detail: section of the next due values."
+  },
+  "reminderAxisDate": "By date",
+  "@reminderAxisDate": {
+    "description": "Reminder detail: the time axis."
+  },
+  "reminderAxisDistance": "By distance",
+  "@reminderAxisDistance": {
+    "description": "Reminder detail: the distance axis."
+  },
+  "reminderCriterion": "Criterion",
+  "@reminderCriterion": {
+    "description": "Reminder detail: the criterion when not overridden."
+  },
+  "reminderAppliedCriterion": "Applied criterion",
+  "@reminderAppliedCriterion": {
+    "description": "Reminder detail: the overriding criterion."
+  },
+  "reminderReferenceCriterion": "Reference criterion",
+  "@reminderReferenceCriterion": {
+    "description": "Reminder detail: the manual's criterion under an override."
+  },
+  "reminderReferenceDueDate": "By the manufacturer it would be due {date}",
+  "@reminderReferenceDueDate": {
+    "description": "Reminder detail: the reference due date under an override.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderReferenceDueDistance": "By the manufacturer it would be due at {distance}",
+  "@reminderReferenceDueDistance": {
+    "description": "Reminder detail: the reference due odometer under an override.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderEveryDistance": "every {distance}",
+  "@reminderEveryDistance": {
+    "description": "Criterion summary: km interval with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderEveryMonths": "{months, plural, =1{every month} other{every {months} months}}",
+  "@reminderEveryMonths": {
+    "description": "Criterion summary: months interval.",
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderDistanceDisabled": "distance off",
+  "@reminderDistanceDisabled": {
+    "description": "Criterion summary: the km axis is turned off by the override."
+  },
+  "reminderTimeDisabled": "time off",
+  "@reminderTimeDisabled": {
+    "description": "Criterion summary: the time axis is turned off by the override."
+  },
+  "reminderOneShotOn": "one date: {date}",
+  "@reminderOneShotOn": {
+    "description": "Criterion summary of a one-shot reminder.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderReason": "Reason: {reason}",
+  "@reminderReason": {
+    "description": "The owner's reason of an override or a snooze.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderOverriddenOn": "Customised on {date}",
+  "@reminderOverriddenOn": {
+    "description": "Reminder detail: when the override was set.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "reminderSnoozedUntil": "Postponed to {until}",
+  "@reminderSnoozedUntil": {
+    "description": "Reminder detail: the snooze date and / or odometer.",
+    "placeholders": {
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderAnchor": "Last time",
+  "@reminderAnchor": {
+    "description": "Reminder detail: the anchor section."
+  },
+  "reminderAnchorEntryLink": "Open the entry",
+  "@reminderAnchorEntryLink": {
+    "description": "Reminder detail: opens the entry that last closed it."
+  },
+  "reminderSourceGenerated": "Loaded from the manual",
+  "@reminderSourceGenerated": {
+    "description": "Reminder detail: written by the loading procedure."
+  },
+  "reminderSourceManual": "Created by hand",
+  "@reminderSourceManual": {
+    "description": "Reminder detail: typed in the app."
+  },
+  "reminderLeadLabel": "Warning",
+  "@reminderLeadLabel": {
+    "description": "Reminder detail: the reminder's own lead."
+  },
+  "reminderLeadDaysValue": "{days, plural, =1{1 day before} other{{days} days before}}",
+  "@reminderLeadDaysValue": {
+    "description": "Lead in days.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderLeadDistanceValue": "{distance} before",
+  "@reminderLeadDistanceValue": {
+    "description": "Lead in distance, with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderHistoryTitle": "Reminder history",
+  "@reminderHistoryTitle": {
+    "description": "Reminder detail: section of the change history."
+  },
+  "reminderChangeCreate": "Created",
+  "@reminderChangeCreate": {
+    "description": "History row: created."
+  },
+  "reminderChangeEdit": "Edited",
+  "@reminderChangeEdit": {
+    "description": "History row: edited from the form."
+  },
+  "reminderChangeOverride": "Criterion customised",
+  "@reminderChangeOverride": {
+    "description": "History row and toast: override set."
+  },
+  "reminderChangeRestoreReference": "Reference restored",
+  "@reminderChangeRestoreReference": {
+    "description": "History row and toast: override removed."
+  },
+  "reminderChangeSnooze": "Postponed",
+  "@reminderChangeSnooze": {
+    "description": "History row and toast: snoozed."
+  },
+  "reminderChangeUnsnooze": "Postponement removed",
+  "@reminderChangeUnsnooze": {
+    "description": "History row and toast: snooze removed."
+  },
+  "reminderChangeClose": "Done",
+  "@reminderChangeClose": {
+    "description": "History row and toast: closed by an entry."
+  },
+  "reminderChangeComplete": "Completed",
+  "@reminderChangeComplete": {
+    "description": "History row: one-shot completed."
+  },
+  "reminderQuoted": "“{text}”",
+  "@reminderQuoted": {
+    "description": "The owner's words quoted in a history row.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSeparator": " · ",
+  "@partsSeparator": {
+    "description": "Separator between the parts of one line."
+  },
+  "reminderActionMarkDone": "Mark done",
+  "@reminderActionMarkDone": {
+    "description": "Action: close the reminder with a new entry."
+  },
+  "reminderActionSnooze": "Postpone",
+  "@reminderActionSnooze": {
+    "description": "Action: postpone this occurrence."
+  },
+  "reminderActionUnsnooze": "Remove postponement",
+  "@reminderActionUnsnooze": {
+    "description": "Action: remove the snooze."
+  },
+  "reminderActionOverride": "Customise criterion",
+  "@reminderActionOverride": {
+    "description": "Action: override the reference criterion."
+  },
+  "reminderActionEditOverride": "Edit criterion",
+  "@reminderActionEditOverride": {
+    "description": "Action: change an active override."
+  },
+  "reminderActionRestoreReference": "Restore reference",
+  "@reminderActionRestoreReference": {
+    "description": "Action: remove the override."
+  },
+  "reminderMarkDoneTitle": "Mark as done",
+  "@reminderMarkDoneTitle": {
+    "description": "Title of the mark-done dialog."
+  },
+  "reminderMarkDoneIntro": "An entry of type {type} is saved, and the reminder counts from it.",
+  "@reminderMarkDoneIntro": {
+    "description": "Mark-done dialog: what it writes; type = the entry type name.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderSnoozeIntro": "This time only: the criterion does not change.",
+  "@reminderSnoozeIntro": {
+    "description": "Snooze dialog intro."
+  },
+  "reminderSnoozeUntilDate": "Until (date)",
+  "@reminderSnoozeUntilDate": {
+    "description": "Snooze dialog: new date."
+  },
+  "reminderSnoozeUntilDistance": "Until (odometer)",
+  "@reminderSnoozeUntilDistance": {
+    "description": "Snooze dialog: new odometer value; the unit is the suffix."
+  },
+  "reminderReasonField": "Reason",
+  "@reminderReasonField": {
+    "description": "Snooze and override dialogs: mandatory reason."
+  },
+  "validationReasonRequired": "Write the reason",
+  "@validationReasonRequired": {
+    "description": "Blank reason."
+  },
+  "validationSnoozeAxisRequired": "Fill in a date or an odometer value",
+  "@validationSnoozeAxisRequired": {
+    "description": "Snooze dialog with no axis."
+  },
+  "validationSnoozeNotLater": "Must be after the current due value ({due})",
+  "@validationSnoozeNotLater": {
+    "description": "Snooze that does not postpone; due = the applied due value.",
+    "placeholders": {
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderOverrideIntro": "The reference stays and is still shown next to the applied criterion.",
+  "@reminderOverrideIntro": {
+    "description": "Override dialog intro."
+  },
+  "reminderDisableAxis": "Turn this criterion off",
+  "@reminderDisableAxis": {
+    "description": "Override dialog: switch that disables an axis."
+  },
+  "reminderAnchorKmNeededHelp": "Needed to count the distance: write the real odometer value of the last time.",
+  "@reminderAnchorKmNeededHelp": {
+    "description": "Override dialog: the km anchor asked when a km axis is added."
+  },
+  "validationOneAxisRequired": "At least one criterion must stay on",
+  "@validationOneAxisRequired": {
+    "description": "Override with both axes off."
+  },
+  "reminderOverrideSummary": "From {from} to {to}.",
+  "@reminderOverrideSummary": {
+    "description": "Override dialog: what changes.",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderRestoreReferenceTitle": "Restore the reference?",
+  "@reminderRestoreReferenceTitle": {
+    "description": "Confirmation title of restore reference."
+  },
+  "reminderRestoreReferenceMessage": "This applies again: {criterion}. The history is kept.",
+  "@reminderRestoreReferenceMessage": {
+    "description": "Confirmation message of restore reference.",
+    "placeholders": {
+      "criterion": {
+        "type": "String"
+      }
+    }
+  },
+  "entryClosesReminder": "Closes the reminder",
+  "@entryClosesReminder": {
+    "description": "Entry form: reminder this entry closes."
+  },
+  "entryClosesReminderNone": "None",
+  "@entryClosesReminderNone": {
+    "description": "Entry form: closes no reminder."
+  },
+  "entryClosesReminderHelp": "On save the reminder counts from this entry.",
+  "@entryClosesReminderHelp": {
+    "description": "Entry form: help of the reminder field."
+  },
+  "entryClosedReminder": "Closed: {title}",
+  "@entryClosedReminder": {
+    "description": "Entry form in edit mode: the reminder this entry closed.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "entryClosedReminderHint": "The last time of the reminder is changed from the reminder itself.",
+  "@entryClosedReminderHint": {
+    "description": "Entry form: hint under the closed reminder."
+  },
+  "validationClosingKmRequired": "This reminder needs the entry's odometer",
+  "@validationClosingKmRequired": {
+    "description": "Entry form: closing a reminder with a km interval without km."
+  },
+  "validationClosingBeforeAnchor": "Before the last time of the reminder ({date})",
+  "@validationClosingBeforeAnchor": {
+    "description": "Entry form: entry dated before the reminder anchor.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "validationClosingBelowAnchor": "Below the last time of the reminder ({distance})",
+  "@validationClosingBelowAnchor": {
+    "description": "Entry form: entry km below the reminder anchor.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "validationClosingFuture": "To close a reminder the date must be today or earlier",
+  "@validationClosingFuture": {
+    "description": "Entry form: closing with a future date."
+  },
+  "entryClosesReminderIcon": "Closed a reminder",
+  "@entryClosesReminderIcon": {
+    "description": "History row: label of the reminder icon."
+  },
+  "settingsReminders": "Reminders",
+  "@settingsReminders": {
+    "description": "Settings section of the reminder leads."
+  },
+  "settingsReminderLeadDays": "{days, plural, =1{Warn 1 day before} other{Warn {days} days before}}",
+  "@settingsReminderLeadDays": {
+    "description": "Settings: global lead in days.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsReminderLeadDistance": "Warn {distance} before",
+  "@settingsReminderLeadDistance": {
+    "description": "Settings: global lead in distance, with its unit.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsReminderLeadHelp": "Each reminder can have its own warning.",
+  "@settingsReminderLeadHelp": {
+    "description": "Settings: help of the reminders section."
+  },
+  "settingsReminderLeadDaysTitle": "Days before the due date",
+  "@settingsReminderLeadDaysTitle": {
+    "description": "Settings: dialog of the lead in days."
+  },
+  "settingsReminderLeadDistanceTitle": "Distance before the due odometer",
+  "@settingsReminderLeadDistanceTitle": {
+    "description": "Settings: dialog of the lead in distance."
+  },
+  "vehicleContentsEntries": "{count, plural, =1{its entry} other{its {count} entries}}",
+  "@vehicleContentsEntries": {
+    "description": "Part of what goes with a deleted vehicle: its entries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vehicleContentsReadings": "{count, plural, =1{its odometer reading} other{its {count} odometer readings}}",
+  "@vehicleContentsReadings": {
+    "description": "Part of what goes with a deleted vehicle: its readings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vehicleContentsAttachments": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@vehicleContentsAttachments": {
+    "description": "Part of what goes with a deleted vehicle: its attachments.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vehicleContentsReminders": "{count, plural, =1{1 reminder} other{{count} reminders}}",
+  "@vehicleContentsReminders": {
+    "description": "Part of what goes with a deleted vehicle: its reminders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listJoinComma": "{first}, {next}",
+  "@listJoinComma": {
+    "description": "Joins two items of a list that goes on.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "listJoinAnd": "{first} and {last}",
+  "@listJoinAnd": {
+    "description": "Joins the last item of a list.",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteVehicleMessageList": "The vehicle, {contents} will be deleted. You can recover it from the Trash for 30 days.",
+  "@deleteVehicleMessageList": {
+    "description": "Delete confirmation of a vehicle with reminders; contents = the joined parts.",
+    "placeholders": {
+      "contents": {
+        "type": "String"
+      }
+    }
+  },
+  "purgeVehicleMessageList": "The vehicle, {contents} will be deleted forever. This cannot be undone.",
+  "@purgeVehicleMessageList": {
+    "description": "Permanent delete confirmation of a vehicle with reminders.",
+    "placeholders": {
+      "contents": {
+        "type": "String"
+      }
+    }
+  },
+  "trashContentsWithReminders": "{contents} · {count, plural, =1{1 reminder} other{{count} reminders}}",
+  "@trashContentsWithReminders": {
+    "description": "Trash row of a vehicle with reminders: the usual counts, then the reminders.",
+    "placeholders": {
+      "contents": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorReminderNotFound": "This reminder no longer exists. Nothing was changed.",
+  "@errorReminderNotFound": {
+    "description": "Error: the reminder is missing or deleted."
+  },
+  "errorReminderKindInUse": "This vehicle already has a reminder of this type. Nothing was saved.",
+  "@errorReminderKindInUse": {
+    "description": "Error: a live, open reminder of the same kind exists."
+  },
+  "errorReminderRule": "This reminder does not allow that action now. Nothing was changed.",
+  "@errorReminderRule": {
+    "description": "Error: a reminder rule refused the action."
+  },
+  "validationDueDateRequired": "Choose the due date",
+  "@validationDueDateRequired": {
+    "description": "Reminder form: one-shot reminder without due date."
+  },
+  "importConfirmContentsWithReminders": "This file contains {vehicles, plural, =1{1 vehicle} other{{vehicles} vehicles}}, {entries, plural, =1{1 entry} other{{entries} entries}}, {readings, plural, =1{1 reading} other{{readings} readings}} and {reminders, plural, =1{1 reminder} other{{reminders} reminders}}; last modified {date}.",
+  "@importConfirmContentsWithReminders": {
+    "description": "Import confirmation of a package with reminders: what it holds and when it last changed.",
+    "placeholders": {
+      "vehicles": {
+        "type": "int"
+      },
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "reminders": {
+        "type": "int"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
   }
 }

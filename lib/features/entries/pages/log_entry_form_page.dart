@@ -9,9 +9,12 @@ import '../../../app/router/navigation.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../data/models/log_entry_type.dart';
+import '../../../data/models/reminder.dart';
 import '../../../data/models/mileage_reading.dart';
 import '../../../data/models/odometer_checks.dart';
 import '../../../data/models/refuel.dart';
+import '../../../data/repositories/reminder_closer.dart';
+import '../../../data/repositories/repository_exceptions.dart';
 import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
@@ -22,6 +25,8 @@ import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../reminders/controllers/reminder_list_controller.dart';
+import '../../reminders/widgets/reminder_texts.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
 import '../../reports/widgets/segment_texts.dart';
@@ -157,6 +162,32 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
 
   /// Whether a save is running; the save button is disabled meanwhile.
   bool _saving = false;
+
+  /// The reminder chosen in "Closes the reminder"; `null` for none.
+  String? _closesReminderId;
+
+  /// The reminders the field offers, from the last build.
+  List<ReminderView> _closable = const [];
+
+  /// Why the chosen reminder refuses this entry, under the field.
+  String? _closeError;
+
+  /// The entry types that can close a reminder.
+  static const Set<LogEntryType> _closingTypes = {
+    LogEntryType.maintenance,
+    LogEntryType.repair,
+    LogEntryType.legalDue,
+    LogEntryType.expense,
+  };
+
+  /// The reminder chosen in the field, if it is still offered (a change of
+  /// type may leave it out).
+  ReminderView? get _closing {
+    for (final view in _closable) {
+      if (view.reminder.id == _closesReminderId) return view;
+    }
+    return null;
+  }
 
   @override
   void didChangeDependencies() {
@@ -400,6 +431,27 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
       );
       if (!confirmed || !mounted) return;
     }
+    // The rules of the close, checked first so their message lands under
+    // the reminder field and nothing is saved.
+    final closing = _closing;
+    if (closing != null) {
+      try {
+        ReminderCloser.checkEntry(
+          closing.reminder,
+          vehicleId: widget.vehicle.id,
+          type: _type!,
+          date: _date,
+          km: km,
+          today: _today,
+        );
+      } on RepositoryException catch (error) {
+        setState(
+          () => _closeError =
+              closingErrorText(error, closing.reminder, l10n, _units),
+        );
+        return;
+      }
+    }
     final volume = _showsRefuelFields ? _parseVolume(_volume.text) : null;
     final costCents = costText.isEmpty ? null : tryParseEuroCents(costText);
     if (!await _confirmUnusualRefuel(
@@ -438,6 +490,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
             : null,
         addedAttachments: attachments.staged,
         removedAttachmentIds: attachments.removedIds,
+        closesReminderId: closing?.reminder.id,
       ),
     );
     if (!mounted) return;
@@ -496,6 +549,24 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
     final currency =
         NumberFormat.simpleCurrency(locale: l10n.localeName, name: 'EUR');
     const gap = SizedBox(height: 16);
+    final type = _type;
+    final editedId = widget.initial?.id;
+    // An edited entry that already closed a reminder shows it, read-only:
+    // the anchor is changed from the reminder, there is no unlinking.
+    final closed = editedId == null
+        ? const <Reminder>[]
+        : ref.watch(entryClosedRemindersProvider(editedId)).value ??
+            const <Reminder>[];
+    _closable = type != null && _closingTypes.contains(type) && closed.isEmpty
+        ? ref
+                .watch(
+                  closableRemindersProvider(
+                    (vehicleId: widget.vehicle.id, type: type),
+                  ),
+                )
+                .value ??
+            const []
+        : const [];
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -536,6 +607,7 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                 onChanged: (type) => setState(() {
                   _type = type;
                   _dateError = null;
+                  _closeError = null;
                 }),
               ),
               gap,
@@ -669,6 +741,50 @@ class _LogEntryFormState extends ConsumerState<_LogEntryForm> {
                   value: _missedPrevious,
                   onChanged: (value) =>
                       setState(() => _missedPrevious = value ?? false),
+                ),
+              ],
+              if (closed.isNotEmpty) ...[
+                gap,
+                for (final reminder in closed)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_available),
+                    title: Text(l10n.entryClosedReminder(reminder.title)),
+                    subtitle: Text(l10n.entryClosedReminderHint),
+                  ),
+              ] else if (_closable.isNotEmpty) ...[
+                gap,
+                DropdownButtonFormField<String?>(
+                  // A new type offers other reminders: start again.
+                  key: ValueKey('entry-closes-reminder-$type'),
+                  initialValue: _closing?.reminder.id,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.entryClosesReminder,
+                    helperText: l10n.entryClosesReminderHelp,
+                    helperMaxLines: 2,
+                    errorText: _closeError,
+                    errorMaxLines: 3,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(l10n.entryClosesReminderNone),
+                    ),
+                    for (final view in _closable)
+                      DropdownMenuItem(
+                        value: view.reminder.id,
+                        child: Text(
+                          view.reminder.title,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (id) => setState(() {
+                    _closesReminderId = id;
+                    _closeError = null;
+                  }),
                 ),
               ],
               gap,

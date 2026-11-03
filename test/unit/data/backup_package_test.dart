@@ -53,6 +53,7 @@ void main() {
         'log_entries': 41,
         'mileage_readings': 7,
         'attachments': 0,
+        'reminders': 0,
       },
       'last_modified_at': '2026-10-18T09:00:00.000Z',
       'attachments_bytes': 0,
@@ -74,6 +75,32 @@ void main() {
     expect(read.counts.attachments, 0);
     expect(read.attachmentsBytes, 0);
     expect(read, manifest);
+  });
+
+  test(
+      'a manifest from before step 13a, without the reminders count, reads '
+      'as zero reminders', () {
+    final json = manifest.toJson();
+    (json['counts']! as Map<String, Object?>).remove('reminders');
+    final read = BackupManifest.fromJson(json);
+    expect(read.counts.reminders, 0);
+    expect(read, manifest);
+  });
+
+  test('the reminders count round-trips and must not be negative', () {
+    const counts = BackupCounts(
+      owners: 1,
+      vehicles: 2,
+      logEntries: 41,
+      mileageReadings: 7,
+      attachments: 3,
+      reminders: 12,
+    );
+    expect(BackupCounts.fromJson(counts.toJson()), counts);
+    expect(
+      () => BackupCounts.fromJson({...counts.toJson(), 'reminders': -1}),
+      throwsFormatException,
+    );
   });
 
   test('only plain files under attachments/ are attachment entries', () {
@@ -134,6 +161,11 @@ void main() {
     expect(requiredTablesAt(4), contains('mileage_readings'));
     expect(requiredTablesAt(5), isNot(contains('settings')));
     expect(requiredTablesAt(6), contains('settings'));
+    expect(requiredTablesAt(10), isNot(contains('reminders')));
+    expect(
+      requiredTablesAt(11),
+      containsAll(['reminders', 'reminder_changes', 'attachments']),
+    );
   });
 
   test('appVersion matches pubspec.yaml', () {

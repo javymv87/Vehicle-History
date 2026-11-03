@@ -71,12 +71,14 @@ versión **excluye**:
 3. **Historial de entradas** — la lista desplazable de todo lo que ha sucedido.
 4. **Documentos** — permiso de circulación, seguro, etc. (estado actual, no
    eventos).
-5. **Vencimientos / recordatorios** — manuales y automáticos a partir de los
-   datos de fábrica.
+5. **Vencimientos / recordatorios** — desde el paso 13a, recordatorios por
+   vehículo, creados a mano o cargados desde el manual del fabricante (ver
+   [08](08_recordatorios.md)); las notificaciones llegarán en el paso 13b.
 6. **Informes** — desde el paso 12, en la ficha de cada vehículo: consumo,
    gasto en carburante y distancia frente al tiempo; los informes en PDF
    (gastos, por tipo, consumos, general) llegarán después.
-7. **Ajustes** — idioma, tema y unidades de medida. La **copia de
+7. **Ajustes** — idioma, tema, unidades de medida y aviso de los
+   recordatorios. La **copia de
    seguridad** (archivo y Google Drive) tiene su propia pantalla, desde el
    mismo menú.
 8. **Registro de propietarios** — personas y sus documentos personales.

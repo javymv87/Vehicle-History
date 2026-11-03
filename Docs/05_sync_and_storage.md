@@ -198,8 +198,9 @@ No hay un contador de versiones ni cambio de esquema.
 - **Propiedades de la copia en Drive** (se leen sin descargarla):
   `upload_id` (un UUID nuevo en cada subida), `last_modified_at`,
   `schema_version`, `app_version`, `device_id` (el teléfono que subió) y los
-  recuentos (propietarios, vehículos, entradas, lecturas vivos y filas de
-  adjuntos).
+  recuentos (propietarios, vehículos, entradas, lecturas vivos, filas de
+  adjuntos y, desde el paso 13a, recordatorios vivos y no completados; una
+  copia anterior sin ese recuento lo lee como 0).
 - **Último punto en común**, en la tabla `settings` del teléfono: la cuenta,
   el sello local y el `upload_id` de la copia en el momento de la última
   subida o restauración correcta, y cuándo y cómo (subida / restauración).
@@ -313,8 +314,9 @@ vínculo de **este teléfono** con Drive no debe llegar de otro:
   Drive anota el nuevo al terminar; tras una importación manual el estado
   queda "sin punto común" y la copia automática en pausa hasta que el
   usuario suba o restaure, y la confirmación de la importación lo avisa.
-- El idioma, el tema, las cinco unidades de medida (`unit_*`) y
-  `last_export_at` siguen viajando con los datos.
+- El idioma, el tema, las cinco unidades de medida (`unit_*`), el aviso
+  anticipado de los recordatorios (`reminder_lead_*`) y `last_export_at`
+  siguen viajando con los datos.
 
 ### Exportar / importar: el paquete de copia
 
@@ -339,10 +341,15 @@ copia en Google Drive y seguirá sirviendo después, como copia manual.
   ISO-8601), `counts` (propietarios, vehículos, entradas y lecturas **vivos**:
   no borrados, y las entradas y lecturas además de un vehículo no borrado;
   más `attachments`, el número de **archivos** de `attachments/`, borrados
-  incluidos), `attachments_bytes` (lo que ocupan) y `last_modified_at`: el último
+  incluidos, y desde el paso 13a `reminders`, los recordatorios vivos y no
+  completados de vehículos vivos), `attachments_bytes` (lo que ocupan) y
+  `last_modified_at`: el último
   instante en que cambió algo de lo que registra el usuario, es decir, el
-  `updated_at` más reciente de propietarios, vehículos, entradas, lecturas
-  y **adjuntos** (borrados incluidos) y la fecha de la última fila `purge`
+  `updated_at` más reciente de propietarios, vehículos, entradas, lecturas,
+  **adjuntos** y **recordatorios** (borrados incluidos; los cambios del
+  historial de un recordatorio no cuentan aparte porque cada uno escribe
+  también el `updated_at` del recordatorio) y la fecha de la última fila
+  `purge`
   del historial (cada borrado físico); `null` si no hay datos. Quedan fuera
   a propósito los **ajustes** (idioma, tema, fecha de la última
   exportación: si no, cada exportación lo movería) y las filas `import`
@@ -350,7 +357,10 @@ copia en Google Drive y seguirá sirviendo después, como copia manual.
   recientes). Es la base del control de versión del paso 9; un paquete
   anterior a la 0.8.1 lleva el valor antiguo, solo de las cuatro tablas
   principales, y se sigue leyendo igual. En un paquete anterior al
-  paso 8 faltan `counts.attachments` y `attachments_bytes`: se leen como 0.
+  paso 8 faltan `counts.attachments` y `attachments_bytes`: se leen como 0;
+  en uno anterior al paso 13a falta `counts.reminders`: se lee como 0. El
+  formato sigue siendo el 1, y un paquete de esquema 11 debe tener las tablas
+  `reminders` y `reminder_changes`.
 - La base de datos es una copia **entera y coherente**, hecha con
   `VACUUM INTO` en un archivo temporal junto a la base de datos (sea cual sea
   el estado del WAL), con la papelera y el historial de operaciones dentro.
@@ -460,23 +470,26 @@ comportamiento de la versión 1 sigue siendo la Strada A.
 
 Desde el esquema v5 (paso 5b).
 
-- **Lógico:** borrar un vehículo, una entrada, una lectura o un propietario
-  solo lo marca (`deleted = 1` y `deleted_at` con el instante). Los
-  vehículos borrados forman la **papelera** y se pueden restaurar con todas
-  sus entradas y lecturas durante **30 días**.
+- **Lógico:** borrar un vehículo, una entrada, una lectura, un recordatorio
+  o un propietario solo lo marca (`deleted = 1` y `deleted_at` con el
+  instante). Los vehículos borrados forman la **papelera** y se pueden
+  restaurar con todas sus entradas, lecturas y recordatorios durante **30
+  días**.
 - **Físico:** el registro desaparece del archivo, sin vuelta atrás. Ocurre
   solo al "Eliminar definitivamente" un vehículo o "Vaciar papelera" (por
   decisión del usuario, con confirmación) y en la **limpieza al arrancar la
   app**, que borra lo que lleva borrado 30 días o más: vehículos de la
-  papelera (con todas sus entradas y lecturas), entradas y lecturas sueltas
-  de vehículos vivos, y propietarios a los que ya no apunta ningún vehículo.
+  papelera (con todas sus entradas, lecturas y recordatorios), entradas,
+  lecturas y recordatorios sueltos de vehículos vivos (cada recordatorio con
+  su historial de cambios), y propietarios a los que ya no apunta ningún
+  vehículo.
   La limpieza se ejecuta una vez por arranque, después de abrir y migrar la
   base de datos, en una sola transacción; si falla, no borra nada y la app
   arranca igual.
 - El historial de operaciones conserva sus filas y añade una `purge` por
   cada vehículo y propietario borrados físicamente y por cada entrada,
-  lectura o adjunto que la limpieza elimina sueltos (no por lo que se va
-  con su padre).
+  lectura, adjunto o recordatorio que la limpieza elimina sueltos (no por lo
+  que se va con su padre).
 - **Adjuntos:** se van con el vehículo, la entrada o el propietario que se
   borra físicamente, con sus archivos; la limpieza borra también los
   adjuntos borrados hace 30 días o más (salvo los que viajan con un vehículo

@@ -27,10 +27,13 @@ import 'repositories/drift_attachment_repository.dart';
 import 'repositories/drift_log_entry_repository.dart';
 import 'repositories/drift_mileage_reading_repository.dart';
 import 'repositories/drift_owner_repository.dart';
+import 'repositories/drift_reminder_repository.dart';
 import 'repositories/drift_vehicle_repository.dart';
 import 'repositories/log_entry_repository.dart';
 import 'repositories/mileage_reading_repository.dart';
 import 'repositories/owner_repository.dart';
+import 'repositories/reminder_closer.dart';
+import 'repositories/reminder_repository.dart';
 import 'repositories/repository_support.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/trash_cleanup_service.dart';
@@ -180,6 +183,24 @@ final logEntryRepositoryProvider = Provider<LogEntryRepository>((ref) {
     db.logEntriesDao,
     db.auditLogDao,
     attachments: ref.watch(attachmentWriterProvider),
+    reminders: ref.watch(reminderCloserProvider),
+  );
+});
+
+/// The [ReminderCloser] shared by the entry and reminder repositories.
+final reminderCloserProvider = Provider<ReminderCloser>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return ReminderCloser(db.remindersDao, db.auditLogDao);
+});
+
+/// The [ReminderRepository] on the app database.
+final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftReminderRepository(
+    db.remindersDao,
+    db.auditLogDao,
+    entries: ref.watch(logEntryRepositoryProvider),
+    closer: ref.watch(reminderCloserProvider),
   );
 });
 

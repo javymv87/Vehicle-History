@@ -13,6 +13,8 @@ import 'package:vehicle_history/data/models/log_entry.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/refuel.dart';
+import 'package:vehicle_history/data/models/reminder.dart';
+import 'package:vehicle_history/data/models/reminder_kind.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 
@@ -33,7 +35,7 @@ import 'generated/schema.dart';
 /// 4. extend the existing expectations with any new column's default.
 ///
 /// The tests must never be weakened to make an upgrade pass.
-const int latestVersion = 10;
+const int latestVersion = 11;
 
 /// Timestamp written into every old row.
 const String _ts = '2024-03-04T10:30:00.000Z';
@@ -1356,7 +1358,7 @@ Future<void> _expectV9RowsIntact(AppDatabase db) async {
     ),
     0,
   );
-  expect(await db.backupDao.lastModifiedAt(), DateTime.parse(_ts5));
+  expect(await _stamp(db), DateTime.parse(_ts5));
 
   // The values of every entry, raw from disk.
   final raw = await db
@@ -1444,6 +1446,290 @@ Future<void> _expectV10RefuelUsable(AppDatabase db, String vehicleId) async {
       reason: 'should be refused: $sql',
     );
   }
+}
+
+/// The data stamp of [db]: `BackupDao.lastModifiedAt` once the database
+/// has the v11 tables, otherwise the same query over the tables of v10 (a
+/// step test stops at v10 while the app's code is at the latest version).
+Future<DateTime?> _stamp(AppDatabase db) async {
+  final hasReminders = await _count(
+    db,
+    "SELECT COUNT(*) AS c FROM sqlite_master WHERE name = 'reminders'",
+  );
+  if (hasReminders == 1) return db.backupDao.lastModifiedAt();
+  final row = await db
+      .customSelect(
+        'SELECT MAX(m) AS last FROM ('
+        'SELECT MAX(updated_at) AS m FROM owners UNION ALL '
+        'SELECT MAX(updated_at) FROM vehicles UNION ALL '
+        'SELECT MAX(updated_at) FROM log_entries UNION ALL '
+        'SELECT MAX(updated_at) FROM mileage_readings UNION ALL '
+        'SELECT MAX(updated_at) FROM attachments UNION ALL '
+        "SELECT MAX(at) FROM audit_log WHERE operation = 'purge')",
+      )
+      .getSingle();
+  final last = row.read<String?>('last');
+  return last == null ? null : DateTime.parse(last).toUtc();
+}
+
+/// `updated_at` of the newest change written at v10.
+const String _ts6 = '2026-11-01T17:45:12.345678Z';
+
+/// Writes a standalone v10 data set with plain SQL against the v10 schema:
+/// an owner with an active vehicle (refuels with the v10 fields, a
+/// maintenance, a deleted entry, readings, a document and the settings), an
+/// archived vehicle and a vehicle in the Trash, plus audit rows. The v11
+/// step must leave all of it as it is and only add the empty reminder
+/// tables.
+Future<void> _insertV10Rows(GeneratedDatabase oldDb) async {
+  await oldDb.customStatement(
+    'INSERT INTO owners (id, created_at, updated_at, deleted, deleted_at, '
+    'first_name, last_name, birth_date, nationality, phone, email, notes, '
+    'photo_path) VALUES '
+    "('o1', '$_ts', '$_ts5', 0, NULL, 'Javier', 'Muñoz', '1987-05-12', "
+    "'ES', '+39 333 1234567', 'javier@example.com', NULL, NULL)",
+  );
+  const columns = 'INSERT INTO vehicles (id, created_at, updated_at, '
+      'deleted, deleted_at, plate, kind, make, make_slug, model, model_slug, '
+      'model_year, version, nickname, owner_id, current_odometer_km, '
+      'fuel_type, recommended_engine_oil, manufacturer_notes, photo_path, '
+      'archived_at, archive_reason, archive_note, archived_km) VALUES ';
+  await oldDb.customStatement(
+    '$columns'
+    "('vA', '$_ts', '$_ts6', 0, NULL, 'FG123HI', 'car', 'Fiat', 'fiat', "
+    "'Grande Punto', 'grande-punto', 2008, '1.4 77 CV', 'Il Punto', 'o1', "
+    "152300.5, 'petrolLpg', '5W-40', 'Bifuel di fabbrica', NULL, NULL, NULL, "
+    'NULL, NULL), '
+    "('vR', '$_ts', '$_ts5', 0, NULL, 'AB001CD', 'motorcycle', 'Honda', "
+    "'honda', 'SH 125', 'sh-125', 2015, NULL, NULL, 'o1', 41000, 'petrol', "
+    "NULL, NULL, NULL, '2026-10-15', 'sold', 'Venduta a Marco', 41000), "
+    "('vT', '$_ts', '$_ts5', 1, '$_ts5', 'ZZ999ZZ', 'van', NULL, NULL, NULL, "
+    "NULL, NULL, NULL, NULL, 'o1', 99000, 'diesel', NULL, NULL, NULL, NULL, "
+    'NULL, NULL, NULL)',
+  );
+  await oldDb.customStatement(
+    'INSERT INTO log_entries (id, created_at, updated_at, deleted, '
+    'deleted_at, vehicle_id, entry_date, km, type, description, cost_cents, '
+    'volume, full_tank, missed_previous, fuel) VALUES '
+    "('e1', '$_ts', '$_ts5', 0, NULL, 'vA', '2026-10-01', 151000, 'refuel', "
+    "'Pieno GPL', 3420, 45.678, 1, 0, 'lpg'), "
+    "('e2', '$_ts', '$_ts6', 0, NULL, 'vA', '2026-10-20', 151600.25, "
+    "'refuel', NULL, 6100, 32.5, 0, 1, 'petrol'), "
+    "('e3', '$_ts', '$_ts5', 0, NULL, 'vA', '2026-09-15', 150500, "
+    "'maintenance', 'Tagliando: olio e filtri', 18950, NULL, NULL, NULL, "
+    'NULL), '
+    "('e4', '$_ts', '$_ts5', 1, '$_ts5', 'vA', '2026-09-16', 150600, "
+    "'repair', 'Errore', 100, NULL, NULL, NULL, NULL), "
+    "('e5', '$_ts', '$_ts5', 0, NULL, 'vR', '2026-10-10', NULL, 'legalDue', "
+    "'Bollo', 4500, NULL, NULL, NULL, NULL), "
+    "('e6', '$_ts', '$_ts5', 0, NULL, 'vT', '2026-08-01', 98000, 'refuel', "
+    "NULL, 7000, 60, 1, 0, 'diesel')",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO mileage_readings (id, created_at, updated_at, deleted, '
+    'deleted_at, vehicle_id, reading_date, km) VALUES '
+    "('r1', '$_ts', '$_ts', 0, NULL, 'vA', '2024-03-04', 140000), "
+    "('r2', '$_ts', '$_ts6', 0, NULL, 'vA', '2026-10-20', 152300.5), "
+    "('r3', '$_ts', '$_ts5', 0, NULL, 'vR', '2024-03-04', 41000), "
+    "('r4', '$_ts', '$_ts5', 0, NULL, 'vT', '2024-03-04', 99000)",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO attachments (id, created_at, updated_at, deleted, '
+    'deleted_at, entity_type, entity_id, kind, file_name, mime_type, '
+    'relative_path, size_bytes, caption, sort_order) VALUES '
+    "('t1', '$_ts', '$_ts5', 0, NULL, 'vehicle', 'vA', 'pdf', "
+    "'libretto.pdf', 'application/pdf', 'attachments/t1.pdf', 123456, "
+    "'Libretto', 0)",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO settings (key, value, updated_at) VALUES '
+    "('language', 'it', '$_ts5'), ('unit_distance', 'km', '$_ts5')",
+  );
+  await oldDb.customStatement(
+    'INSERT INTO audit_log (id, entity_type, entity_id, operation, at) '
+    "VALUES ('a1', 'logEntry', 'e2', 'create', '$_ts6'), "
+    "('a2', 'vehicle', 'vR', 'archive', '$_ts5'), "
+    "('a3', 'vehicle', 'vT', 'delete', '$_ts5')",
+  );
+}
+
+/// Checks every row written by [_insertV10Rows] after an upgrade to v11 or
+/// later: every value as it was, no `updated_at` moved, no audit row added,
+/// the data stamp still the v10 one, and the reminder tables empty.
+Future<void> _expectV10RowsIntact(AppDatabase db) async {
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM owners'), 1);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM vehicles'), 3);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM log_entries'), 6);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM mileage_readings'), 4);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM attachments'), 1);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM settings'), 2);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM audit_log'), 3);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM reminders'), 0);
+  expect(await _count(db, 'SELECT COUNT(*) AS c FROM reminder_changes'), 0);
+  expect(await db.backupDao.lastModifiedAt(), DateTime.parse(_ts6));
+
+  final punto = (await db.vehiclesDao.getLiveById('vA'))!;
+  expect(punto.plate, 'FG123HI');
+  expect(punto.model, 'Grande Punto');
+  expect(punto.currentOdometerKm, 152300.5);
+  expect(punto.fuelType, FuelType.petrolLpg);
+  expect(punto.recommendedEngineOil, '5W-40');
+  expect(punto.updatedAt, DateTime.parse(_ts6));
+  final scooter = (await db.vehiclesDao.getLiveById('vR'))!;
+  expect(scooter.archivedAt, const CalendarDate(2026, 10, 15));
+  expect(scooter.archiveNote, 'Venduta a Marco');
+  expect(scooter.archivedKm, 41000);
+  expect((await db.vehiclesDao.getDeletedById('vT'))!.plate, 'ZZ999ZZ');
+
+  final lpg = (await db.logEntriesDao.getLiveById('e1'))!;
+  expect(
+    lpg.refuel,
+    const RefuelDetails(fuel: RefuelFuel.lpg, volume: 45.678),
+  );
+  expect(lpg.costCents, 3420);
+  final petrol = (await db.logEntriesDao.getLiveById('e2'))!;
+  expect(petrol.km, 151600.25);
+  expect(
+    petrol.refuel,
+    const RefuelDetails(
+      fuel: RefuelFuel.petrol,
+      volume: 32.5,
+      fullTank: false,
+      missedPrevious: true,
+    ),
+  );
+  expect(
+    (await db.logEntriesDao.getLiveById('e3'))!.description,
+    'Tagliando: olio e filtri',
+  );
+  expect((await db.logEntriesDao.getDeletedById('e4'))!.costCents, 100);
+  final readings = await db.mileageReadingsDao.getLiveByVehicle('vA');
+  expect([for (final r in readings) r.km], containsAll([140000, 152300.5]));
+  final settings = await db.settingsDao.readValue(SettingKey.language);
+  expect(settings, 'it');
+  await _expectForeignKeysValid(db);
+}
+
+/// Checks the v11 reminder tables on an upgraded database whose vehicle
+/// [vehicleId] is active and has the entry [entryId]: a reminder and its
+/// change are stored and read back; the CHECKs refuse every invalid shape;
+/// the partial unique index refuses a second open reminder of a unique kind
+/// but not a second `other`, nor one once the first is deleted; and
+/// removing the closing entry from disk clears `last_entry_id`.
+Future<void> _expectV11RemindersUsable(
+  AppDatabase db,
+  String vehicleId,
+  String entryId,
+) async {
+  final reminder = Reminder(
+    id: 'rem-oil',
+    vehicleId: vehicleId,
+    kind: ReminderKind.engineOil,
+    title: 'Olio motore',
+    source: ReminderSource.generated,
+    manualRef: 'p. 174',
+    refIntervalKm: 30000,
+    refIntervalMonths: 24,
+    lastDoneDate: const CalendarDate(2026, 9, 15),
+    lastDoneKm: 150500,
+    lastEntryId: entryId,
+    createdAt: _tsUtc,
+    updatedAt: _tsUtc,
+  );
+  await db.remindersDao.insertReminder(reminder);
+  expect(await db.remindersDao.getLiveById('rem-oil'), reminder);
+  final change = ReminderChange.of(
+    reminder,
+    id: 'ch-1',
+    type: ReminderChangeType.create,
+    at: _tsUtc,
+  );
+  await db.remindersDao.insertChange(change);
+  expect(await db.remindersDao.watchChanges('rem-oil').first, [change]);
+
+  // Every shape the table constraints forbid.
+  const insert = 'INSERT INTO reminders (id, created_at, updated_at, '
+      'vehicle_id, kind, title, source, ref_interval_km, ref_interval_months, '
+      'due_date, last_done_date, last_done_km, override_active, '
+      'applied_interval_km, applied_interval_months, completed_at) VALUES ';
+  final refused = <String, String>{
+    'blank title': "('x', '$_ts', '$_ts', '$vehicleId', 'other', '  ', "
+        "'manual', NULL, 12, NULL, '2026-01-01', NULL, 0, NULL, NULL, NULL)",
+    'no interval nor due date': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', NULL, NULL, NULL, '2026-01-01', NULL, 0, "
+        'NULL, NULL, NULL)',
+    'one-shot with an interval': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', NULL, 12, '2027-01-01', '2026-01-01', NULL, "
+        '0, NULL, NULL, NULL)',
+    'recurring without anchor day': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', NULL, 12, NULL, NULL, NULL, 0, NULL, NULL, "
+        'NULL)',
+    'km interval without anchor km': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', 10000, NULL, NULL, '2026-01-01', NULL, 0, "
+        'NULL, NULL, NULL)',
+    'applied km without anchor km': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', NULL, 12, NULL, '2026-01-01', NULL, 1, "
+        '8000, NULL, NULL)',
+    'override disabling both axes': "('x', '$_ts', '$_ts', '$vehicleId', "
+        "'other', 'X', 'manual', NULL, 12, NULL, '2026-01-01', NULL, 1, NULL, "
+        'NULL, NULL)',
+    'completed recurring': "('x', '$_ts', '$_ts', '$vehicleId', 'other', "
+        "'X', 'manual', NULL, 12, NULL, '2026-01-01', NULL, 0, NULL, NULL, "
+        "'$_ts')",
+    'zero interval': "('x', '$_ts', '$_ts', '$vehicleId', 'other', 'X', "
+        "'manual', 0, NULL, NULL, '2026-01-01', 0, 0, NULL, NULL, NULL)",
+    'negative anchor km': "('x', '$_ts', '$_ts', '$vehicleId', 'other', "
+        "'X', 'manual', 1000, NULL, NULL, '2026-01-01', -1, 0, NULL, NULL, "
+        'NULL)',
+  };
+  for (final MapEntry(key: reason, value: values) in refused.entries) {
+    await expectLater(
+      db.customStatement('$insert$values'),
+      throwsA(anything),
+      reason: 'should be refused: $reason',
+    );
+  }
+
+  // One open reminder per unique kind and vehicle.
+  const duplicate = "'engine_oil', 'Olio', 'manual', NULL, 12, NULL, "
+      "'2026-01-01', NULL, 0, NULL, NULL, NULL)";
+  await expectLater(
+    db.customStatement(
+      "$insert('dup', '$_ts', '$_ts', '$vehicleId', $duplicate",
+    ),
+    throwsA(anything),
+  );
+  // "Other" repeats freely.
+  for (final id in ['oth1', 'oth2']) {
+    await db.customStatement(
+      "$insert('$id', '$_ts', '$_ts', '$vehicleId', 'other', 'Altro', "
+      "'manual', NULL, 6, NULL, '2026-01-01', NULL, 0, NULL, NULL, NULL)",
+    );
+  }
+  // Once the first is deleted, the kind is free again.
+  await db.customStatement(
+    "UPDATE reminders SET deleted = 1, deleted_at = '$_ts' "
+    "WHERE id = 'rem-oil'",
+  );
+  await db.customStatement(
+    "$insert('dup', '$_ts', '$_ts', '$vehicleId', $duplicate",
+  );
+  await expectLater(
+    db.customStatement(
+      "UPDATE reminders SET deleted = 0, deleted_at = NULL "
+      "WHERE id = 'rem-oil'",
+    ),
+    throwsA(anything),
+    reason: 'two open reminders of the same kind',
+  );
+
+  // Removing the closing entry from disk clears the link, nothing else.
+  await db.customStatement('PRAGMA foreign_keys = ON');
+  await db.customStatement("DELETE FROM log_entries WHERE id = '$entryId'");
+  final unlinked = (await db.remindersDao.getDeletedById('rem-oil'))!;
+  expect(unlinked.lastEntryId, isNull);
+  expect(unlinked.lastDoneKm, 150500);
+  await _expectForeignKeysValid(db);
 }
 
 void main() {
@@ -1632,6 +1918,21 @@ void main() {
     await _expectV10RefuelUsable(db, 'v1');
   });
 
+  test('rows written at v10 are intact at v11, reminder tables empty',
+      () async {
+    final db = await upgrade(10, 11, _insertV10Rows);
+    await _expectV10RowsIntact(db);
+    await _expectV11RemindersUsable(db, 'vA', 'e3');
+  });
+
+  test('rows written at v9 are intact at v$latestVersion (chain)', () async {
+    final db = await upgrade(9, latestVersion, _insertV9Rows);
+    await _expectV9RowsIntact(db);
+    expect(await db.backupDao.lastModifiedAt(), DateTime.parse(_ts5));
+    expect(await _count(db, 'SELECT COUNT(*) AS c FROM reminders'), 0);
+    await _expectV11RemindersUsable(db, 'vP', 'mP');
+  });
+
   /// Writes [insert]'s rows into a real file at [fromVersion], opens it with
   /// the app's database (a real upgrade, as on the phone), checks the rows
   /// with [expectIntact], and checks the pre-upgrade copy.
@@ -1677,7 +1978,7 @@ void main() {
     expect(copyVersion.read<int>('user_version'), fromVersion);
     // The columns of the latest version are in the copy of no older file:
     // up to v8 `current_odometer_km` is still INTEGER there, and up to v9
-    // `log_entries` has no refuel columns.
+    // `log_entries` has no refuel columns; no copy has the v11 reminders.
     final columns =
         await copy.customSelect('PRAGMA table_info(vehicles)').get();
     expect(
@@ -1689,7 +1990,7 @@ void main() {
         fromVersion < 9 ? 'INTEGER' : 'REAL',
       ),
     );
-    if (fromVersion >= 3) {
+    if (fromVersion >= 3 && fromVersion < 10) {
       final entryColumns =
           await copy.customSelect('PRAGMA table_info(log_entries)').get();
       expect(
@@ -1697,6 +1998,13 @@ void main() {
         isNot(contains('volume')),
       );
     }
+    expect(
+      await _count(
+        copy,
+        "SELECT COUNT(*) AS c FROM sqlite_master WHERE name = 'reminders'",
+      ),
+      0,
+    );
     expect(
       await _count(copy, 'SELECT COUNT(*) AS c FROM vehicles'),
       vehicleRows,
@@ -1784,6 +2092,18 @@ void main() {
         await _expectV10RefuelUsable(db, 'vP');
       },
       vehicleRows: 7,
+    );
+  });
+
+  test('a real upgrade of a v10 file first copies it', () async {
+    await realUpgrade(
+      10,
+      _insertV10Rows,
+      (db) async {
+        await _expectV10RowsIntact(db);
+        await _expectV11RemindersUsable(db, 'vA', 'e3');
+      },
+      vehicleRows: 3,
     );
   });
 

@@ -82,12 +82,20 @@ class ImportConfirmationDialog extends StatelessWidget {
           Text(
             lastModified == null
                 ? l10n.importConfirmContentsEmpty
-                : l10n.importConfirmContents(
-                    counts.vehicles,
-                    counts.logEntries,
-                    counts.mileageReadings,
-                    lastModified.toLocal(),
-                  ),
+                : counts.reminders > 0
+                    ? l10n.importConfirmContentsWithReminders(
+                        counts.vehicles,
+                        counts.logEntries,
+                        counts.mileageReadings,
+                        counts.reminders,
+                        lastModified.toLocal(),
+                      )
+                    : l10n.importConfirmContents(
+                        counts.vehicles,
+                        counts.logEntries,
+                        counts.mileageReadings,
+                        lastModified.toLocal(),
+                      ),
           ),
           const SizedBox(height: 8),
           Text(

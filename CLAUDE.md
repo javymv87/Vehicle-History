@@ -139,13 +139,15 @@ The reason is not tidiness. The local database is the only copy of data the
 user cannot recreate: there is no server to re-sync from, and the Drive backup
 may be older than the last change. A broken migration is permanent data loss.
 
-Settled for the database (schema v10: `owners`, `vehicles`, `audit_log`,
-`log_entries`, `mileage_readings`, `settings`, `attachments`; v2 added the
+Settled for the database (schema v11: `owners`, `vehicles`, `audit_log`,
+`log_entries`, `mileage_readings`, `settings`, `attachments`, `reminders`,
+`reminder_changes`; v2 added the
 vehicle kind, make / model, model year and version; v3 added `log_entries`;
 v4 added `mileage_readings` with one initial reading per vehicle; v5 added
 `deleted_at` for the Trash; v6 added `settings`; v7 added `attachments`;
 v8 added the archive columns of `vehicles`; v9 made the four distance
-columns `REAL`; v10 added the refuel columns of `log_entries`):
+columns `REAL`; v10 added the refuel columns of `log_entries`; v11 added
+`reminders` and `reminder_changes`):
 
 - **Workflow.** `build.yaml` configures `drift_dev` (`databases`,
   `schema_dir: drift_schemas/`, `test_dir: test/drift/`); every schema
@@ -167,24 +169,26 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   Every read filters `deleted = 0` unless the method name says otherwise;
   delete means soft delete. The audit log is append-only and has no flag.
   Child rows of a soft-deleted parent are **not** cascaded: the entries of a
-  deleted vehicle keep their own flag, and the `log_entries` and
-  `mileage_readings` reads also require a live vehicle, so they come back
-  when the vehicle is restored.
+  deleted vehicle keep their own flag, and the `log_entries`,
+  `mileage_readings` and `reminders` reads also require a live vehicle, so
+  they come back when the vehicle is restored.
 - **Trash and physical delete (v5).** Soft-deleted vehicles are the Trash
-  (`VehicleRepository.watchTrashed`, with live entry / reading counts).
+  (`VehicleRepository.watchTrashed`, with live entry / reading / attachment
+  / reminder counts).
   `TrashDao` is the only code that removes rows from disk: `purgeVehicle`
-  deletes the vehicle's readings and entries (whatever their flags) and then
-  the vehicle, in one transaction. Callers: `VehicleRepository.purge` /
+  deletes the vehicle's `reminder_changes`, then its reminders, then its
+  attachments, readings and entries (whatever their flags) and then the
+  vehicle, in one transaction (every foreign key is `RESTRICT`). Callers: `VehicleRepository.purge` /
   `purgeAllTrashed` (user action) and `TrashCleanupService`, run once per
   app start by `databaseReadyProvider` after the open
   (`runStartupCleanupSafely`: a failure is logged, rolled back and never
   blocks the start). The cleanup removes, at `deleted_at` ≤ now − 30 days
-  (`trashRetention`): trashed vehicles with their children; deleted entries
-  and readings of live vehicles; deleted owners referenced by no vehicle
-  row; deleted attachments outside the Trash. Every vehicle and owner
-  removed, and (since 0.8.1) every entry, reading and attachment the
-  cleanup removes on its own, gets a `purge` audit row in the same
-  transaction; what goes with a removed parent gets none (the parent's row
+  (`trashRetention`): trashed vehicles with their children; deleted
+  reminders (with their changes), entries and readings of live vehicles;
+  deleted owners referenced by no vehicle row; deleted attachments outside
+  the Trash. Every vehicle and owner removed, and (since 0.8.1) every entry,
+  reading and attachment (since v11 every reminder) the cleanup removes on
+  its own, gets a `purge` audit row in the same transaction; what goes with a removed parent gets none (the parent's row
   covers it). An owner
   with vehicles in the Trash cannot be deleted
   (`OwnerHasTrashedVehiclesException`).
@@ -195,7 +199,8 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   (`AuditOperationConverter`, `AuditEntityTypeConverter`; `logEntry` came
   this way in v3, `mileageReading` in v4, operation `purge` in v5, operation
   `import` with entity `database` in v6, entity `attachment` in v7,
-  operations `archive` and `reactivate` in v8), not a schema change; an older build that meets an unknown code throws when
+  operations `archive` and `reactivate` in v8, entity `reminder` in v11),
+  not a schema change; an older build that meets an unknown code throws when
   reading the audit log.
 - **Location.** `vehicle_history.sqlite` lives in the **application support
   directory** (`getApplicationSupportDirectory`, passed to `drift_flutter`
@@ -313,14 +318,14 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   (`NULL CHECK (archived_km >= 0)`), all `NULL` while active. *Active* =
   `deleted = 0 AND archived_at IS NULL`: the one expression
   `VehiclesDao.isActive`, behind `watchActive` (the main list) and, negated
-  over live rows, `watchArchived`; step 13a reuses it. `getById` /
+  over live rows, `watchArchived`; the reminders of Home reuse it (step 13a). `getById` /
   `watchById` / `watchByOwner` return archived vehicles too.
   `VehicleRepository.archive` runs in one transaction: with a km it first
   calls `MileageReadingRepository.create` (a nested drift transaction, so
   the reading rules refuse the whole archive), then writes the four columns
   and the `archive` audit row; `reactivate` clears them (`reactivate` row)
-  and leaves every reading alone. **Read-only guard:** the entry, reading
-  and attachment repositories check `vehicleStateOf`
+  and leaves every reading alone. **Read-only guard:** the entry, reading,
+  attachment and reminder repositories check `vehicleStateOf`
   (`lib/data/db/vehicle_state.dart`, one shared query; `targetStateOf` for
   attachment targets) before every write and throw
   `VehicleArchivedException` (`ActionError.vehicleArchived`); only
@@ -331,6 +336,46 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   Archive or Reactivate plus Move to Trash; the archived list is
   `/vehicles/archived` (declared before `/:id`); the forms refuse an
   archived vehicle reached by deep link.
+- **Reminders (step 13a, schema v11)** (`Docs/08_recordatorios.md`, the
+  source of truth). `reminders` (`TechnicalColumns` + vehicle, `kind`,
+  title, note, `source`, `manual_ref`, the reference `ref_interval_km` /
+  `ref_interval_months` or a one-shot `due_date`, the anchor
+  `last_done_date` / `last_done_km`, `last_entry_id` → `log_entries`
+  `ON DELETE SET NULL`, the override `override_active` /
+  `applied_interval_*` / `override_reason` / `override_at`, the own lead
+  `lead_days` / `lead_km`, the snooze `snooze_until_*` / `snooze_reason`,
+  `completed_at`) and the append-only `reminder_changes` (one row per write,
+  in the same transaction, with the state **after** the change; codes
+  `ReminderChangeType`, Dart `applyOverride` = code `override`). Table
+  CHECKs (all `customConstraints`, the table was created whole): recurring
+  xor one-shot; an anchor day on recurring ones and an anchor km with any
+  km axis, reference **or applied**; an override never disables both axes;
+  only a one-shot completes; a non-blank title. The partial unique index
+  `reminders_one_per_kind` (one live, open reminder per kind and vehicle,
+  `other` / `other_document` excepted) is a `@TableIndex.sql`, so it is in
+  the dump; the repository checks the rule first
+  (`ReminderKindAlreadyUsedException` → `ActionError.reminderKindInUse`).
+  `ReminderKind` (`lib/data/models/reminder_kind.dart`) is the fixed
+  catalogue of 85 kinds in 12 groups, with `appliesTo` (a picker filter
+  only), `closingEntryTypes`, `markDoneEntryType` and `uniquePerVehicle`;
+  a test pins the exact list, which the loading procedure writes. Status is
+  **never stored**: `evaluateReminder` (`reminder_status.dart`, pure) with
+  `CalendarDate.addMonths` (day clamped), the global `ReminderLead`
+  (`reminderLeadProvider`) and the vehicle's `current_odometer_km`.
+  `ReminderCloser` (`lib/data/repositories/`) is the one close, joined to
+  the transaction of `DriftLogEntryRepository.create` / `update`
+  (`closesReminderId`) and used by `DriftReminderRepository.close` /
+  `markDone`; `ReminderCloser.checkEntry` is pure, so the entry form and
+  the mark-done dialog show its refusals inline. Rule refusals are
+  `ReminderRuleException` (`ActionError.reminderRule`) or
+  `InvalidFieldException` reasons (`beforeAnchor`, `belowAnchor`,
+  `notLater`, `required`). Once a `close` change exists
+  (`ReminderRepository.hasBeenClosed`), `update` refuses a change of kind
+  or of recurring / one-shot (`ReminderRule.alreadyClosed`) and the form
+  disables both (`ReminderFormData.kindLocked`). Reminders are loaded from a manual only by the
+  procedure of `Docs/08` on an exported package
+  (`tool/reminders/insert_reminder.sql`, `/load-reminders`,
+  `reminders_runbook_sql_test.dart`), never by app code.
 - **Make and model** are stored as the display name (always) plus an
   optional catalogue slug (`make_slug`, `model_slug`; `null` when typed by
   hand). The name is the source of truth for display; the slug only matches
@@ -338,21 +383,23 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
 - **Settings (v6)** are the key / value table `settings` (`key` text PK,
   `value` nullable text, `updated_at` UTC), with no `deleted` flag and no
   audit rows. Keys are `SettingKey` values with explicit codes
-  (`last_export_at`, `language`, `theme`, since step 9 the `drive_…` keys
-  and since step 11 the five `unit_…` keys of
+  (`last_export_at`, `language`, `theme`, since step 9 the `drive_…` keys,
+  since step 11 the five `unit_…` keys and since step 13a
+  `reminder_lead_days` / `reminder_lead_km` of
   `Docs/06_settings_and_i18n.md`). Each key has a `SettingScope`
   that decides what **every import** does with it: `shared` comes from the
   package, `device` (`drive_account`, `drive_auth_mode`,
   `drive_device_id`, `drive_mobile_data`) keeps the phone's value,
   `syncPoint`
   (`drive_sync_*`) is cleared (`BackupService._openImported`); the
-  `unit_…` keys are `shared` like `language` and `theme`, so an import
-  brings the package's units. `SettingsRepository` has `read`, `write`,
+  `unit_…` and `reminder_lead_…` keys are `shared` like `language` and
+  `theme`, so an import brings the package's units and leads. `SettingsRepository` has `read`, `write`,
   `watch`, `watchMany`, `writeMany` (one transaction), plus typed accessors
   (`watchLastExportAt`, `writeLastExportAt`, `watchLanguage` /
   `writeLanguage`, `watchThemeMode` / `writeThemeMode`,
-  `watchUnitPreferences` / `writeUnitPreferences` and one `write…Unit` per
-  quantity). `language` and `theme` hold the
+  `watchUnitPreferences` / `writeUnitPreferences`, one `write…Unit` per
+  quantity, and `watchReminderLead` / `writeReminderLeadDays` /
+  `writeReminderLeadKm`). `language` and `theme` hold the
   stable codes of `AppLanguage` (`system`, `it`, `es`, `en`) and
   `AppThemeMode` (`system`, `light`, `dark`, named so because `AppTheme`
   holds the themes), `lib/data/models/app_preferences.dart`; absent or
@@ -406,8 +453,9 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
 
 - **`last_modified_at`** of the manifest (`BackupDao.lastModifiedAt`, the
   version stamp of the step-9 guard) is the latest `updated_at` of owners,
-  vehicles, entries, readings and attachments (deleted rows included) and
-  the latest `purge` audit row, compared as ISO-8601 UTC text. Settings and
+  vehicles, entries, readings, attachments and reminders (deleted rows
+  included; `reminder_changes` does not count, every change also writes its
+  reminder's `updated_at`) and the latest `purge` audit row, compared as ISO-8601 UTC text. Settings and
   `import` audit rows never count. Every physical deletion must write a
   `purge` row in its transaction, or the stamp could go backwards.
 - **`last_export_at` and the package:** `BackupService.exportPackage`
@@ -422,7 +470,11 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   through `BackupDao`) and `attachments/` with the file of **every**
   attachment row, live or deleted; `format_version` stays 1, the manifest
   has `counts.attachments` and `attachments_bytes` (0 when missing, as in a
-  step-6 package). **Never in memory:** `writeBackupPackage` streams the
+  step-6 package) and, since step 13a, `counts.reminders` (live, open
+  reminders of live vehicles; 0 when missing, in the manifest and in the
+  Drive properties alike, so an older copy holding the same data still
+  compares equal in `evaluateSync`). `requiredTablesAt(11)` adds `reminders`
+  and `reminder_changes`. **Never in memory:** `writeBackupPackage` streams the
   files into a temporary zip with `archive`'s `ZipFileEncoder`, the
   controller saves it through `NativeFiles.saveFile` and then deletes it
   (`deleteExport`); an import copies the picked file (streamed) next to the
@@ -481,7 +533,8 @@ columns `REAL`; v10 added the refuel columns of `log_entries`):
   scope `drive.file`, visible folder "Vehicle History" found the same way),
   uploads resumable and downloads streamed. Every upload carries
   `upload_id`, `last_modified_at`, `schema_version`, `app_version`,
-  `device_id` and the counts (`CloudBackup.propertiesOf`). The last common
+  `device_id` and the counts, `reminders` included
+  (`CloudBackup.propertiesOf`). The last common
   point lives in the `drive_sync_*` settings (`DriveSettings` extension) and
   is written only after Drive confirmed an upload or after a successful
   restore (stamp read after the reopen). `evaluateSync` (`sync_guard.dart`)
@@ -585,7 +638,8 @@ Releases: the Android `versionCode` (the build number after `+` in
 `pubspec.yaml`) must increase with every release. **Version convention:**
 every merged roadmap step bumps the minor version and increments the build
 number by one (step 6 = `0.6.0+6`; after the 0.8.1 and 9b releases the two
-no longer match: step 12 = `0.12.0+14`), and updates `appVersion`
+no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
+`appVersion`
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
 they differ.
 
@@ -728,7 +782,10 @@ code generation (`freezed` and similar are not used).
   auto-disposed with the page (`logEntryFilterProvider`).
 - Deletion controllers (`…DeletionController`) are **kept alive**: the Undo
   snackbar outlives the page that deleted, so its callback holds the
-  notifier, read before popping, never the page's `ref`.
+  notifier, read before popping, never the page's `ref`. A kept-alive
+  actions controller holding delete / Undo together with other actions
+  (`ReminderActionsController`) is equally valid when a page has several
+  actions that outlive it.
 - Tests override `databaseReadyProvider` and the repository providers
   (`test/support/`), never the DAOs.
 
@@ -739,18 +796,22 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
 
 - Paths are built only through `AppRoutes` (`app/router/app_routes.dart`).
 - The lists live in a `StatefulShellRoute` under the `NavigationBar`
-  (`HomeShell`, which also owns the add FAB). Details and forms are
+  (`HomeShell`, which also owns the add FAB): Vehicles, Reminders (with the
+  overdue + due-soon badge, `reminderBadgeCountProvider`, and no FAB) and
+  Owners. Details and forms are
   top-level routes pushed full screen on top of it; `…/new` is declared
   before `…/:id`. History entries are nested under their vehicle
   (`/vehicles/:id/entries/new`, `…/entries/:entryId`, `…/:entryId/edit`), so
   both ids are in the path; an entry reached through another vehicle's path
   is not found. Odometer readings follow the same pattern
-  (`/vehicles/:id/mileage/new`, `…/mileage/:readingId/edit`). The vehicle
-  page has five tabs (`VehicleTab`: history, mileage, reports, documents,
-  details), opened through the `tab` query parameter
+  (`/vehicles/:id/mileage/new`, `…/mileage/:readingId/edit`), and so do
+  reminders (`/vehicles/:id/reminders/new`, `…/reminders/:reminderId`,
+  `…/:reminderId/edit`). The vehicle page has six tabs (`VehicleTab`:
+  history, reminders, mileage, reports, documents, details), opened through
+  the `tab` query parameter
   (`AppRoutes.vehicle(id, tab: …)`, e.g. `?tab=mileage`), and owns its FAB:
-  "Update km" on Mileage, "Add document" on Documents, none on the
-  read-only Reports, "New entry" otherwise. The Reports filter
+  "Update km" on Mileage, "New reminder" on Reminders, "Add document" on
+  Documents, none on the read-only Reports, "New entry" otherwise. The Reports filter
   (`reportFilterProvider`, screen state, never stored) is kept alive by the
   vehicle page while it is open. The image viewer is the
   top-level route `/attachments/:attachmentId` (`AppRoutes.attachment`). An action that outlives its page (the odometer offer) asks the
@@ -788,14 +849,16 @@ decision, not a refactor.
 
 ### Log entries
 - **One unified entry model.** A single base entry (date, mileage, cost, notes,
-  photos, optional reminder) plus type-specific extra fields. Do **not** create
-  a separate table per entry type.
+  photos) plus type-specific extra fields. Do **not** create a separate table
+  per entry type. Reminders are their own table (see "Reminders" below); an
+  entry can close one.
 - Types: maintenance, repair, refuelling, expense, inspection, legal deadline,
   note.
 
 ### Maintenance
 - A shared catalogue of maintenance types; each vehicle has its own rules drawn
-  from it.
+  from it. Since step 13a that catalogue is the fixed `ReminderKind` list
+  (`Docs/08_recordatorios.md`); an editable catalogue is planned.
 - A maintenance type already assigned to a vehicle disappears from that
   vehicle's picker.
 - Intervals may be km-based, time-based, or both. When both are set, **the
@@ -850,6 +913,19 @@ litres, no automatic total).
 - Every create, modify and delete is recorded with timestamp and operation
   type, and kept for future reference.
 
+### Reminders
+- Two layers, never merged: the reference criterion (the manual's, or the
+  owner's) and, behind `override_active`, the applied one, set consciously
+  with a mandatory reason. The reference is never lost and always shown.
+- Status (overdue, due soon, ok) is computed on every read, never stored;
+  the first of the two axes to fall due wins.
+- A recurring reminder moves only through an entry, explicitly (the "Closes
+  the reminder" field or "Mark done"); its anchor is a **copy** of the
+  entry's day and km, never derived from the entry afterwards.
+- Loading reminders from a manual is the procedure of
+  `Docs/08_recordatorios.md` on an exported package: no AI and no import
+  feature inside the app.
+
 ### Backup and sync ("Strada A")
 - Backup / restore with a **version guard**. No automatic merging, ever.
 - The database carries a version number and a last-modified timestamp.
@@ -881,8 +957,9 @@ litres, no automatic total).
 - Each vehicle has an in-app, read-only Reports tab since step 12
   (consumption, fuel spend, distance over time). The PDF reports (expenses,
   by type, fuel, general) come later, built on them.
-- Time-based deadlines produce local notifications; km-based ones are surfaced
-  through visual highlighting, not notifications.
+- Time-based deadlines will produce local notifications (step 13b); km-based
+  ones are surfaced through visual highlighting, not notifications. Since
+  step 13a both are shown in the app (status and the Reminders badge).
 
 ---
 

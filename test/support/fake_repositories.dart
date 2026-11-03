@@ -11,6 +11,7 @@ import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/mileage_reading.dart';
 import 'package:vehicle_history/data/models/owner.dart';
 import 'package:vehicle_history/data/models/refuel.dart';
+import 'package:vehicle_history/data/models/reminder.dart';
 import 'package:vehicle_history/data/models/trashed_vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
@@ -61,6 +62,15 @@ class FakeStore {
 
   /// Ids of soft-deleted attachments.
   final Set<String> deletedAttachments = {};
+
+  /// Live and deleted reminders, by id.
+  final Map<String, Reminder> reminders = {};
+
+  /// Ids of soft-deleted reminders.
+  final Set<String> deletedReminders = {};
+
+  /// The history of every reminder, oldest first.
+  final List<ReminderChange> reminderChanges = [];
 
   /// When set, every write throws it instead of writing.
   Exception? failWritesWith;
@@ -144,6 +154,12 @@ class FakeStore {
                       !deletedEntries.contains(a.target.entityId)),
             )
             .length,
+        reminderCount: reminders.values
+            .where(
+              (r) =>
+                  r.vehicleId == vehicleId && !deletedReminders.contains(r.id),
+            )
+            .length,
       );
 
   /// Live attachments, in display order.
@@ -191,6 +207,7 @@ class FakeStore {
     vehicleDeletedAt.remove(id);
     entries.removeWhere((_, e) => e.vehicleId == id);
     readings.removeWhere((_, r) => r.vehicleId == id);
+    reminders.removeWhere((_, r) => r.vehicleId == id);
   }
 
   /// Live readings of the live vehicle [vehicleId], newest first, like the
@@ -305,6 +322,51 @@ class FakeStore {
     entries[entry.id] = entry;
     _changes.add(null);
     return entry;
+  }
+
+  /// Adds a live reminder directly, for test setup, with its `create`
+  /// change.
+  Reminder addReminder(Reminder reminder) {
+    reminders[reminder.id] = reminder;
+    reminderChanges.add(
+      ReminderChange.of(
+        reminder,
+        id: newId('change'),
+        type: ReminderChangeType.create,
+        at: reminder.createdAt,
+      ),
+    );
+    _changes.add(null);
+    return reminder;
+  }
+
+  /// Closes the reminder [id] with [entry], like `ReminderCloser.close`
+  /// without its checks, and records the change.
+  Reminder closeReminder(String id, LogEntry entry) {
+    final reminder = reminders[id]!;
+    final cleared = reminder.copyWith(
+      lastEntryId: entry.id,
+      snoozeUntilDate: null,
+      snoozeUntilKm: null,
+      snoozeReason: null,
+      updatedAt: now,
+    );
+    final closed = reminder.isOneShot
+        ? cleared.copyWith(completedAt: now)
+        : cleared.copyWith(lastDoneDate: entry.date, lastDoneKm: entry.km);
+    reminders[id] = closed;
+    reminderChanges.add(
+      ReminderChange.of(
+        closed,
+        id: newId('change'),
+        type: reminder.isOneShot
+            ? ReminderChangeType.complete
+            : ReminderChangeType.close,
+        at: now,
+        entryId: entry.id,
+      ),
+    );
+    return closed;
   }
 
   /// Adds a live vehicle directly, for test setup.
@@ -776,6 +838,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     int? costCents,
     RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
+    String? closesReminderId,
   }) =>
       store.write(() {
         _check(type, km, date);
@@ -799,6 +862,9 @@ class FakeLogEntryRepository implements LogEntryRepository {
         for (final file in attachments) {
           store.addAttachment(AttachmentTarget.logEntry(entry.id), file);
         }
+        if (closesReminderId != null) {
+          store.closeReminder(closesReminderId, entry);
+        }
         return entry;
       });
 
@@ -813,6 +879,7 @@ class FakeLogEntryRepository implements LogEntryRepository {
     RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
+    String? closesReminderId,
   }) =>
       store.write(() {
         _check(type, km, date);
@@ -832,6 +899,9 @@ class FakeLogEntryRepository implements LogEntryRepository {
         store.deletedAttachments.addAll(removedAttachmentIds);
         for (final file in addedAttachments) {
           store.addAttachment(AttachmentTarget.logEntry(id), file);
+        }
+        if (closesReminderId != null) {
+          store.closeReminder(closesReminderId, updated);
         }
         return updated;
       });

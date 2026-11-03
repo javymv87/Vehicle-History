@@ -124,6 +124,17 @@ enum ActionError {
   /// The Drive copy comes from a newer version of the app.
   driveCloudTooNew,
 
+  /// The reminder involved is missing or deleted.
+  reminderNotFound,
+
+  /// The vehicle already has a live, open reminder of the same kind;
+  /// nothing was written.
+  reminderKindInUse,
+
+  /// A reminder rule refused the action (a completed or one-shot reminder,
+  /// nothing to undo, an entry that cannot close it); nothing was written.
+  reminderRule,
+
   /// Anything else, such as a disk or SQLite failure.
   unexpected,
 }
@@ -147,6 +158,10 @@ ActionError actionErrorOf(Object error, [StackTrace? stackTrace]) {
       ActionError.readingNotFound,
     EntityNotFoundException(entityType: AuditEntityType.attachment) =>
       ActionError.attachmentNotFound,
+    EntityNotFoundException(entityType: AuditEntityType.reminder) =>
+      ActionError.reminderNotFound,
+    ReminderKindAlreadyUsedException() => ActionError.reminderKindInUse,
+    ReminderRuleException() => ActionError.reminderRule,
     VehicleArchivedException() => ActionError.vehicleArchived,
     VehicleFuelTypeConflictException() => ActionError.fuelTypeConflict,
     AttachmentTooLargeException() => ActionError.attachmentTooLarge,

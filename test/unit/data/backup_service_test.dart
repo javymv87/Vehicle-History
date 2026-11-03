@@ -20,6 +20,8 @@ import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
 import 'package:vehicle_history/data/models/refuel.dart';
+import 'package:vehicle_history/data/models/reminder.dart';
+import 'package:vehicle_history/data/models/reminder_kind.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/data/repositories/attachment_writer.dart';
@@ -27,7 +29,9 @@ import 'package:vehicle_history/data/repositories/drift_attachment_repository.da
 import 'package:vehicle_history/data/repositories/drift_log_entry_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_mileage_reading_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_owner_repository.dart';
+import 'package:vehicle_history/data/repositories/drift_reminder_repository.dart';
 import 'package:vehicle_history/data/repositories/drift_vehicle_repository.dart';
+import 'package:vehicle_history/data/repositories/reminder_closer.dart';
 
 import '../../drift/vehicle_history/generated/schema.dart';
 import 'test_support.dart';
@@ -659,6 +663,98 @@ void main() {
           await imported.mileageReadingsDao.getLiveByVehicle(punto.id);
       expect(readings.first.km, 2000);
       expect(readings.first.date, day);
+    });
+
+    test(
+        'reminders and their history round-trip; the manifest counts the '
+        'open ones', () async {
+      await seed(db);
+      final punto = (await db.vehiclesDao.getActive()).single;
+      final closer = ReminderCloser(db.remindersDao, db.auditLogDao);
+      final entries = DriftLogEntryRepository(
+        db.logEntriesDao,
+        db.auditLogDao,
+        attachments: attachmentWriterOf(db, storeOf()),
+        reminders: closer,
+        clock: clock.call,
+      );
+      final reminders = DriftReminderRepository(
+        db.remindersDao,
+        db.auditLogDao,
+        entries: entries,
+        closer: closer,
+        clock: clock.call,
+      );
+      final today = CalendarDate.localDayOf(clock());
+      clock.advance();
+      final oil = await reminders.create(
+        vehicleId: punto.id,
+        draft: ReminderDraft(
+          kind: ReminderKind.engineOil,
+          title: 'Olio motore',
+          note: 'Uso gravoso: 10.000 km',
+          manualRef: 'p. 174',
+          refIntervalKm: 15000,
+          refIntervalMonths: 24,
+          lastDoneDate: today,
+          lastDoneKm: 1000,
+          leadDays: 15,
+        ),
+      );
+      clock.advance();
+      await reminders.overrideCriterion(
+        oil.id,
+        appliedKm: 20000,
+        reason: 'Poco uso',
+      );
+      clock.advance();
+      await reminders.snooze(oil.id, untilKm: 22000, reason: 'Viaggio');
+      clock.advance();
+      final tax = await reminders.create(
+        vehicleId: punto.id,
+        draft: ReminderDraft(
+          kind: ReminderKind.roadTax,
+          title: 'Bollo',
+          dueDate: today,
+        ),
+      );
+      clock.advance();
+      await reminders.markDone(tax.id, date: today, costCents: 18000);
+      final before = {
+        for (final r in await db.remindersDao.getLiveByVehicle(punto.id))
+          r.id: r,
+      };
+      final beforeChanges = {
+        for (final id in before.keys)
+          id: await db.remindersDao.watchChanges(id).first,
+      };
+      final stamp = await db.backupDao.lastModifiedAt();
+
+      final package = await exportToFile();
+      final manifest = (await serviceOf().inspectPackage(package)).manifest;
+      // The completed one-shot is not counted.
+      expect(manifest.counts.reminders, 1);
+      expect(manifest.lastModifiedAt, stamp);
+
+      await serviceOf().importPackage(package);
+      final imported = openFile();
+      addTearDown(imported.close);
+      final after = {
+        for (final r in await imported.remindersDao.getLiveByVehicle(punto.id))
+          r.id: r,
+      };
+      expect(after, before);
+      expect(after[oil.id]!.overrideActive, isTrue);
+      expect(after[oil.id]!.snoozeUntilKm, 22000);
+      expect(after[tax.id]!.isCompleted, isTrue);
+      for (final id in before.keys) {
+        expect(
+          await imported.remindersDao.watchChanges(id).first,
+          beforeChanges[id],
+        );
+      }
+      expect(await imported.backupDao.lastModifiedAt(), stamp);
+      expect((await imported.backupDao.liveCounts()).reminders, 1);
     });
 
     test('a step-9 (v7) package imports with every vehicle active', () async {

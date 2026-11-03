@@ -11,8 +11,9 @@ import 'log_entry_type_icon.dart';
 
 /// One row of a vehicle's history (`Docs/03_features.md`, U6, U24): type
 /// icon and label, date, km (if any), a paperclip with the number of
-/// attachments (if any), the first line of the description, and the cost
-/// (if any) aligned to the right of the type.
+/// attachments (if any), a small reminder icon when the entry last closed a
+/// live reminder, the first line of the description, and the cost (if any)
+/// aligned to the right of the type.
 ///
 /// Built as a plain row rather than a `ListTile` so that, with very large
 /// text, the cost wraps under the type instead of squeezing it.
@@ -23,6 +24,7 @@ class LogEntryTile extends ConsumerWidget {
     required this.entry,
     required this.onTap,
     this.attachmentCount = 0,
+    this.closesReminder = false,
   });
 
   /// The entry shown.
@@ -31,6 +33,9 @@ class LogEntryTile extends ConsumerWidget {
   /// Number of live attachments of the entry; the paperclip shows when it
   /// is above 0.
   final int attachmentCount;
+
+  /// Whether the entry is the last closing entry of a live reminder.
+  final bool closesReminder;
 
   /// Opens the entry detail.
   final VoidCallback onTap;
@@ -105,6 +110,13 @@ class LogEntryTile extends ConsumerWidget {
                           style: theme.textTheme.bodyMedium
                               ?.copyWith(color: muted),
                         ),
+                        if (closesReminder)
+                          Icon(
+                            Icons.event_available,
+                            size: 16,
+                            color: muted,
+                            semanticLabel: l10n.entryClosesReminderIcon,
+                          ),
                         if (attachmentCount > 0)
                           Semantics(
                             label: l10n.attachmentCount(attachmentCount),

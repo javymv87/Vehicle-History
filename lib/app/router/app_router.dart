@@ -9,6 +9,9 @@ import '../../features/mileage/pages/mileage_reading_form_page.dart';
 import '../../features/owners/pages/owner_detail_page.dart';
 import '../../features/owners/pages/owner_form_page.dart';
 import '../../features/owners/pages/owner_list_page.dart';
+import '../../features/reminders/pages/reminder_detail_page.dart';
+import '../../features/reminders/pages/reminder_form_page.dart';
+import '../../features/reminders/pages/reminder_list_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/trash/pages/trash_page.dart';
 import '../../features/vehicles/controllers/vehicle_tab_controller.dart';
@@ -30,10 +33,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 /// Builds the route table of the app, starting at [initialLocation].
 ///
-/// The two lists live in a [StatefulShellRoute] under the navigation bar;
+/// The three lists (vehicles, reminders, owners) live in a
+/// [StatefulShellRoute] under the navigation bar;
 /// details and forms are top-level routes, so they are pushed full screen on
 /// top of it. `/vehicles/new`, `/vehicles/archived`, `/owners/new` and
-/// `entries/new` are declared before the matching `:id` routes so that
+/// `entries/new` and `reminders/new` are declared before the matching
+/// `:id` routes so that
 /// "new" and "archived" are never read as ids.
 /// The history entries and the odometer readings live under their vehicle
 /// (`/vehicles/:id/entries/...`, `/vehicles/:id/mileage/...`), so pushing
@@ -56,6 +61,14 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
               GoRoute(
                 path: AppRoutes.vehicles,
                 builder: (context, state) => const VehicleListPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.reminders,
+                builder: (context, state) => const ReminderListPage(),
               ),
             ],
           ),
@@ -101,6 +114,27 @@ GoRouter buildAppRouter({String initialLocation = AppRoutes.vehicles}) {
               vehicleId: state.pathParameters['id']!,
               readingId: state.pathParameters['readingId'],
             ),
+          ),
+          GoRoute(
+            path: 'reminders/new',
+            builder: (context, state) =>
+                ReminderFormPage(vehicleId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'reminders/:reminderId',
+            builder: (context, state) => ReminderDetailPage(
+              vehicleId: state.pathParameters['id']!,
+              reminderId: state.pathParameters['reminderId']!,
+            ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => ReminderFormPage(
+                  vehicleId: state.pathParameters['id']!,
+                  reminderId: state.pathParameters['reminderId'],
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'entries/new',

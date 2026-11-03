@@ -25,8 +25,9 @@ registro principal lleva consigo:
 - `deleted_at` — **cuándo** se borró (instante en UTC, texto ISO-8601);
   vacío (`NULL`) mientras el registro está vivo. Existe desde el esquema v5
   en `owners`, `vehicles`, `log_entries` y `mileage_readings`, y en
-  `attachments` desde que la tabla existe (v7). Se escribe siempre junto con
-  `deleted` y se vacía junto con él al restaurar.
+  `attachments` (v7) y `reminders` (v11) desde que existen esas tablas. Se
+  escribe siempre junto con `deleted` y se vacía junto con él al
+  restaurar.
 
 ### Borrado lógico, papelera y borrado físico (esquema v5)
 
@@ -44,19 +45,21 @@ registro principal lleva consigo:
   el Deshacer de unos segundos.
 - **Borrado físico** (`DELETE` real, irreversible) solo en estos casos:
   1. "Eliminar definitivamente" un vehículo o "Vaciar papelera": se borran
-     el vehículo y **todas** sus entradas y lecturas, sea cual sea su propio
-     indicador, en una sola transacción (primero entradas y lecturas, porque
-     las claves externas son `RESTRICT`).
+     el vehículo y **todas** sus entradas, lecturas y recordatorios (con su
+     historial de cambios), sea cual sea su propio indicador, en una sola
+     transacción (primero los hijos, porque las claves externas son
+     `RESTRICT`).
   2. La **limpieza al arrancar la app**, una vez abierta y migrada la base
      de datos, en una sola transacción: los vehículos borrados hace 30 días o
-     más (como en el punto 1); las entradas y lecturas borradas hace 30 días
-     o más de vehículos vivos; y los propietarios borrados hace 30 días o más
+     más (como en el punto 1); las entradas, lecturas y recordatorios
+     borrados hace 30 días o más de vehículos vivos; y los propietarios
+     borrados hace 30 días o más
      a los que ya no apunta **ningún** vehículo (vivo o borrado). Si algo
      falla, se deshace todo, se anota en el registro y la app arranca igual.
 - El historial de operaciones guarda una fila `purge` por cada elemento
   borrado físicamente por sí mismo: cada vehículo y cada propietario, y,
-  desde la 0.8.1, cada entrada, lectura y adjunto que la limpieza de los 30
-  días elimina sueltos. Lo que se va **con** su padre (las entradas y
+  desde la 0.8.1, cada entrada, lectura y adjunto (y desde la v11 cada
+  recordatorio) que la limpieza de los 30 días elimina sueltos. Lo que se va **con** su padre (las entradas y
   lecturas de un vehículo, los adjuntos de un vehículo, entrada o
   propietario eliminados) no tiene fila propia: la del padre lo cubre. Así
   la fecha de última modificación de los datos (`last_modified_at`, ver
@@ -94,11 +97,12 @@ hasta que se reactiva. Los dos estados son independientes.
   cierre. `archived_km` guarda el mismo valor como resumen para el banner y
   el chip. Sin km, no hay lectura.
 - **Activo = vivo y no archivado.** Es el único filtro de los vehículos
-  "actuales" (lista principal, y los recordatorios del paso 13a); la ficha
+  "actuales" (lista principal y recordatorios de la pantalla principal, ver
+  doc 08); la ficha
   del propietario muestra también los archivados, en una sección plegable.
 - **Solo lectura:** mientras está archivado, los repositorios rechazan
-  cualquier escritura sobre el vehículo, sus entradas, sus lecturas y sus
-  adjuntos (`VehicleArchivedException`); solo quedan **reactivar**, **mover a
+  cualquier escritura sobre el vehículo, sus entradas, sus lecturas, sus
+  adjuntos y sus recordatorios (`VehicleArchivedException`); solo quedan **reactivar**, **mover a
   la papelera** y **restaurar**. Importar, restaurar desde Drive, eliminar
   definitivamente y la limpieza de los 30 días no pasan por esa puerta.
 - **Reactivar** vacía las cuatro columnas y no toca ninguna lectura, tampoco
@@ -250,8 +254,9 @@ Campos siempre presentes:
 - **Tipo** de entrada (ver lista abajo)
 - **Texto** / descripción libre
 - **Coste** total (opcional), en euros
-- **Recordatorio** opcional (fecha futura + eventual umbral de km) que genera
-  una notificación — *previsto para el paso 13a; ver abajo*
+- Los **recordatorios** no son campos de la entrada: son su propia tabla
+  (`reminders`, ver "Reminder" y el doc 08). Una entrada puede **cerrar** un
+  recordatorio.
 
 Tipos de entrada previstos:
 
@@ -268,8 +273,8 @@ Tipos de entrada previstos:
 - Control genérico no clasificado (nota libre)
 - Nota / evento (accidentes, multas, recordatorios libres)
 
-**Lo que existe hoy (esquema v10).** La tabla `log_entries` (desde el
-esquema v3) guarda los campos técnicos comunes (`id`, `created_at`,
+**Lo que existe hoy (esquema v10, sin cambios en la v11).** La tabla
+`log_entries` (desde el esquema v3) guarda los campos técnicos comunes (`id`, `created_at`,
 `updated_at`, `deleted`, `deleted_at`), la referencia
 al vehículo (`vehicle_id`, clave externa a `vehicles` con `ON DELETE
 RESTRICT`), la **fecha** (fecha de calendario, texto `yyyy-MM-dd`, sin hora ni
@@ -298,9 +303,12 @@ vacío es distinto de un coste 0. Índices: `(vehicle_id, entry_date)` y
   `MileageReading` ni cambia el km actual del vehículo por sí solo: el único
   puente es la oferta explícita "¿Actualizar el cuentakilómetros?" después de
   guardar (ver `03_features.md`, E3).
-- **Sin recordatorio todavía:** los campos del recordatorio se añadirán con su
-  propia migración en el paso de los recordatorios. Guardar un recordatorio
-  que nunca avisa engañaría al usuario.
+- **Recordatorios:** los campos de recordatorio que se habían previsto en la
+  entrada se sustituyeron, en el paso 13a, por la tabla `reminders` (doc 08):
+  `log_entries` no tiene ningún campo de recordatorio. Al guardar una entrada
+  se puede elegir el recordatorio que cierra; el recordatorio guarda una
+  copia de su fecha y sus km como ancla y el id de la entrada
+  (`last_entry_id`, informativo).
 - **Vehículo borrado:** sus entradas se quedan tal cual (no se borran en
   cascada) y simplemente no se ven, porque el vehículo ya no es accesible.
   Restaurar el vehículo las hace visibles de nuevo.
@@ -450,7 +458,9 @@ eventos del historial.
 
 ### MaintenanceType (catálogo de tipos de mantenimiento)
 
-*Previsto, no implementado todavía (paso 14 o posterior).*
+*Por ahora una lista fija en el código (`ReminderKind`, 85 tipos en 12
+grupos, ver doc 08); el catálogo modificable sigue previsto (paso 14 o
+posterior).*
 
 Catálogo **común** y modificable de los tipos de mantenimiento disponibles,
 agrupados por familia. Se comparte entre todos los vehículos.
@@ -463,7 +473,8 @@ agrupados por familia. Se comparte entre todos los vehículos.
 
 ### MaintenanceRule (criterio de mantenimiento por vehículo)
 
-*Previsto, no implementado todavía (paso 14 o posterior).*
+*Implementado en el paso 13a como `reminders` (esquema v11), ver "Reminder"
+abajo y el doc 08. El tipo sale de la lista fija `ReminderKind`.*
 
 El criterio de mantenimiento **configurado para un vehículo concreto**,
 tomando un tipo del catálogo y asignándole los intervalos de ese vehículo.
@@ -484,8 +495,31 @@ el mismo vehículo (pero sigue disponible para los demás).
 sistema (disco+pastillas o tambor+zapatas) y **dos subvencimientos
 independientes**: el elemento que se desgasta (pastilla/zapata) y el elemento
 que lo contiene (disco/tambor), cada uno con su propio vencimiento en km y/o
-tiempo. Esto se modela como estructura interna de la regla, no como una tabla
-nueva.
+tiempo. En el paso 13a se modela con **tipos separados por componente y eje**
+(`brake_pads_front`, `brake_discs_rear`…), cada uno su propio recordatorio;
+la regla "el contenedor solo si existe el que se desgasta" queda pendiente
+para el paso del catálogo.
+
+### Reminder (recordatorio) — esquema v11
+
+Dos tablas, descritas por completo en el doc 08:
+
+- `reminders`: los campos técnicos comunes y el vehículo, el tipo, el
+  título, la nota, el origen (`manual` / `generated`), la referencia del
+  manual, el **criterio de referencia** (intervalo en km y / o en meses) o la
+  **fecha única**, el **ancla** (día y km de la última vez), la última
+  entrada que lo cerró, el **criterio aplicado** con su motivo, el aviso
+  anticipado propio, el **aplazamiento** con su motivo y el instante en que
+  se completó uno de fecha única. Restricciones: periódico o fecha única;
+  ancla de día en los periódicos y de km con cualquier eje de km; un override
+  nunca desactiva los dos ejes; solo se completa uno de fecha única. Índice
+  único parcial: un solo recordatorio vivo y abierto de cada tipo por
+  vehículo (salvo `other` y `other_document`).
+- `reminder_changes`: el historial de solo añadir de cada recordatorio, con
+  la foto de su estado después de cada cambio.
+
+El estado nunca se guarda. La migración v10 → v11 solo crea las tablas y sus
+índices.
 
 ### MileageReading (historial de kilometraje)
 
@@ -548,15 +582,15 @@ unidades: siempre km (ver `06_settings_and_i18n.md`).
 Registro ligero de todas las operaciones realizadas sobre las entradas,
 consultable y útil también en el futuro. Existe **desde la primera versión
 del esquema**: cada creación, modificación, borrado y restauración (deshacer
-un borrado) de un Owner, un Vehicle, una LogEntry, una MileageReading o un
-Attachment (desde la v7)
+un borrado) de un Owner, un Vehicle, una LogEntry, una MileageReading, un
+Attachment (desde la v7) o un Reminder (desde la v11)
 añade su fila en la misma transacción. El tipo de entidad y la operación son
 texto sin restricción CHECK, así que añadir las entradas del historial
 (`logEntry`, en la v3), las lecturas del cuentakilómetros (`mileageReading`,
 en la v4), la operación de borrado físico (`purge`, en la v5), la importación
-de un paquete (operación `import` sobre la entidad `database`, en la v6) y el
-archivo (`archive` y `reactivate`, en la v8) no ha requerido tocar esta
-tabla. Es solo de añadir: sus filas no se modifican ni se borran, tampoco
+de un paquete (operación `import` sobre la entidad `database`, en la v6), el
+archivo (`archive` y `reactivate`, en la v8) y los recordatorios (entidad
+`reminder`, en la v11) no ha requerido tocar esta tabla. Es solo de añadir: sus filas no se modifican ni se borran, tampoco
 cuando la entidad a la que apuntan se borra físicamente.
 
 - Qué: referencia a la entidad (qué entrada/vehículo)
@@ -574,6 +608,8 @@ la tabla clave / valor `settings`, descrita en `06_settings_and_i18n.md`.
 
 - Idioma (IT / ES / EN) y tema (Sistema / Claro / Oscuro)
 - Las cinco unidades de medida (desde el paso 11)
+- El aviso anticipado de los recordatorios, en días y en km (desde el paso
+  13a)
 - La fecha de la última exportación del paquete
 - Google Drive: la cuenta vinculada, la modalidad, el identificador del
   teléfono, el uso de datos móviles y el último punto en común con la copia
@@ -595,12 +631,17 @@ Implementadas:
 - LogEntry 1 — N Attachment
 - Vehicle 1 — N Attachment
 - Owner 1 — N Attachment
+- Vehicle 1 — N Reminder (el criterio por vehículo, la antigua
+  MaintenanceRule)
+- Reminder 1 — N ReminderChange (su historial)
+- LogEntry 1 — N Reminder (la última entrada que cerró cada recordatorio,
+  `last_entry_id`, opcional)
 - AuditLog y Settings son transversales / globales
 
 Previstas (no implementadas todavía):
 
 - Owner 1 — N OwnerDocument
 - Vehicle 1 — N Document
-- Vehicle 1 — N MaintenanceRule
 - LogEntry 1 — 1 Measurement (solo para el tipo "control con medición")
-- MaintenanceType 1 — N MaintenanceRule (el catálogo alimenta las reglas)
+- MaintenanceType 1 — N Reminder (el catálogo modificable sustituirá la
+  lista fija `ReminderKind`)

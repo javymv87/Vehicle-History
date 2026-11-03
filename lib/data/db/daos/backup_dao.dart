@@ -7,6 +7,7 @@ import '../audit_log_table.dart';
 import '../log_entries_table.dart';
 import '../mileage_readings_table.dart';
 import '../owners_table.dart';
+import '../reminders_table.dart';
 import '../vehicles_table.dart';
 
 part 'backup_dao.g.dart';
@@ -21,6 +22,7 @@ part 'backup_dao.g.dart';
     MileageReadings,
     Attachments,
     AuditLog,
+    Reminders,
   ],
 )
 class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
@@ -36,7 +38,8 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
   Future<void> vacuumInto(String path) =>
       customStatement('VACUUM INTO ?', [path]);
 
-  /// Counts the live rows of each main table (see [BackupCounts]).
+  /// Counts the live rows of each main table (see [BackupCounts]): the
+  /// reminders are the live, open ones of live vehicles.
   Future<BackupCounts> liveCounts() async {
     final row = await customSelect(
       'SELECT '
@@ -47,21 +50,25 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
       'AS log_entries, '
       '(SELECT COUNT(*) FROM mileage_readings r JOIN vehicles v '
       'ON v.id = r.vehicle_id WHERE r.deleted = 0 AND v.deleted = 0) '
-      'AS mileage_readings',
-      readsFrom: {owners, vehicles, logEntries, mileageReadings},
+      'AS mileage_readings, '
+      '(SELECT COUNT(*) FROM reminders m JOIN vehicles v '
+      'ON v.id = m.vehicle_id WHERE m.deleted = 0 AND v.deleted = 0 '
+      'AND m.completed_at IS NULL) AS reminders',
+      readsFrom: {owners, vehicles, logEntries, mileageReadings, reminders},
     ).getSingle();
     return BackupCounts(
       owners: row.read<int>('owners'),
       vehicles: row.read<int>('vehicles'),
       logEntries: row.read<int>('log_entries'),
       mileageReadings: row.read<int>('mileage_readings'),
+      reminders: row.read<int>('reminders'),
     );
   }
 
   /// The latest instant at which anything the user records changed, in
   /// UTC, or `null` for a database with no data and no purge: the latest
-  /// `updated_at` across owners, vehicles, entries, readings and
-  /// attachments, deleted rows included (a delete and an undo write
+  /// `updated_at` across owners, vehicles, entries, readings, attachments
+  /// and reminders, deleted rows included (a delete and an undo write
   /// `updated_at` too), and the latest `at` of the `purge` audit rows, which
   /// stand for the rows deleted for good.
   ///
@@ -70,7 +77,9 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
   /// table (preferences and the last export date, which would move the
   /// value at every export) and the `import` audit rows (after an import the
   /// data is the package's, so a freshly restored copy must not look newer
-  /// than it). This value is the version stamp of the backup guard.
+  /// than it). `reminder_changes` is not read either: every change also
+  /// writes its reminder's `updated_at`. This value is the version stamp of
+  /// the backup guard.
   ///
   /// Compared as text: every timestamp, `audit_log.at` included, is stored
   /// as ISO-8601 UTC in the same format, which sorts like the instants it
@@ -103,6 +112,7 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
       'SELECT MAX(updated_at) FROM log_entries UNION ALL '
       'SELECT MAX(updated_at) FROM mileage_readings UNION ALL '
       'SELECT MAX(updated_at) FROM attachments UNION ALL '
+      'SELECT MAX(updated_at) FROM reminders UNION ALL '
       "SELECT MAX(at) FROM audit_log WHERE operation = 'purge')",
       readsFrom: {
         owners,
@@ -110,6 +120,7 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
         logEntries,
         mileageReadings,
         attachments,
+        reminders,
         auditLog,
       },
     );

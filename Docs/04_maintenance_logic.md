@@ -5,15 +5,19 @@ comportamiento de la parte de mantenimiento. Las decisiones aquí derivan
 también del análisis de los manuales reales del Fiat Grande Punto y del Toyota
 Yaris Hybrid.
 
-**Qué está implementado.** Los repostajes y su consumo (paso 12) y el
-historial de kilometraje (pasos 5 y 10). El catálogo de mantenimiento, los
-criterios por vehículo, los frenos por eje, el control frente a sustitución,
-los controles con medición y los intervalos de fábrica son **diseño previsto,
-no implementado todavía** (paso 14 o posterior).
+**Qué está implementado.** Los repostajes y su consumo (paso 12), el
+historial de kilometraje (pasos 5 y 10) y, desde el paso 13a, los criterios
+por vehículo como **recordatorios** (`08_recordatorios.md`), con un catálogo
+de tipos fijo y los frenos como tipos separados por componente y eje. El
+catálogo modificable, la regla del componente contenedor de los frenos, el
+control frente a sustitución y los controles con medición son **diseño
+previsto, no implementado todavía** (paso 14 o posterior).
 
 ## Catálogo de tipos de mantenimiento (MaintenanceType)
 
-*Previsto, no implementado todavía (paso 14 o posterior).*
+*Desde el paso 13a, una lista fija en el código (`ReminderKind`: 85 tipos en
+12 grupos, ver `08_recordatorios.md`). El catálogo común **modificable** que
+describe esta sección sigue previsto (paso 14 o posterior).*
 
 Lista común, agrupada por familia para encontrarla fácilmente cuando crece.
 Precargada con las entradas más comunes, y modificable por el usuario.
@@ -32,11 +36,11 @@ Precargada con las entradas más comunes, y modificable por el usuario.
 **Motos y ciclomotores tienen su propio camino.** El vehículo tiene un tipo
 (coche, furgoneta, moto, ciclomotor; ver `02_data_model.md`), y el futuro
 catálogo de mantenimiento marcará cada tipo de mantenimiento con los tipos de
-vehículo a los que se aplica: por ejemplo la cadena de transmisión o el
-reglaje de válvulas para las motos, y no para los coches. La lógica de frenos
-por eje sigue valiendo en las motos como delantero / trasero. Esto aún no está
-implementado: hoy el tipo de vehículo solo filtra el catálogo de marcas y
-modelos.
+vehículo a los que se aplica: por ejemplo la cadena de transmisión para las
+motos, y no para los coches. La lógica de frenos por eje sigue valiendo en
+las motos como delantero / trasero. Desde el paso 13a la lista fija de tipos
+de recordatorio ya lo hace (por tipo de vehículo y de combustible), como un
+filtro del selector con "Mostrar todos": la lista ayuda, nunca bloquea.
 
 Los dos manuales confirman la estructura: el Punto usa intervalos por km **y**
 por tiempo con la regla "vence el primero de los dos" (p. ej. aceite de motor
@@ -48,7 +52,9 @@ estructura debe admitir: solo km, solo tiempo, o ambos.
 
 ## Criterio configurado por vehículo (MaintenanceRule)
 
-*Previsto, no implementado todavía (paso 14 o posterior).*
+*Implementado en el paso 13a como **recordatorio** (`reminders`), con la regla
+de abajo, el criterio de referencia y el aplicado, el aplazamiento y el
+historial de cambios: ver `08_recordatorios.md`, que es la fuente de verdad.*
 
 Asignar un criterio a un vehículo significa tomar un tipo del catálogo y darle
 los intervalos de *ese* vehículo:
@@ -65,16 +71,24 @@ demás vehículos.
 
 ### Cómo saltan los vencimientos
 
-- **Por tiempo**: calculable en el tiempo → genera una notificación en la fecha
-  prevista.
+Desde el paso 13a el estado (vencido, próximo, al día) se calcula en cada
+lectura con el km actual del vehículo y el día de hoy, y se ve en el destino
+Recordatorios (con su distintivo) y en la pestaña de cada vehículo
+(`08_recordatorios.md`, "El estado").
+
+- **Por tiempo**: calculable en el tiempo → generará una notificación en la
+  fecha prevista (paso 13b, todavía no).
 - **Por km**: la app no conoce los km en tiempo real, por lo que no puede
-  notificar por sí sola. Las entradas con vencimiento por km se **resaltan** al
-  abrir la app y al actualizar el cuentakilómetros total, comparando el umbral
-  con el km actual del vehículo.
+  notificar por sí sola. Los recordatorios con vencimiento por km se
+  **resaltan** al abrir la app y al actualizar el cuentakilómetros total,
+  comparando el umbral con el km actual del vehículo.
 
 ## Frenos (lógica por eje)
 
-*Previsto, no implementado todavía (paso 14 o posterior).*
+*Desde el paso 13a, cada componente de cada eje es un tipo de recordatorio
+separado (pastillas, discos, zapatas y tambores, delanteros y traseros), con
+su propio vencimiento. La regla del componente contenedor (abajo) todavía no
+se aplica: queda para el paso del catálogo (14 o posterior).*
 
 Modelo: **eje → tipo de sistema → componentes, cada uno con su propio
 vencimiento.**
@@ -299,5 +313,7 @@ fabricante, usados como base para crear los criterios y como referencia:
   repostajes)
 - Aceite de motor recomendado (implementado, texto libre)
 - Notas del fabricante (implementado, texto libre)
-- Intervalos de mantenimiento aconsejados (en km y/o tiempo), que alimentarán
-  las `MaintenanceRule` — *previsto, no implementado todavía*
+- Intervalos de mantenimiento aconsejados (en km y/o tiempo): desde el paso
+  13a se cargan como recordatorios desde el manual, con el procedimiento de
+  `08_recordatorios.md` ("Carga desde el manual"); no son campos de la
+  ficha.

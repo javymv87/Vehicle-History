@@ -61,18 +61,7 @@ class TrashedVehicleTile extends StatelessWidget {
               // A timestamp shown as the user's local day.
               Text(l10n.trashDeletedOn(item.deletedAt.toLocal())),
               Text(l10n.trashPurgeIn(item.daysUntilPurge(now))),
-              Text(
-                item.contents.attachmentCount == 0
-                    ? l10n.trashContents(
-                        item.contents.entryCount,
-                        item.contents.readingCount,
-                      )
-                    : l10n.trashContentsWithAttachments(
-                        item.contents.entryCount,
-                        item.contents.readingCount,
-                        item.contents.attachmentCount,
-                      ),
-              ),
+              Text(item.contents.trashLine(l10n)),
             ],
           ),
         ),
