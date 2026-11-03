@@ -149,7 +149,8 @@ teléfono), el **km actual** del vehículo y el **aviso anticipado** general.
 - Un recordatorio de fecha única **completado** nunca aparece como activo.
 - **Menos exigente que la referencia:** con el override activo, si en algún
   eje de la referencia el aplicado vence más tarde o está desactivado. Se
-  avisa con un icono discreto y un texto; nunca se impide.
+  avisa con la etiqueta **Menos exigente** (con icono) en el detalle y con el
+  icono en la etiqueta Personalizado de la fila; nunca se impide.
 - **Color** solo para el estado y siempre con icono y texto (doc 07): rojo
   vencido, ámbar próximo, verde al día.
 

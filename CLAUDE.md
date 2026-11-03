@@ -797,9 +797,10 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
 
 - Paths are built only through `AppRoutes` (`app/router/app_routes.dart`).
 - The lists live in a `StatefulShellRoute` under the `NavigationBar`
-  (`HomeShell`, which also owns the add FAB): Vehicles, Reminders (with the
-  overdue + due-soon badge, `reminderBadgeCountProvider`, and no FAB) and
-  Owners. Details and forms are
+  (`HomeShell`, which also owns the add FAB): Vehicles, Reminders (an
+  agenda of the overdue and due-soon reminders, `reminderAgendaProvider` /
+  `ReminderAgenda`, whose length is the badge, `reminderBadgeCountProvider`;
+  no FAB) and Owners. Details and forms are
   top-level routes pushed full screen on top of it; `…/new` is declared
   before `…/:id`. History entries are nested under their vehicle
   (`/vehicles/:id/entries/new`, `…/entries/:entryId`, `…/:entryId/edit`), so
