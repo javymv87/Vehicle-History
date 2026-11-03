@@ -98,7 +98,7 @@ class ImportPreview {
 ///
 /// Every version keeps the tables of the previous ones: v1 owners, vehicles
 /// and the audit log; v3 the history; v4 the odometer readings; v6 the
-/// settings; v7 the attachments.
+/// settings; v7 the attachments; v11 the reminders and their history.
 Set<String> requiredTablesAt(int schemaVersion) => {
       'owners',
       'vehicles',
@@ -107,6 +107,7 @@ Set<String> requiredTablesAt(int schemaVersion) => {
       if (schemaVersion >= 4) 'mileage_readings',
       if (schemaVersion >= 6) 'settings',
       if (schemaVersion >= 7) 'attachments',
+      if (schemaVersion >= 11) ...['reminders', 'reminder_changes'],
     };
 
 /// Room kept free on top of what an import needs, so the phone is not left
@@ -256,6 +257,7 @@ class BackupService {
         logEntries: counts.logEntries,
         mileageReadings: counts.mileageReadings,
         attachments: await dao.attachmentRowCount(),
+        reminders: counts.reminders,
       ),
     );
   }
@@ -302,6 +304,7 @@ class BackupService {
           logEntries: counts.logEntries,
           mileageReadings: counts.mileageReadings,
           attachments: attachments.length,
+          reminders: counts.reminders,
         ),
         lastModifiedAt: local.stamp,
         attachmentsBytes: attachmentBytes,

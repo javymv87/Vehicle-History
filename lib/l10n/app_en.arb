@@ -3827,5 +3827,27 @@
   "validationDueDateRequired": "Choose the due date",
   "@validationDueDateRequired": {
     "description": "Reminder form: one-shot reminder without due date."
+  },
+  "importConfirmContentsWithReminders": "This file contains {vehicles, plural, =1{1 vehicle} other{{vehicles} vehicles}}, {entries, plural, =1{1 entry} other{{entries} entries}}, {readings, plural, =1{1 reading} other{{readings} readings}} and {reminders, plural, =1{1 reminder} other{{reminders} reminders}}; last modified {date}.",
+  "@importConfirmContentsWithReminders": {
+    "description": "Import confirmation of a package with reminders: what it holds and when it last changed.",
+    "placeholders": {
+      "vehicles": {
+        "type": "int"
+      },
+      "entries": {
+        "type": "int"
+      },
+      "readings": {
+        "type": "int"
+      },
+      "reminders": {
+        "type": "int"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
   }
 }

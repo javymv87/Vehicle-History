@@ -7,6 +7,10 @@ import 'package:vehicle_history/data/models/attachment.dart';
 import 'package:vehicle_history/data/models/setting_key.dart';
 import 'package:vehicle_history/data/platform/native_files.dart';
 
+import 'package:vehicle_history/data/backup/backup_service.dart';
+import 'package:vehicle_history/data/models/backup_manifest.dart';
+import 'package:vehicle_history/features/backup/widgets/import_confirmation_dialog.dart';
+import 'package:vehicle_history/l10n/app_localizations.dart';
 import '../support/fake_backup.dart';
 import '../support/fake_repositories.dart';
 import '../support/pump_app.dart';
@@ -244,6 +248,49 @@ void main() {
 
     expect(
       find.text('The import failed; your data has not changed.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the import preview names the reminders when there are some',
+      (tester) async {
+    final manifest = BackupManifest(
+      formatVersion: 1,
+      schemaVersion: 11,
+      appVersion: '0.13.0+15',
+      exportedAt: DateTime.utc(2026, 11, 3),
+      counts: const BackupCounts(
+        owners: 1,
+        vehicles: 2,
+        logEntries: 41,
+        mileageReadings: 7,
+        reminders: 12,
+      ),
+      lastModifiedAt: DateTime.utc(2026, 10, 18, 12),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ImportConfirmationDialog(
+            preview: ImportPreview(
+              manifest: manifest,
+              attachmentCount: 0,
+              attachmentBytes: 0,
+              missingFiles: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'This file contains 2 vehicles, 41 entries, 7 readings and 12 '
+        'reminders; last modified Oct 18, 2026.',
+      ),
       findsOneWidget,
     );
   });

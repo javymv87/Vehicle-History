@@ -38,7 +38,8 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
   Future<void> vacuumInto(String path) =>
       customStatement('VACUUM INTO ?', [path]);
 
-  /// Counts the live rows of each main table (see [BackupCounts]).
+  /// Counts the live rows of each main table (see [BackupCounts]): the
+  /// reminders are the live, open ones of live vehicles.
   Future<BackupCounts> liveCounts() async {
     final row = await customSelect(
       'SELECT '
@@ -49,14 +50,18 @@ class BackupDao extends DatabaseAccessor<AppDatabase> with _$BackupDaoMixin {
       'AS log_entries, '
       '(SELECT COUNT(*) FROM mileage_readings r JOIN vehicles v '
       'ON v.id = r.vehicle_id WHERE r.deleted = 0 AND v.deleted = 0) '
-      'AS mileage_readings',
-      readsFrom: {owners, vehicles, logEntries, mileageReadings},
+      'AS mileage_readings, '
+      '(SELECT COUNT(*) FROM reminders m JOIN vehicles v '
+      'ON v.id = m.vehicle_id WHERE m.deleted = 0 AND v.deleted = 0 '
+      'AND m.completed_at IS NULL) AS reminders',
+      readsFrom: {owners, vehicles, logEntries, mileageReadings, reminders},
     ).getSingle();
     return BackupCounts(
       owners: row.read<int>('owners'),
       vehicles: row.read<int>('vehicles'),
       logEntries: row.read<int>('log_entries'),
       mileageReadings: row.read<int>('mileage_readings'),
+      reminders: row.read<int>('reminders'),
     );
   }
 

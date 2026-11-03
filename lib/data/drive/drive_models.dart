@@ -70,8 +70,9 @@ class LocalSyncState {
   /// `BackupDao.lastModifiedAt`, or `null` for an empty database.
   final DateTime? stamp;
 
-  /// Live owners, vehicles, entries and readings, and the number of
-  /// attachment rows (live or deleted) as [BackupCounts.attachments].
+  /// Live owners, vehicles, entries, readings and open reminders, and the
+  /// number of attachment rows (live or deleted) as
+  /// [BackupCounts.attachments].
   final BackupCounts counts;
 }
 
@@ -154,11 +155,15 @@ class CloudBackup {
         'log_entries': '${counts.logEntries}',
         'mileage_readings': '${counts.mileageReadings}',
         'attachments': '${counts.attachments}',
+        'reminders': '${counts.reminders}',
       };
 
   /// Reads a copy from its Drive file: [properties] as written by
   /// [propertiesOf], or `null` when they are not those of a package (a
-  /// file the app cannot read is ignored, never trusted).
+  /// file the app cannot read is ignored, never trusted). `reminders` is
+  /// missing in a copy uploaded before step 13a: it reads as 0, like the
+  /// manifest, so an older copy holding the same data still compares
+  /// equal.
   static CloudBackup? fromFile({
     required String fileId,
     required Map<String, String?> properties,
@@ -178,6 +183,8 @@ class CloudBackup {
     final entries = number('log_entries');
     final readings = number('mileage_readings');
     final attachments = number('attachments');
+    final reminders =
+        properties.containsKey('reminders') ? number('reminders') : 0;
     if (properties[roleKey] != packageRole ||
         uploadId == null ||
         uploadId.isEmpty ||
@@ -188,7 +195,8 @@ class CloudBackup {
         vehicles == null ||
         entries == null ||
         readings == null ||
-        attachments == null) {
+        attachments == null ||
+        reminders == null) {
       return null;
     }
     return CloudBackup(
@@ -204,6 +212,7 @@ class CloudBackup {
         logEntries: entries,
         mileageReadings: readings,
         attachments: attachments,
+        reminders: reminders,
       ),
       uploadedAt: uploadedAt.toUtc(),
       sizeBytes: sizeBytes,

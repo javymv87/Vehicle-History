@@ -6,7 +6,8 @@
 /// (those of a vehicle in the Trash come back with it, but are not shown).
 /// [attachments] is different on purpose: it counts the files in the
 /// package's `attachments/`, those of deleted attachments included, since
-/// the Trash travels with the package.
+/// the Trash travels with the package. [reminders] counts the live, open
+/// reminders of live vehicles (schema v11).
 class BackupCounts {
   /// Creates the counts.
   const BackupCounts({
@@ -15,6 +16,7 @@ class BackupCounts {
     required this.logEntries,
     required this.mileageReadings,
     this.attachments = 0,
+    this.reminders = 0,
   });
 
   /// Live owners.
@@ -32,6 +34,10 @@ class BackupCounts {
   /// Attachment files in the package, live or deleted (added in step 8).
   final int attachments;
 
+  /// Live reminders of live vehicles that are not completed (added in step
+  /// 13a; 0 for an older package or Drive copy).
+  final int reminders;
+
   /// The JSON object written into `manifest.json`.
   Map<String, Object?> toJson() => {
         'owners': owners,
@@ -39,13 +45,14 @@ class BackupCounts {
         'log_entries': logEntries,
         'mileage_readings': mileageReadings,
         'attachments': attachments,
+        'reminders': reminders,
       };
 
   /// Reads the counts written by [toJson].
   ///
-  /// `attachments` may be missing, in a package of an app from before the
-  /// attachments: it is 0 then. Throws [FormatException] when a count is
-  /// missing (`attachments` aside), not an integer or negative.
+  /// `attachments` and `reminders` may be missing, in a package of an app
+  /// from before them: they are 0 then. Throws [FormatException] when a
+  /// count is missing (those two aside), not an integer or negative.
   factory BackupCounts.fromJson(Object? json) {
     if (json is! Map<String, Object?>) {
       throw const FormatException('counts is not an object');
@@ -65,6 +72,7 @@ class BackupCounts {
       logEntries: count('log_entries'),
       mileageReadings: count('mileage_readings'),
       attachments: count('attachments', optional: true),
+      reminders: count('reminders', optional: true),
     );
   }
 
@@ -75,16 +83,23 @@ class BackupCounts {
       other.vehicles == vehicles &&
       other.logEntries == logEntries &&
       other.mileageReadings == mileageReadings &&
-      other.attachments == attachments;
+      other.attachments == attachments &&
+      other.reminders == reminders;
 
   @override
-  int get hashCode =>
-      Object.hash(owners, vehicles, logEntries, mileageReadings, attachments);
+  int get hashCode => Object.hash(
+        owners,
+        vehicles,
+        logEntries,
+        mileageReadings,
+        attachments,
+        reminders,
+      );
 
   @override
   String toString() => 'BackupCounts(owners: $owners, vehicles: $vehicles, '
       'logEntries: $logEntries, mileageReadings: $mileageReadings, '
-      'attachments: $attachments)';
+      'attachments: $attachments, reminders: $reminders)';
 }
 
 /// The `manifest.json` of a backup package (`Docs/05_sync_and_storage.md`):

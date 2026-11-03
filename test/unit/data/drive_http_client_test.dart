@@ -144,6 +144,56 @@ void main() {
       expect(read({...properties, 'schema_version': 'x'}), isNull);
       expect(read({...properties, 'vehicles': '-1'}), isNull);
       expect(read({...properties, 'last_modified_at': 'yesterday'}), isNull);
+      expect(read({...properties, 'reminders': '-1'}), isNull);
+    });
+
+    test('a copy uploaded before step 13a, without reminders, reads 0', () {
+      final properties = CloudBackup.propertiesOf(
+        uploadId: 'u1',
+        stamp: '2026-10-18T12:00:00.000Z',
+        schemaVersion: 10,
+        appVersion: '0.12.0+14',
+        deviceId: 'phone',
+        counts: counts,
+      )..remove('reminders');
+      final backup = CloudBackup.fromFile(
+        fileId: 'f1',
+        properties: properties,
+        uploadedAt: DateTime.utc(2026, 10, 20),
+        sizeBytes: 10,
+      )!;
+      expect(backup.counts.reminders, 0);
+      expect(backup.counts, counts);
+    });
+
+    test('the reminders count travels in the properties', () {
+      const withReminders = BackupCounts(
+        owners: 1,
+        vehicles: 2,
+        logEntries: 41,
+        mileageReadings: 7,
+        attachments: 3,
+        reminders: 5,
+      );
+      final properties = CloudBackup.propertiesOf(
+        uploadId: 'u1',
+        stamp: 'none',
+        schemaVersion: 11,
+        appVersion: '0.13.0+15',
+        deviceId: 'phone',
+        counts: withReminders,
+      );
+      expect(properties['reminders'], '5');
+      expect(
+        CloudBackup.fromFile(
+          fileId: 'f1',
+          properties: properties,
+          uploadedAt: DateTime.utc(2026),
+          sizeBytes: 0,
+        )!
+            .counts,
+        withReminders,
+      );
     });
   });
 }

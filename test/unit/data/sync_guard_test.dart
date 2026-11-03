@@ -190,6 +190,35 @@ void main() {
       );
     });
 
+    test(
+        'a copy from before step 13a (no reminders key, read as 0) holds '
+        'the same data as a phone without reminders', () {
+      // `counts` has no reminders, like a copy whose key is missing.
+      expect(
+        guard(
+          localState: local(stampA),
+          cloudCopy: cloud(schema: 10),
+          appSchema: 11,
+        ),
+        const SyncVerdict(SyncState.aligned, sameContent: true),
+      );
+    });
+
+    test('a different reminder count alone is a difference', () {
+      const other = BackupCounts(
+        owners: 1,
+        vehicles: 2,
+        logEntries: 41,
+        mileageReadings: 7,
+        attachments: 3,
+        reminders: 1,
+      );
+      expect(
+        guard(localState: local(stampA, other), cloudCopy: cloud()).state,
+        SyncState.noCommonPoint,
+      );
+    });
+
     test('a point recorded with another account does not count', () {
       expect(
         guard(
