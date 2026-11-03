@@ -11,19 +11,18 @@ A single-user, offline-first mobile app (Android first, built with Flutter so
 iOS stays possible later) for keeping a complete digital history of one or more
 vehicles. It replaces the paper service booklet and the shoebox of receipts:
 log maintenance, repairs, refuelling, inspections, expenses, legal deadlines and
-documents, then see per-vehicle reports (reminders and PDF export are
-planned). Data lives on the device and can be backed up to Google Drive to
+documents, then see per-vehicle reports and in-app reminders (phone
+notifications and PDF export are planned). Data lives on the device and can be backed up to Google Drive to
 move between phones.
 
 ## Key features
 
 - Multiple vehicles — cars, vans, motorcycles and mopeds — each linked to an
-  owner, with documents attached to vehicles and owners (expiry dates and
-  reminders: planned)
+  owner, with documents attached to vehicles and owners (document expiry
+  dates: planned)
 - Make and model picked from a bundled offline catalogue, or typed by hand
 - Unified log of dated entries: maintenance, repairs, refuelling, expenses,
   inspections, legal deadlines, notes — each with mileage, cost and photos
-  (optional reminders: planned)
 - Fuel consumption by the full-tank chain, from the odometer km of each
   refuel (bi-fuel LPG / CNG vehicles keep one chain per fuel), with the
   amount / volume / price triangle in the refuel form
@@ -31,13 +30,17 @@ move between phones.
 - Per-vehicle Reports tab: consumption with an explicit coverage line, fuel
   spend by month, distance over time — filtered by dates or odometer range
 - Units of measurement (km / miles, litres / gallons, …) with SI storage
+- Reminders per vehicle from a fixed catalogue of maintenance and legal
+  items, with km- and/or time-based intervals ("first of the two wins") or a
+  single due date: the manufacturer's reference criterion kept next to any
+  custom one (with its reason), postpone with a reason, a change history,
+  status computed on every read, closed only through an entry; loaded from
+  the manual by a documented procedure
 - Archived vehicles, a 30-day Trash and an audit log
-- Planned: per-vehicle maintenance rules from a shared catalogue, with km-
-  and/or time-based intervals ("first of the two wins"); per-axle brake
-  modelling (disc+pads / drum+shoes); measurement checks with low-threshold
-  alerts; PDF reports (expenses, by type, fuel, general) for resale; local
-  notifications for time-based deadlines and visual highlighting for km-based
-  ones
+- Planned: local notifications for time-based deadlines (km-based ones are
+  highlighted in the app); an editable maintenance catalogue; measurement
+  checks with low-threshold alerts; PDF reports (expenses, by type, fuel,
+  general) for resale
 - Optional Google Drive backup with a version guard; two account-linking modes
   (system account picker and manual OAuth for an app-only account)
 - Multilingual UI: Italian, Spanish, English
@@ -125,8 +128,15 @@ the full-tank chain from the odometer km of each refuel, and shows after
 saving, in the refuel detail and in each vehicle's new Reports tab
 (consumption with its coverage line, fuel spend and distance over time,
 filtered by dates or odometer range); the Mileage tab also shows the days
-between readings. Next are reminders (13a in the app, 13b local
-notifications), built knowing which vehicles are archived.
+between readings. Step 13a added reminders inside the app (schema v11): a
+Reminders destination on Home with an overdue / due-soon badge, a Reminders
+tab per vehicle, the reference criterion and an optional applied one (with
+a reason, never losing the reference), postpone with a reason, a history of
+every change, the status computed on every read, closing through an entry
+("Closes the reminder" or "Mark done") and the warning lead in Settings;
+archived vehicles are left out. Reminders are loaded from the manual by a
+documented procedure that writes into an exported package. Next are local
+notifications (13b).
 
 Roadmap to the first usable version:
 
@@ -145,7 +155,7 @@ Roadmap to the first usable version:
 | 10 | ~~Archived vehicles: reason, date, final km as a reading, read-only, reactivate (schema v8)~~ — done |
 | 11 | ~~Units of measurement: setting, SI storage, a single formatter (schema v9)~~ — done |
 | 12 | ~~Fuel consumption (full-tank chain), refuel fields (schema v10) and per-vehicle Reports~~ — done |
-| 13a | Reminders inside the app (table, list, states, mark as done; archived vehicles excluded) |
+| 13a | ~~Reminders inside the app (table, list, states, mark as done; archived vehicles excluded; schema v11)~~ — done |
 | 13b | Local notifications (`flutter_local_notifications`, deep links) |
 
 Then (14+), in an order decided while using the app: measurements, the

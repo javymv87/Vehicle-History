@@ -4,8 +4,9 @@
 
 Primera parte usable de la app (paso 3 de la hoja de ruta).
 
-- **Inicio = lista de vehículos.** Una barra de navegación inferior con dos
-  destinos: **Vehículos** y **Propietarios**.
+- **Inicio = lista de vehículos.** Una barra de navegación inferior con tres
+  destinos: **Vehículos**, **Recordatorios** (desde el paso 13a, con su
+  distintivo; ver "Recordatorios y notificaciones") y **Propietarios**.
 - **Fila de la lista de vehículos:** icono del tipo de vehículo, marca +
   modelo como línea principal (p. ej. "Fiat Punto"), matrícula, nombre común
   (si lo hay), nombre del propietario, km actual (con el formato del idioma)
@@ -13,8 +14,9 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   existir esos campos) muestra la matrícula como línea principal. Ordenada
   por matrícula. Si no hay vehículos, solo un texto
   breve: para añadir se usa el botón flotante, que nunca se duplica.
-- **Añadir siempre a mano:** un botón flotante (FAB) en las dos listas (ver
-  `07_design_and_theming.md`).
+- **Añadir siempre a mano:** un botón flotante (FAB) en las listas de
+  vehículos y de propietarios (ver `07_design_and_theming.md`). La lista de
+  recordatorios no tiene: un recordatorio se crea desde su vehículo.
 - **Formulario del vehículo:** tipo de vehículo (primer campo), marca,
   modelo, año, versión / acabado, matrícula, propietario, tipo de
   combustible, km actual (**solo al crearlo**), aceite recomendado, notas del
@@ -55,7 +57,7 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   diálogo dice qué se va con él (ver U16, en "Papelera").
 - Los **tipos de combustible** y los **tipos de vehículo** se muestran
   traducidos en los tres idiomas.
-- **Información:** el menú de la barra superior de las dos listas tiene
+- **Información:** el menú de la barra superior de las listas de inicio tiene
   "Información", con los créditos de los datos incluidos (VehiclesDB, Unicode
   CLDR) y la página de licencias. El de la lista de vehículos tiene además
   "Papelera" (ver U17).
@@ -96,8 +98,8 @@ valor que no esté en la lista.
 Cada vehículo tiene una lista desplazable de LogEntry ordenadas por fecha (las
 más recientes arriba). Cada fila muestra de un vistazo: tipo, fecha, km, un
 extracto del texto, el coste (si lo hay) y un clip con el número de adjuntos
-si los hay (U24); el icono de recordatorio llegará con los recordatorios
-(paso 13a).
+si los hay (U24) y, desde el paso 13a, un pequeño icono cuando la entrada es
+la última que cerró un recordatorio vivo.
 
 Al tocar una entrada se ve su detalle completo y se puede modificar o
 borrar.
@@ -216,9 +218,10 @@ El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
 
 - **U11 — Pestañas** de la página del vehículo: en el paso 5 eran tres
   (**Historial**, la que se ve al abrir, **Kilometraje** y **Ficha**); el paso
-  8 añadió **Documentos** (U25) y el paso 12 **Informes**. Hoy son cinco:
-  Historial, Kilometraje, Informes, Documentos y Ficha. La cabecera compacta
-  sigue mostrando el km actual.
+  8 añadió **Documentos** (U25), el paso 12 **Informes** y el paso 13a
+  **Recordatorios**. Hoy son seis: Historial, Recordatorios, Kilometraje,
+  Informes, Documentos y Ficha. La cabecera compacta sigue mostrando el km
+  actual.
 - **U12 — Pestaña Kilometraje:** las lecturas de la más reciente a la más
   antigua; cada fila muestra la fecha, los km (con el formato del idioma) y
   la diferencia con la lectura anterior con los días entre las dos
@@ -226,8 +229,9 @@ El cuentakilómetros del vehículo (paso 5 de la hoja de ruta). Reglas en
   "Lectura inicial" en lugar de la diferencia. Las estadísticas por periodo
   están en Informes.
 - **U13 — Botón flotante "Actualizar cuentakilómetros"** en la pestaña
-  Kilometraje (en Historial y en Ficha sigue "Nueva entrada", en Documentos
-  es "Añadir documento" e Informes, que es de solo lectura, no tiene).
+  Kilometraje (en Historial y en Ficha sigue "Nueva entrada", en
+  Recordatorios es "Nuevo recordatorio", en Documentos es "Añadir documento" e
+  Informes, que es de solo lectura, no tiene).
   Formulario:
   lectura (obligatoria, número entero en la unidad elegida, con su símbolo
   como sufijo y la ayuda "Última: 123.456 km el 3 oct 2026") y fecha (hoy
@@ -258,7 +262,9 @@ Los vehículos borrados (paso 5b de la hoja de ruta). Reglas de datos en
   lecturas **no borradas**, con singular y plural). Desde el paso 8, si el
   vehículo tiene adjuntos (los suyos más los de sus entradas no borradas),
   dice "…, sus M lecturas de km y K adjuntos"; lo mismo la fila de la
-  papelera y la confirmación de eliminar definitivamente. Al confirmar, el toast
+  papelera y la confirmación de eliminar definitivamente. Desde el paso 13a,
+  si tiene recordatorios, los tres textos los nombran también ("…, sus M
+  lecturas de km, K adjuntos y R recordatorios"). Al confirmar, el toast
   con Deshacer de siempre.
 - **U17 — Pantalla Papelera** (ruta `/trash`), desde el menú de la lista de
   vehículos: "Papelera", con el número de vehículos cuando hay alguno
@@ -365,9 +371,11 @@ ruta). Formato del paquete, validación y red de seguridad en
 - **U21 — Pantalla Ajustes** (ruta `/settings`), desde el menú de las listas
   de inicio, junto a Copia de seguridad, Papelera e Información. Idioma y
   tema, cada uno una fila con su valor actual que abre un diálogo con botones
-  de opción, y desde el paso 11 la sección **Unidades** (preajuste
+  de opción, desde el paso 11 la sección **Unidades** (preajuste
   Internacional / Imperial y una fila por magnitud; ver
-  `06_settings_and_i18n.md`, "Unidades de medida"):
+  `06_settings_and_i18n.md`, "Unidades de medida") y desde el paso 13a la
+  sección **Recordatorios** ("Avisar N días antes", "Avisar N km antes"; ver
+  `08_recordatorios.md`):
   - **Idioma**: Sistema, Italiano, Español, English. Cada idioma se escribe
     en su propio idioma, sea cual sea el de la app.
   - **Tema**: Sistema, Claro, Oscuro.
@@ -406,28 +414,41 @@ Cómo funciona (U8):
 
 ## Recordatorios y notificaciones
 
-*Previsto, no implementado todavía (paso 13a dentro de la app, 13b
-notificaciones).*
+Los recordatorios dentro de la app están hechos (paso 13a); las
+notificaciones del teléfono son el paso 13b. Modelo, reglas, pantallas y el
+procedimiento de carga desde el manual: `08_recordatorios.md`.
 
-Dos orígenes de recordatorios:
-
-1. **Manuales** — configurados en una sola entrada (una fecha futura y/o un
-   umbral de km).
-2. **Automáticos** — derivados de las `MaintenanceRule` del vehículo y de los
-   vencimientos de los documentos (impuesto de circulación, inspección técnica
-   obligatoria, seguro y los documentos del propietario: permiso de conducir,
-   documento de identidad, permiso de residencia).
-
-Comportamiento de los avisos:
-
-- Los vencimientos **por tiempo** generan una **notificación** del teléfono en
-  la fecha prevista (incluso con la app cerrada).
-- Los vencimientos **por km** no pueden "saltar" por sí solos en el tiempo (la
-  app no conoce los km en tiempo real): se **señalan visualmente** — las
-  entradas de mantenimiento próximas al umbral de km o que lo superan se
-  resaltan cuando abres la app y cuando actualizas el cuentakilómetros total.
-- Los controles con medición con **umbral** avisan cuando el último valor
-  registrado baja del umbral configurado.
+- **Qué es:** un recordatorio por criterio y vehículo, en su propia tabla:
+  periódico (cada X km y / o Y meses desde la última vez) o de fecha única
+  (seguro, documento). Lo crea el usuario desde la pestaña Recordatorios del
+  vehículo, o se carga desde el manual con el procedimiento del doc 08. No
+  son campos de la entrada.
+- **Inicio:** el destino **Recordatorios**, con un distintivo de vencidos +
+  próximos, lista los recordatorios abiertos de los vehículos activos en
+  Vencidos / Próximos / Al día. Los vehículos archivados quedan fuera.
+- **Vehículo:** pestaña **Recordatorios** (después de Historial) con el botón
+  "Nuevo recordatorio" y los completados plegados.
+- **Estado:** vencido / próximo / al día, en color con icono y texto,
+  calculado en cada lectura (nunca guardado): vence el primero de los dos, km
+  o tiempo; el aviso anticipado es el de Ajustes o el propio del
+  recordatorio.
+- **Criterio aplicado:** el usuario puede apartarse de la referencia con un
+  motivo; las dos se ven siempre, con un aviso discreto si el aplicado es
+  menos exigente. **Posponer** solo esta vez, con motivo. Todo queda en el
+  historial del recordatorio.
+- **Cerrar:** solo con una entrada, de forma explícita: el campo **Cierra el
+  recordatorio** del formulario de entradas (mantenimiento, reparación,
+  vencimiento legal, gasto) o **Marcar hecho** en el detalle, que crea la
+  entrada. El ancla es una copia de la fecha y los km de la entrada.
+- **Previsto (13b):** los vencimientos **por tiempo** generarán una
+  **notificación** del teléfono en la fecha prevista (incluso con la app
+  cerrada), con un enlace directo al recordatorio. Los vencimientos **por km**
+  no pueden "saltar" solos (la app no conoce los km en tiempo real): se
+  señalan en la app, con el distintivo y los colores, al abrirla y al
+  actualizar el cuentakilómetros.
+- **Previsto (14+):** los documentos del propietario y del vehículo con
+  vencimiento, y los controles con medición con **umbral**, que avisarán
+  cuando el último valor baje del umbral.
 
 ## Informes
 

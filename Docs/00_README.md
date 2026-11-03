@@ -26,6 +26,10 @@ estará en **inglés** y la interfaz se traduce a IT / ES / EN (ver
    IT/ES/EN.
 7. [`07_design_and_theming.md`](07_design_and_theming.md) — Sistema de diseño
    Material 3, temas claro/oscuro, principios de legibilidad y color.
+8. [`08_recordatorios.md`](08_recordatorios.md) — Recordatorios: criterio de
+   referencia y aplicado, aplazamiento, historial de cambios, estado
+   calculado, cierre con una entrada y el procedimiento de carga desde el
+   manual del fabricante.
 
 ## Resumen en una frase
 
@@ -100,9 +104,18 @@ cuentakilómetros de cada repostaje, y se ve al guardar, en el detalle y en la
 nueva pestaña **Informes** de cada vehículo (consumo con su línea de
 cobertura, gasto en carburante y distancia frente al tiempo, con un filtro
 por fechas o por cuentakilómetros); la pestaña Kilometraje enseña también los
-días entre lecturas. Lo siguiente son los recordatorios (13a dentro de la
-app, 13b notificaciones), que se construyen sabiendo qué vehículos están
-archivados.
+días entre lecturas. El paso 13a añadió los recordatorios dentro de la app
+(esquema v11, doc 08): un destino Recordatorios en la pantalla principal con
+un distintivo de vencidos y próximos, una pestaña Recordatorios en cada
+vehículo, el criterio de referencia (el del manual) y el aplicado (cuando el
+usuario se aparta de él, con un motivo, sin perder nunca la referencia),
+posponer con motivo, un historial de cambios por recordatorio, el estado
+calculado en cada lectura (vence el primero de los dos, km o tiempo), el
+cierre con una entrada (el campo "Cierra el recordatorio" o "Marcar hecho")
+y el aviso anticipado en Ajustes; los vehículos archivados quedan fuera. Los
+recordatorios se cargan desde el manual con un procedimiento documentado que
+escribe en un paquete exportado. Lo siguiente son las notificaciones locales
+(13b).
 
 Hoja de ruta hasta la primera versión usable:
 
@@ -121,7 +134,7 @@ Hoja de ruta hasta la primera versión usable:
 | 10 | ~~Archivo de vehículos: motivo, fecha, km finales como lectura, solo lectura, reactivar (esquema v8)~~ — hecho |
 | 11 | ~~Unidades de medida: ajuste, almacenamiento en SI, un único formateador (esquema v9)~~ — hecho |
 | 12 | ~~Consumo de combustible (cadena de llenos), campos del repostaje (esquema v10) e Informes por vehículo~~ — hecho |
-| 13a | Recordatorios dentro de la app (tabla, lista, estados, marcar como hecho; excluyendo los vehículos archivados) |
+| 13a | ~~Recordatorios dentro de la app (tabla, lista, estados, marcar como hecho; excluyendo los vehículos archivados; esquema v11)~~ — hecho |
 | 13b | Notificaciones locales (`flutter_local_notifications`, enlaces profundos) |
 
 Después (14+), en el orden que se decida usando la app: mediciones, catálogo
