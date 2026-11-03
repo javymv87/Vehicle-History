@@ -17,6 +17,7 @@ class ReminderFormData {
     required this.vehicle,
     required this.reminder,
     this.usedKinds = const {},
+    this.kindLocked = false,
   });
 
   /// The vehicle, or `null` when no live vehicle has the id in the path.
@@ -29,6 +30,10 @@ class ReminderFormData {
   /// The unique kinds the vehicle's other live, open reminders already use:
   /// they do not appear in the picker (`Docs/04_maintenance_logic.md`).
   final Set<ReminderKind> usedKinds;
+
+  /// Whether an entry has already closed the edited reminder: then its kind
+  /// and its mode (recurring or one-shot) are fixed.
+  final bool kindLocked;
 }
 
 /// State of the reminder form, loaded once when the form opens so the
@@ -57,6 +62,7 @@ class ReminderFormController extends AsyncNotifier<ReminderFormData> {
     return ReminderFormData(
       vehicle: vehicle,
       reminder: edited,
+      kindLocked: edited != null && await repository.hasBeenClosed(edited.id),
       usedKinds: {
         for (final reminder in reminders)
           if (reminder.id != reminderId &&

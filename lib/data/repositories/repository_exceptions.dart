@@ -241,6 +241,11 @@ enum ReminderRule {
 
   /// "Remove postponement" on a reminder that is not postponed.
   notSnoozed,
+
+  /// A change of kind, or between recurring and one-shot, of a reminder an
+  /// entry has already closed: its history belongs to that kind, so a new
+  /// reminder is created instead.
+  alreadyClosed,
 }
 
 /// A reminder operation was refused by one of the rules of

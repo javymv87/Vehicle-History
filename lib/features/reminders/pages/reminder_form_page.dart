@@ -83,6 +83,7 @@ class ReminderFormPage extends ConsumerWidget {
               vehicle: vehicle,
               initial: reminder,
               usedKinds: data.usedKinds,
+              kindLocked: data.kindLocked,
               title: title,
             );
           },
@@ -97,6 +98,7 @@ class _ReminderForm extends ConsumerStatefulWidget {
     required this.vehicle,
     required this.initial,
     required this.usedKinds,
+    required this.kindLocked,
     required this.title,
   });
 
@@ -104,6 +106,9 @@ class _ReminderForm extends ConsumerStatefulWidget {
   final Vehicle vehicle;
   final Reminder? initial;
   final Set<ReminderKind> usedKinds;
+
+  /// An entry has closed the reminder: kind and mode cannot change.
+  final bool kindLocked;
   final String title;
 
   @override
@@ -406,6 +411,7 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
                 label: l10n.reminderFieldKind,
                 value: kind?.label(l10n),
                 onTap: _pickKind,
+                enabled: !widget.kindLocked,
                 validator: (value) =>
                     value == null ? l10n.validationReminderKindRequired : null,
               ),
@@ -438,11 +444,23 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
                   ),
                 ],
                 selected: {_oneShot},
-                onSelectionChanged: (selection) => setState(() {
-                  _oneShot = selection.single;
-                  _dateError = null;
-                }),
+                onSelectionChanged: widget.kindLocked
+                    ? null
+                    : (selection) => setState(() {
+                          _oneShot = selection.single;
+                          _dateError = null;
+                        }),
               ),
+              if (widget.kindLocked) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.reminderKindLockedHint,
+                  key: const ValueKey('reminder-kind-locked'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               gap,
               if (_oneShot)
                 _DateField(

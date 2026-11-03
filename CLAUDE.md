@@ -369,7 +369,10 @@ columns `REAL`; v10 added the refuel columns of `log_entries`; v11 added
   the mark-done dialog show its refusals inline. Rule refusals are
   `ReminderRuleException` (`ActionError.reminderRule`) or
   `InvalidFieldException` reasons (`beforeAnchor`, `belowAnchor`,
-  `notLater`, `required`). Reminders are loaded from a manual only by the
+  `notLater`, `required`). Once a `close` change exists
+  (`ReminderRepository.hasBeenClosed`), `update` refuses a change of kind
+  or of recurring / one-shot (`ReminderRule.alreadyClosed`) and the form
+  disables both (`ReminderFormData.kindLocked`). Reminders are loaded from a manual only by the
   procedure of `Docs/08` on an exported package
   (`tool/reminders/insert_reminder.sql`, `/load-reminders`,
   `reminders_runbook_sql_test.dart`), never by app code.

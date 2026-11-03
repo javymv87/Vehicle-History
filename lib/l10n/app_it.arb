@@ -638,6 +638,7 @@
   "reminderFieldTitle": "Titolo",
   "reminderModePeriodic": "Periodico",
   "reminderModeOneShot": "Data unica",
+  "reminderKindLockedHint": "Una voce ha già chiuso questo promemoria: il tipo e la modalità non si possono cambiare. Per un altro tipo, crea un nuovo promemoria.",
   "reminderFieldIntervalDistance": "Ogni (distanza)",
   "reminderFieldIntervalMonths": "Ogni (mesi)",
   "reminderIntervalHelp": "Compila uno o entrambi: scade il primo che si raggiunge.",

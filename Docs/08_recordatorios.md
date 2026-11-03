@@ -171,6 +171,11 @@ solo lectura), escribe su fila del historial de operaciones y su fila de
   única, aviso propio, nota y referencia del manual. El ancla de día nunca es
   posterior a hoy; la fecha única sí puede ser futura. Editar escribe un
   cambio `edit`. No se puede pasar a fecha única mientras haya override.
+  **Tras el primer cierre**, el tipo y la modalidad (periódico o fecha
+  única) quedan fijos: sus cierres pertenecen a ese tipo, y otro tipo es un
+  recordatorio nuevo. Antes del primer cierre se pueden corregir. "Cerrado"
+  = hay un cambio `close` en su historial; el repositorio lo rechaza
+  también, no solo el formulario.
 - **Personalizar criterio:** al menos un eje activo y motivo obligatorio. Si
   el override **añade el eje de km** a un recordatorio sin ancla de km, pide
   también **los km de la última vez** (obligatorios, sin valor por defecto: el
@@ -226,7 +231,9 @@ solo lectura), escribe su fila del historial de operaciones y su fila de
   (la lectura actual por defecto, obligatoria con intervalo de km), aviso
   propio ("Usar el ajuste general" si vacío), nota y referencia del manual.
   Al editar, una línea dice que el criterio aplicado se cambia desde el
-  detalle.
+  detalle. Si una entrada ya lo cerró, el tipo y Periódico / Fecha única
+  aparecen desactivados con una línea que lo explica ("Para otro tipo, crea
+  un recordatorio nuevo").
 - **Detalle:** estado en color con icono; **Próximo vencimiento** por fecha y
   por km con lo que falta; con override, **Criterio aplicado** en grande,
   motivo y fecha, y **Criterio de referencia** debajo con "Según el

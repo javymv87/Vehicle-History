@@ -39,6 +39,10 @@ abstract interface class ReminderRepository {
   /// last closing entry of a live reminder (the history-row icon).
   Stream<Set<String>> watchClosingEntryIds(String vehicleId);
 
+  /// Whether an entry has ever closed the reminder [id] (a `close` change
+  /// in its history): then its kind and its mode are fixed.
+  Future<bool> hasBeenClosed(String id);
+
   /// Emits the live reminders whose last closing entry is [entryId].
   Stream<List<Reminder>> watchClosedBy(String entryId);
 
@@ -65,8 +69,9 @@ abstract interface class ReminderRepository {
   /// change. The override, the snooze and the closing state are kept.
   ///
   /// Throws what [create] throws, `ReminderRuleException` for a completed
-  /// reminder, and `InvalidFieldException` when it would become one-shot
-  /// while overridden.
+  /// reminder or for a change of kind or mode once an entry has closed it
+  /// ([ReminderRule.alreadyClosed]), and `InvalidFieldException` when it
+  /// would become one-shot while overridden.
   Future<Reminder> update(String id, ReminderDraft draft);
 
   /// Sets or changes the applied criterion of the recurring reminder [id]:

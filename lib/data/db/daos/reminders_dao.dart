@@ -217,6 +217,20 @@ class RemindersDao extends DatabaseAccessor<AppDatabase>
           .watch()
           .map((rows) => [for (final r in rows) r.toModel()]);
 
+  /// Whether an entry has ever closed the recurring reminder [reminderId]:
+  /// its history holds a `close` change.
+  Future<bool> hasBeenClosed(String reminderId) async {
+    final rows = await (select(reminderChanges)
+          ..where(
+            (c) =>
+                c.reminderId.equals(reminderId) &
+                c.changeType.equalsValue(ReminderChangeType.close),
+          )
+          ..limit(1))
+        .get();
+    return rows.isNotEmpty;
+  }
+
   /// Update statement restricted to the live reminder with [id].
   UpdateStatement<$RemindersTable, ReminderRow> _whereLive(String id) =>
       update(reminders)

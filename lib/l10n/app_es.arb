@@ -638,6 +638,7 @@
   "reminderFieldTitle": "Título",
   "reminderModePeriodic": "Periódico",
   "reminderModeOneShot": "Fecha única",
+  "reminderKindLockedHint": "Una entrada ya ha cerrado este recordatorio: el tipo y la modalidad no se pueden cambiar. Para otro tipo, crea un recordatorio nuevo.",
   "reminderFieldIntervalDistance": "Cada (distancia)",
   "reminderFieldIntervalMonths": "Cada (meses)",
   "reminderIntervalHelp": "Rellena uno o los dos: vence el primero que se cumpla.",

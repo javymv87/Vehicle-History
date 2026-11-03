@@ -3222,6 +3222,10 @@
   "@reminderModeOneShot": {
     "description": "Reminder form: one-shot reminder with a due date."
   },
+  "reminderKindLockedHint": "An entry has already closed this reminder, so its type and mode cannot change. For another type, create a new reminder.",
+  "@reminderKindLockedHint": {
+    "description": "Reminder form, when editing a reminder an entry has closed: why the type and the recurring / one-date choice are disabled."
+  },
   "reminderFieldIntervalDistance": "Every (distance)",
   "@reminderFieldIntervalDistance": {
     "description": "Reminder form: km interval; the unit is the suffix."

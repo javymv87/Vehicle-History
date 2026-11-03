@@ -162,6 +162,55 @@ void main() {
       expect(saved.lastDoneKm, 12345);
     });
 
+    testWidgets('kind and mode are fixed once an entry has closed it',
+        (tester) async {
+      final oil = addOil();
+      store.reminderChanges.add(
+        ReminderChange.of(
+          oil,
+          id: 'change-close',
+          type: ReminderChangeType.close,
+          at: store.now,
+          entryId: 'entry-1',
+        ),
+      );
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.editReminder(vehicleId, 'rem-oil'),
+      );
+      expect(
+        find.byKey(const ValueKey('reminder-kind-locked')),
+        findsOneWidget,
+      );
+      // Neither the kind picker nor the mode switch reacts.
+      await tester.tap(find.byKey(const ValueKey('reminder-kind-field')));
+      await tester.pumpAndSettle();
+      expect(find.text('Spark plugs'), findsNothing);
+      await tester.tap(find.text('One date'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reminder-due-date')), findsNothing);
+
+      // The title can still be edited and saved.
+      await tester.enterText(
+        find.byKey(const ValueKey('reminder-title-field')),
+        'Engine oil 5W-40',
+      );
+      await save(tester);
+      final saved = store.reminders['rem-oil']!;
+      expect(saved.title, 'Engine oil 5W-40');
+      expect(saved.kind, ReminderKind.engineOil);
+    });
+
+    testWidgets('a new reminder has no kind lock', (tester) async {
+      await pumpApp(
+        tester,
+        store,
+        location: AppRoutes.newReminder(vehicleId),
+      );
+      expect(find.byKey(const ValueKey('reminder-kind-locked')), findsNothing);
+    });
+
     testWidgets('a recurring reminder needs an interval', (tester) async {
       await pumpApp(
         tester,

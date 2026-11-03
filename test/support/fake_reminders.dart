@@ -150,6 +150,15 @@ class FakeReminderRepository implements ReminderRepository {
       );
 
   @override
+  Future<bool> hasBeenClosed(String id) async => _closed(id);
+
+  /// Whether the history of [id] holds a `close` change.
+  bool _closed(String id) => store.reminderChanges.any(
+        (change) =>
+            change.reminderId == id && change.type == ReminderChangeType.close,
+      );
+
+  @override
   Stream<List<Reminder>> watchClosedBy(String entryId) => store.watch(
         () => [
           for (final reminder in store.reminders.values)
@@ -193,7 +202,13 @@ class FakeReminderRepository implements ReminderRepository {
 
   @override
   Future<Reminder> update(String id, ReminderDraft draft) => store.write(() {
-        final updated = _apply(_writable(id), draft);
+        final current = _writable(id);
+        final updated = _apply(current, draft);
+        if ((updated.kind != current.kind ||
+                updated.isOneShot != current.isOneShot) &&
+            _closed(id)) {
+          throw ReminderRuleException(id, ReminderRule.alreadyClosed);
+        }
         _requireKindFree(updated);
         return _save(updated, ReminderChangeType.edit);
       });

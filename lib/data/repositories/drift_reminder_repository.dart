@@ -71,6 +71,9 @@ class DriftReminderRepository implements ReminderRepository {
       _reminders.watchClosingEntryIds(vehicleId);
 
   @override
+  Future<bool> hasBeenClosed(String id) => _reminders.hasBeenClosed(id);
+
+  @override
   Stream<List<Reminder>> watchClosedBy(String entryId) =>
       _reminders.watchClosedBy(entryId);
 
@@ -121,6 +124,13 @@ class DriftReminderRepository implements ReminderRepository {
     return _reminders.transaction(() async {
       final current = await _requireWritable(id);
       final updated = _applyDraft(current, draft, now);
+      if ((updated.kind != current.kind ||
+              updated.isOneShot != current.isOneShot) &&
+          await _reminders.hasBeenClosed(id)) {
+        // Its closes belong to this kind and mode: another one is a new
+        // reminder.
+        throw ReminderRuleException(id, ReminderRule.alreadyClosed);
+      }
       _checkCriterion(updated, today);
       if (updated.isOneShot && updated.overrideActive) {
         // A one-shot reminder has no criterion to override.

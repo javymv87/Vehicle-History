@@ -332,6 +332,52 @@ void main() {
       );
     });
 
+    test('kind and mode are fixed once an entry has closed it', () async {
+      final oil = await add();
+      // Before any close, a wrong kind can still be corrected.
+      expect(await reminders.hasBeenClosed(oil.id), isFalse);
+      final filter = await reminders.update(
+        oil.id,
+        oilDraft(kind: ReminderKind.oilFilter),
+      );
+      expect(filter.kind, ReminderKind.oilFilter);
+
+      await reminders.close(
+        oil.id,
+        (await entry(LogEntryType.maintenance)).id,
+      );
+      expect(await reminders.hasBeenClosed(oil.id), isTrue);
+      final closed = (await reminders.getById(oil.id))!;
+      await expectLater(
+        reminders.update(oil.id, oilDraft(kind: ReminderKind.sparkPlugs)),
+        throwsRule(ReminderRule.alreadyClosed),
+      );
+      await expectLater(
+        reminders.update(
+          oil.id,
+          oilDraft(
+            kind: ReminderKind.oilFilter,
+            km: null,
+            months: null,
+            lastDone: null,
+            lastDoneKm: null,
+            due: const CalendarDate(2027, 1, 1),
+          ),
+        ),
+        throwsRule(ReminderRule.alreadyClosed),
+      );
+      // Nothing was written by the refusals.
+      expect(await reminders.getById(oil.id), closed);
+
+      // The rest of the form stays editable.
+      final renamed = await reminders.update(
+        oil.id,
+        oilDraft(kind: ReminderKind.oilFilter, title: 'Filtro olio', km: 20000),
+      );
+      expect(renamed.title, 'Filtro olio');
+      expect(renamed.refIntervalKm, 20000);
+    });
+
     test('a completed reminder is read-only', () async {
       final tax = await add(oneShotDraft(const CalendarDate(2026, 10, 31)));
       await reminders.close(
