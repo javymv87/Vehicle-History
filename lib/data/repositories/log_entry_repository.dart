@@ -61,6 +61,10 @@ abstract interface class LogEntryRepository {
   /// entry's attachments in the same transaction, their files moved out of
   /// the staging directory (and removed again if the transaction fails).
   /// Throws `AttachmentTooLargeException` for a file above 25 MB.
+  ///
+  /// [closesReminderId] closes that reminder with the new entry in the same
+  /// transaction (`Docs/08_recordatorios.md`; `ReminderCloser.close`): if
+  /// the reminder refuses the entry, nothing is written.
   Future<LogEntry> create({
     required String vehicleId,
     required CalendarDate date,
@@ -70,6 +74,7 @@ abstract interface class LogEntryRepository {
     int? costCents,
     RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
+    String? closesReminderId,
   });
 
   /// Replaces every user-editable field of the entry with [id] and returns
@@ -84,6 +89,9 @@ abstract interface class LogEntryRepository {
   /// become new attachments of the entry, and the live attachments of the
   /// entry with [removedAttachmentIds] are soft-deleted, like a delete from
   /// the detail page.
+  ///
+  /// [closesReminderId] closes that reminder with the updated entry in the
+  /// same transaction, as in [create].
   Future<LogEntry> update(
     String id, {
     required CalendarDate date,
@@ -94,6 +102,7 @@ abstract interface class LogEntryRepository {
     RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
+    String? closesReminderId,
   });
 
   /// Soft-deletes the entry with [id].

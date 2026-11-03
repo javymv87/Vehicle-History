@@ -77,5 +77,29 @@ void main() {
         const CalendarDate(2024, 2, 29),
       );
     });
+
+    test('addMonths keeps the day, clamped to the target month', () {
+      const jan31 = CalendarDate(2026, 1, 31);
+      expect(jan31.addMonths(1), const CalendarDate(2026, 2, 28));
+      expect(
+        const CalendarDate(2024, 1, 31).addMonths(1),
+        const CalendarDate(2024, 2, 29),
+      );
+      expect(jan31.addMonths(3), const CalendarDate(2026, 4, 30));
+      expect(jan31.addMonths(2), const CalendarDate(2026, 3, 31));
+      expect(
+        const CalendarDate(2026, 3, 15).addMonths(24),
+        const CalendarDate(2028, 3, 15),
+      );
+      expect(
+        const CalendarDate(2026, 11, 30).addMonths(3),
+        const CalendarDate(2027, 2, 28),
+      );
+      expect(
+        const CalendarDate(2026, 3, 31).addMonths(-1),
+        const CalendarDate(2026, 2, 28),
+      );
+      expect(jan31.addMonths(0), jan31);
+    });
   });
 }

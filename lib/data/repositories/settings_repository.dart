@@ -1,5 +1,6 @@
 import '../db/daos/settings_dao.dart';
 import '../models/app_preferences.dart';
+import '../models/reminder_status.dart';
 import '../models/setting_key.dart';
 import '../models/units.dart';
 import 'repository_support.dart';
@@ -135,6 +136,28 @@ extension TypedSettings on SettingsRepository {
   /// Stores [unit] as the unit of fuel consumption.
   Future<void> writeConsumptionUnit(ConsumptionUnit unit) =>
       write(SettingKey.unitConsumption, unit.code);
+
+  /// Emits the global reminder lead now and after every change to either
+  /// of its keys; a missing or unreadable value is its default.
+  Stream<ReminderLead> watchReminderLead() => watchMany(const [
+        SettingKey.reminderLeadDays,
+        SettingKey.reminderLeadKm,
+      ])
+          .map(
+            (values) => ReminderLead.fromCodes(
+              days: values[SettingKey.reminderLeadDays],
+              km: values[SettingKey.reminderLeadKm],
+            ),
+          )
+          .distinct();
+
+  /// Stores [days] as the global reminder lead in days.
+  Future<void> writeReminderLeadDays(int days) =>
+      write(SettingKey.reminderLeadDays, '$days');
+
+  /// Stores [km] (SI) as the global reminder lead in km.
+  Future<void> writeReminderLeadKm(double km) =>
+      write(SettingKey.reminderLeadKm, ReminderLead.kmCode(km));
 
   /// Parses an instant stored as ISO-8601 text; an unreadable value counts
   /// as unset rather than failing the screen that shows it.

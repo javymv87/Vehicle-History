@@ -16,6 +16,7 @@ class CleanupReport {
     required this.readings,
     required this.owners,
     this.attachments = 0,
+    this.reminders = 0,
   });
 
   /// Vehicles removed from the Trash, each with all its entries and
@@ -35,9 +36,14 @@ class CleanupReport {
   /// counting those that went with a vehicle, an entry or an owner).
   final int attachments;
 
+  /// Deleted reminders of live vehicles removed, each with its history (not
+  /// counting those that went with a vehicle).
+  final int reminders;
+
   @override
   String toString() => 'CleanupReport(vehicles: $vehicles, entries: $entries, '
-      'readings: $readings, owners: $owners, attachments: $attachments)';
+      'readings: $readings, owners: $owners, attachments: $attachments, '
+      'reminders: $reminders)';
 }
 
 /// Removes from disk what has been soft-deleted for longer than
@@ -62,15 +68,18 @@ class TrashCleanupService {
   /// Removes, in one transaction, everything deleted at least
   /// [trashRetention] before [now] (UTC):
   ///
-  /// 1. vehicles in the Trash, each with every entry and reading it has;
-  /// 2. deleted entries and readings of live vehicles;
+  /// 1. vehicles in the Trash, each with every reminder, entry and reading
+  ///    it has;
+  /// 2. deleted reminders (with their history), entries and readings of
+  ///    live vehicles;
   /// 3. deleted owners that no vehicle row references any more (step 1 may
   ///    just have freed some);
   /// 4. deleted attachments that do not travel with a vehicle in the Trash.
   ///
   /// The attachments of a removed vehicle, entry or owner go with it,
-  /// whatever their own flag. Every vehicle, owner, entry (2), reading (2)
-  /// and attachment (4) removed gets a `purge` audit row at [now], in the
+  /// whatever their own flag. Every vehicle, owner, reminder (2), entry
+  /// (2), reading (2) and attachment (4) removed gets a `purge` audit row at
+  /// [now], in the
   /// same transaction, so the last-modified stamp of the data
   /// (`BackupDao.lastModifiedAt`) never goes backwards; the rows that go
   /// with a removed parent (a vehicle's entries and readings, any
@@ -101,6 +110,16 @@ class TrashCleanupService {
 
       // The expired rows below are all soft-deleted (that is how they were
       // found), so each one listed is removed and gets its `purge` row.
+
+      // Reminders before entries: an entry removed below may be the last
+      // closing entry of a reminder (its foreign key then sets it to NULL).
+      final reminders =
+          expired(await _trash.getDeletedRemindersOfLiveVehicles());
+      final removedReminders =
+          reminders.isEmpty ? 0 : await _trash.purgeReminders(reminders);
+      for (final id in reminders) {
+        await _record(AuditEntityType.reminder, id, now);
+      }
 
       final entries = expired(await _trash.getDeletedEntriesOfLiveVehicles());
       var removedEntries = 0;
@@ -143,6 +162,7 @@ class TrashCleanupService {
         readings: removedReadings,
         owners: owners.length,
         attachments: removedAttachments,
+        reminders: removedReminders,
       );
     });
     await deleteFilesQuietly(_files, files);

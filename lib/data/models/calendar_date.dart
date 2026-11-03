@@ -105,6 +105,21 @@ class CalendarDate implements Comparable<CalendarDate> {
     return CalendarDate(shifted.year, shifted.month, shifted.day);
   }
 
+  /// The same day [months] calendar months later (earlier when negative),
+  /// clamped to the last day of the target month: 31 January + 1 month is
+  /// 28 February, or 29 in a leap year. Used for intervals in months, such
+  /// as "every 24 months" of a reminder.
+  CalendarDate addMonths(int months) {
+    // Months counted from year 0, so the division never sees a negative
+    // number for the dates the app handles (year 1 or later).
+    final total = year * 12 + (month - 1) + months;
+    final targetYear = total ~/ 12;
+    final targetMonth = total % 12 + 1;
+    // Day 0 of the next month is the last day of the target month.
+    final lastDay = DateTime.utc(targetYear, targetMonth + 1, 0).day;
+    return CalendarDate(targetYear, targetMonth, day > lastDay ? lastDay : day);
+  }
+
   /// This day at 00:00 UTC, only for day arithmetic.
   DateTime get _utcMidnight => DateTime.utc(year, month, day);
 

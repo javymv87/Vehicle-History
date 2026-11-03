@@ -776,6 +776,8 @@ class FakeLogEntryRepository implements LogEntryRepository {
     int? costCents,
     RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
+    // Reminders are not modelled by this fake: the close is ignored.
+    String? closesReminderId,
   }) =>
       store.write(() {
         _check(type, km, date);
@@ -813,6 +815,8 @@ class FakeLogEntryRepository implements LogEntryRepository {
     RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
+    // Reminders are not modelled by this fake: the close is ignored.
+    String? closesReminderId,
   }) =>
       store.write(() {
         _check(type, km, date);

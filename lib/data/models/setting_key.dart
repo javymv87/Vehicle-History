@@ -55,6 +55,15 @@ enum SettingKey {
   /// `km_l`, `mpg_us`, `mpg_uk`); absent means `l_100km`.
   unitConsumption('unit_consumption'),
 
+  /// How many days before a due date a reminder starts warning: a
+  /// non-negative whole number; absent means 30 (`ReminderLead`). Shared
+  /// like the units: it travels with the data (`Docs/08_recordatorios.md`).
+  reminderLeadDays('reminder_lead_days'),
+
+  /// How many km before a due km a reminder starts warning, in km (SI) as
+  /// plain text; absent means 1000.
+  reminderLeadKm('reminder_lead_km'),
+
   /// The email of the Google account the Drive copy is linked to; absent
   /// when no account is linked. Not a secret: tokens never go into this
   /// table.

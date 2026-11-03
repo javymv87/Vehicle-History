@@ -11,6 +11,7 @@ import '../models/log_entry_type.dart';
 import '../models/refuel.dart';
 import 'attachment_writer.dart';
 import 'log_entry_repository.dart';
+import 'reminder_closer.dart';
 import 'repository_exceptions.dart';
 import 'repository_support.dart';
 
@@ -19,13 +20,18 @@ class DriftLogEntryRepository implements LogEntryRepository {
   /// Creates the repository on [_entries], auditing through [_audit] and
   /// saving the files picked in the entry form through [attachments].
   ///
-  /// [clock] must return UTC; it defaults to the system clock.
+  /// [reminders] closes a reminder together with an entry
+  /// (`closesReminderId`); without it such a call fails with a
+  /// [StateError]. [clock] must return UTC; it defaults to the system
+  /// clock.
   DriftLogEntryRepository(
     this._entries,
     this._audit, {
     required AttachmentWriter attachments,
+    ReminderCloser? reminders,
     UtcClock clock = systemUtcClock,
   })  : _attachments = attachments,
+        _reminders = reminders,
         _clock = clock;
 
   /// Entry queries.
@@ -36,6 +42,9 @@ class DriftLogEntryRepository implements LogEntryRepository {
 
   /// Attachment writes joined to the entry's transaction.
   final AttachmentWriter _attachments;
+
+  /// Reminder closes joined to the entry's transaction.
+  final ReminderCloser? _reminders;
 
   /// Source of `created_at`, `updated_at` and audit timestamps.
   final UtcClock _clock;
@@ -98,6 +107,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     int? costCents,
     RefuelDetails? refuel,
     List<StagedFile> attachments = const [],
+    String? closesReminderId,
   }) async {
     final now = utcNow(_clock);
     _checkValues(
@@ -138,6 +148,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
           now,
           moved,
         );
+        await _closeReminder(closesReminderId, entry, now);
         return entry;
       }),
     );
@@ -154,6 +165,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
     RefuelDetails? refuel,
     List<StagedFile> addedAttachments = const [],
     Set<String> removedAttachmentIds = const {},
+    String? closesReminderId,
   }) async {
     final now = utcNow(_clock);
     _checkValues(
@@ -189,6 +201,7 @@ class DriftLogEntryRepository implements LogEntryRepository {
           await _attachments.softDelete(target, attachmentId, now);
         }
         await _attachments.addStaged(target, addedAttachments, now, moved);
+        await _closeReminder(closesReminderId, updated, now);
         return updated;
       }),
     );
@@ -220,6 +233,26 @@ class DriftLogEntryRepository implements LogEntryRepository {
       await _record(id, AuditOperation.restore, now);
       return deleted.copyWith(updatedAt: now);
     });
+  }
+
+  /// Closes the reminder [reminderId], when given, with [entry] inside the
+  /// running transaction.
+  Future<void> _closeReminder(
+    String? reminderId,
+    LogEntry entry,
+    DateTime now,
+  ) async {
+    if (reminderId == null) return;
+    final reminders = _reminders;
+    if (reminders == null) {
+      throw StateError('No ReminderCloser to close reminder $reminderId');
+    }
+    await reminders.close(
+      reminderId,
+      entry,
+      now: now,
+      today: localToday(_clock),
+    );
   }
 
   /// Refuses values the form should already have caught: a missing km for a

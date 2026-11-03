@@ -13,6 +13,8 @@ import '../models/calendar_date.dart';
 import '../models/fuel_type.dart';
 import '../models/log_entry_type.dart';
 import '../models/refuel.dart';
+import '../models/reminder.dart';
+import '../models/reminder_kind.dart';
 import '../models/vehicle_kind.dart';
 import 'app_database.steps.dart';
 import 'attachments_table.dart';
@@ -24,12 +26,14 @@ import 'daos/backup_dao.dart';
 import 'daos/log_entries_dao.dart';
 import 'daos/mileage_readings_dao.dart';
 import 'daos/owners_dao.dart';
+import 'daos/reminders_dao.dart';
 import 'daos/settings_dao.dart';
 import 'daos/trash_dao.dart';
 import 'daos/vehicles_dao.dart';
 import 'log_entries_table.dart';
 import 'mileage_readings_table.dart';
 import 'owners_table.dart';
+import 'reminders_table.dart';
 import 'settings_table.dart';
 import 'upgrade_safety.dart';
 import 'vehicles_table.dart';
@@ -50,6 +54,8 @@ part 'app_database.g.dart';
     MileageReadings,
     Settings,
     Attachments,
+    Reminders,
+    ReminderChanges,
   ],
   daos: [
     OwnersDao,
@@ -61,6 +67,7 @@ part 'app_database.g.dart';
     SettingsDao,
     BackupDao,
     AttachmentsDao,
+    RemindersDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -211,6 +218,20 @@ class AppDatabase extends _$AppDatabase {
       }
       await fillExistingRefuels(m.database);
     },
+    // v11: the reminders (`reminders`) and their append-only history
+    // (`reminder_changes`), with their indexes, among them the partial
+    // unique index of one open reminder per kind and vehicle. Only new
+    // objects, created empty: no existing table or row is touched and no
+    // audit row is written. `audit_log` needs no change, since
+    // `entity_type` has no CHECK and accepts the new `reminder` code.
+    from10To11: (m, schema) async {
+      await m.createTable(schema.reminders);
+      await m.createTable(schema.reminderChanges);
+      await m.createIndex(schema.remindersVehicleDeleted);
+      await m.createIndex(schema.remindersVehicleKind);
+      await m.createIndex(schema.remindersOnePerKind);
+      await m.createIndex(schema.reminderChangesReminderAt);
+    },
   );
 
   /// Fills the refuel fields of every refuel row, for the v9 → v10 upgrade.
@@ -321,7 +342,7 @@ class AppDatabase extends _$AppDatabase {
   final PreUpgradeCopier _copier;
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// Opens the connection now, running any pending migration.
   ///
