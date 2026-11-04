@@ -150,7 +150,7 @@ void main() {
       expect(find.text('AB123CD'), findsOneWidget);
       expect(find.text('Dad'), findsOneWidget);
       expect(find.text('Mario Rossi'), findsOneWidget);
-      expect(find.text('12,345 km · Diesel'), findsOneWidget);
+      expect(find.text('12,345\u00A0km · Diesel'), findsOneWidget);
     });
 
     testWidgets('a vehicle without make and model shows its plate first',
@@ -171,12 +171,12 @@ void main() {
 
       expect(find.byType(VehicleDetailPage), findsOneWidget);
       // The header always shows the km; the history tab comes first.
-      expect(find.text('12,345 km'), findsOneWidget);
+      expect(find.text('12,345\u00A0km'), findsOneWidget);
       expect(find.textContaining('from the Mileage tab'), findsNothing);
 
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
-      expect(find.text('12,345 km'), findsNWidgets(2));
+      expect(find.text('12,345\u00A0km'), findsNWidgets(2));
       expect(find.textContaining('from the Mileage tab'), findsOneWidget);
     });
 
@@ -601,7 +601,7 @@ void main() {
 
       expect(find.byType(VehicleDetailPage), findsOneWidget);
       expect(
-        find.text('Archived on Mar 4, 2024 · Sold · 1,500 km'),
+        find.text('Archived on Mar 4, 2024 · Sold · 1,500\u00A0km'),
         findsOneWidget,
       );
       expect(find.text('To Luca'), findsOneWidget);
@@ -627,7 +627,7 @@ void main() {
       }
       await tester.tap(find.text('Mileage'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('1,500 km').first);
+      await tester.tap(find.text('1,500\u00A0km').first);
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsNothing);
     });
@@ -684,7 +684,7 @@ void main() {
 
       expect(find.text('Vehicle archived'), findsOneWidget);
       expect(
-        find.text('Archived on ${todayText()} · Sold · 1,500 km'),
+        find.text('Archived on ${todayText()} · Sold · 1,500\u00A0km'),
         findsOneWidget,
       );
       final archived = store.vehicles[punto.id]!;
@@ -716,7 +716,7 @@ void main() {
 
       // The reading form's own message; the dialog stays open.
       expect(
-        find.text('At least 1,500 km: the odometer never goes backwards'),
+        find.text('At least 1,500\u00A0km: the odometer never goes backwards'),
         findsOneWidget,
       );
       expect(find.text('Archive vehicle'), findsOneWidget);

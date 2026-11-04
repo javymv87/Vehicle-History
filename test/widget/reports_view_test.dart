@@ -94,7 +94,7 @@ void main() {
     expect(inCard('report-consumption', '3'), findsOneWidget);
     expect(
       coverage(tester),
-      'Average over 1,600 km (190 days) of the 1,600 km (190 days) in the '
+      'Average over 1,600\u00A0km (190 days) of the 1,600\u00A0km (190 days) in the '
       'range.',
     );
 
@@ -104,7 +104,7 @@ void main() {
     expect(inCard('report-consumption', '1'), findsOneWidget);
     expect(
       coverage(tester),
-      'Average over 500 km (10 days) of the 500 km (10 days) in the range.',
+      'Average over 500\u00A0km (10 days) of the 500\u00A0km (10 days) in the range.',
     );
   });
 
@@ -131,7 +131,7 @@ void main() {
     expect(inCard('report-consumption', '1'), findsOneWidget);
     expect(
       coverage(tester),
-      'Average over 500 km (10 days) of the 500 km (10 days) in the range.',
+      'Average over 500\u00A0km (10 days) of the 500\u00A0km (10 days) in the range.',
     );
   });
 

@@ -261,7 +261,7 @@ void main() {
       await pumpSettings(tester);
       final days = find.text('Warn 30 days before');
       await tester.scrollUntilVisible(days, 200);
-      expect(find.text('Warn 1,000 km before'), findsOneWidget);
+      expect(find.text('Warn 1,000\u00A0km before'), findsOneWidget);
 
       await tester.tap(days);
       await tester.pumpAndSettle();

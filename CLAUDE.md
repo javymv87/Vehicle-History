@@ -641,7 +641,8 @@ number by one (step 6 = `0.6.0+6`; after the 0.8.1 and 9b releases the two
 no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
 `appVersion`
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
-they differ.
+they differ. A revision between steps bumps the patch version and the build
+number instead (the reminder screens rework after step 13a = `0.13.1+16`).
 
 Signing (Android): `android/app/build.gradle.kts` loads
 `android/key.properties` **if present** and signs **both `debug` and
@@ -796,9 +797,10 @@ configuration, do not navigate with anonymous `MaterialPageRoute`.
 
 - Paths are built only through `AppRoutes` (`app/router/app_routes.dart`).
 - The lists live in a `StatefulShellRoute` under the `NavigationBar`
-  (`HomeShell`, which also owns the add FAB): Vehicles, Reminders (with the
-  overdue + due-soon badge, `reminderBadgeCountProvider`, and no FAB) and
-  Owners. Details and forms are
+  (`HomeShell`, which also owns the add FAB): Vehicles, Reminders (an
+  agenda of the overdue and due-soon reminders, `reminderAgendaProvider` /
+  `ReminderAgenda`, whose length is the badge, `reminderBadgeCountProvider`;
+  no FAB) and Owners. Details and forms are
   top-level routes pushed full screen on top of it; `…/new` is declared
   before `…/:id`. History entries are nested under their vehicle
   (`/vehicles/:id/entries/new`, `…/entries/:entryId`, `…/:entryId/edit`), so
@@ -957,6 +959,12 @@ litres, no automatic total).
 - Each vehicle has an in-app, read-only Reports tab since step 12
   (consumption, fuel spend, distance over time). The PDF reports (expenses,
   by type, fuel, general) come later, built on them.
+- Actions are painted by meaning, never by name (`Docs/07`, "Colores de
+  acción"): born = primary, fulfilled = the ok green, deferred = the
+  due-soon amber, rule changed = tertiary, gone = error; always icon + the
+  word in colour and medium weight + the rest of the line in the normal
+  colour, through `ActionLabel` / `actionColor`
+  (`lib/shared/widgets/action_label.dart`).
 - Time-based deadlines will produce local notifications (step 13b); km-based
   ones are surfaced through visual highlighting, not notifications. Since
   step 13a both are shown in the app (status and the Reminders badge).

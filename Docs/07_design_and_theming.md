@@ -62,6 +62,43 @@ Coherente con la lógica de resaltado de los vencimientos por km descrita en
 texto, tanto por accesibilidad (daltonismo) como porque en el modo oscuro la
 representación de los colores cambia.
 
+**Patrón para un estado: la tarjeta teñida.** Cuando una pantalla responde
+"¿cómo está esto?", la respuesta va en una tarjeta teñida del color del
+estado (fondo y borde del color con poca opacidad, texto en el color del
+estado, icono siempre) con la palabra del estado en la primera línea y el
+dato decisivo como cifra grande debajo. Primer uso: la tarjeta de estado del
+detalle de un recordatorio (`08_recordatorios.md`).
+
+### Colores de acción
+
+Regla para toda la app: **cada acción se pinta con el color de su
+significado, no de su nombre**, allí donde se enumeran acciones (historial de
+un recordatorio, filas de la papelera, sus botones).
+
+| Significado | Color | Acciones |
+| --- | --- | --- |
+| Nace | primario | crear, cargado del manual |
+| Se cumple | el verde de "al día" | cerrado, marcado hecho, completado, restaurado de la papelera |
+| Se aplaza | el ámbar de "pronto" | pospuesto, aplazamiento quitado |
+| Cambia la regla | terciario | personalizado, referencia restaurada, editado |
+| Desaparece | error | eliminado, borrado definitivamente |
+
+Siempre **icono + palabra de la acción en su color y peso medio + el resto de
+la línea en el color normal** ("✓ **Hecho** · 3 nov 2026 · 200.000 km");
+nunca el color solo. En el código, `ActionMeaning`, `actionColor` y
+`ActionLabel` (`lib/shared/widgets/action_label.dart`).
+
+### Una tarjeta por pregunta
+
+Las pantallas de detalle se ordenan por las preguntas que se hace quien las
+abre: **una tarjeta por pregunta, la más importante arriba**, y **sin
+etiquetas que repitan lo que el valor ya dice** (una fecha no necesita la
+etiqueta "Fecha" ni unos km la etiqueta "Cuentakilómetros"). Una etiqueta
+pequeña en mayúsculas solo nombra la pregunta de la tarjeta ("ÚLTIMA VEZ").
+Las tarjetas usan `surfaceContainer`, radio de 16 dp y 20 dp de separación;
+lo secundario (como un historial) va plegado. Primer uso: el detalle y el
+formulario de los recordatorios (versión 0.13.1).
+
 ### Coherencia claro/oscuro en las imágenes
 
 La app muestra fotos (documentos y entradas; las fotos de perfil de los

@@ -423,18 +423,20 @@ procedimiento de carga desde el manual: `08_recordatorios.md`.
   (seguro, documento). Lo crea el usuario desde la pestaña Recordatorios del
   vehículo, o se carga desde el manual con el procedimiento del doc 08. No
   son campos de la entrada.
-- **Inicio:** el destino **Recordatorios**, con un distintivo de vencidos +
-  próximos, lista los recordatorios abiertos de los vehículos activos en
-  Vencidos / Próximos / Al día. Los vehículos archivados quedan fuera.
-- **Vehículo:** pestaña **Recordatorios** (después de Historial) con el botón
-  "Nuevo recordatorio" y los completados plegados.
+- **Inicio:** el destino **Recordatorios** es una agenda: solo los vencidos y
+  los próximos de los vehículos activos, en Vencidos / Próximos, con un
+  distintivo que cuenta esa misma lista. Sin nada pendiente dice "Nada
+  pendiente" y cuántos están al día. Los vehículos archivados quedan fuera.
+- **Vehículo:** pestaña **Recordatorios** (después de Historial) con el plan
+  completo (Vencidos / Próximos / Al día), el botón "Nuevo recordatorio" y
+  los completados plegados.
 - **Estado:** vencido / próximo / al día, en color con icono y texto,
   calculado en cada lectura (nunca guardado): vence el primero de los dos, km
   o tiempo; el aviso anticipado es el de Ajustes o el propio del
   recordatorio.
 - **Criterio aplicado:** el usuario puede apartarse de la referencia con un
-  motivo; las dos se ven siempre, con un aviso discreto si el aplicado es
-  menos exigente. **Posponer** solo esta vez, con motivo. Todo queda en el
+  motivo; las dos se ven siempre, con la etiqueta **Menos exigente** si el
+  aplicado lo es. **Posponer** solo esta vez, con motivo. Todo queda en el
   historial del recordatorio.
 - **Cerrar:** solo con una entrada, de forma explícita: el campo **Cierra el
   recordatorio** del formulario de entradas (mantenimiento, reparación,

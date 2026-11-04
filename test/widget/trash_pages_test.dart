@@ -57,7 +57,7 @@ void main() {
     expect(find.text('Fiat Punto'), findsOneWidget);
     expect(find.text('AB123CD'), findsOneWidget);
     expect(find.text('Mario Rossi'), findsOneWidget);
-    expect(find.textContaining('Deleted on '), findsOneWidget);
+    expect(find.textContaining('Deleted · '), findsOneWidget);
     expect(find.text('Will be removed in 30 days'), findsOneWidget);
     expect(find.text('2 entries · 2 odometer readings'), findsOneWidget);
   });

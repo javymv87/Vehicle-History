@@ -114,8 +114,12 @@ calculado en cada lectura (vence el primero de los dos, km o tiempo), el
 cierre con una entrada (el campo "Cierra el recordatorio" o "Marcar hecho")
 y el aviso anticipado en Ajustes; los vehículos archivados quedan fuera. Los
 recordatorios se cargan desde el manual con un procedimiento documentado que
-escribe en un paquete exportado. Lo siguiente son las notificaciones locales
-(13b).
+escribe en un paquete exportado. La versión 0.13.1 rehízo esas pantallas
+(doc 08, "Pantallas"; doc 07, "Una tarjeta por pregunta"): Inicio es ahora
+una agenda de lo vencido y lo próximo, el detalle se ordena en tarjetas (el
+estado teñido arriba) y los textos siguen unas reglas comunes (años en vez
+de múltiplos de 12 meses, "faltan / hace"). Lo siguiente son las
+notificaciones locales (13b).
 
 Hoja de ruta hasta la primera versión usable:
 

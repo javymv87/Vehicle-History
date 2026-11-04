@@ -265,10 +265,20 @@ class UnitFormatter {
         symbol: symbol,
         decimals: decimals,
         locale: _l10n.localeName,
-        join: _l10n.unitValueWithSymbol,
+        join: _joinWithSymbol,
         allowNegative: allowNegative,
       );
+
+  /// [value] and [symbol] as the language joins them, with every space a
+  /// non-breaking one, so a line never breaks between "40.000" and "km".
+  String _joinWithSymbol(String value, String symbol) => _l10n
+      .unitValueWithSymbol(value, symbol)
+      .replaceAll(' ', nonBreakingSpace);
 }
+
+/// The non-breaking space that keeps a value and its unit symbol on one
+/// line.
+const String nonBreakingSpace = ' ';
 
 /// The localised symbol of a [DistanceUnit].
 extension DistanceUnitSymbol on DistanceUnit {

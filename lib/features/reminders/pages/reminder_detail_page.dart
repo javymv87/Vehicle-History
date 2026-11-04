@@ -13,11 +13,10 @@ import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/unit_formatter.dart';
+import '../../../shared/widgets/action_label.dart';
 import '../../../shared/widgets/async_value_view.dart';
-import '../../../shared/widgets/detail_field.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
-import '../../../shared/widgets/section_header.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
@@ -26,13 +25,16 @@ import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../../vehicles/controllers/vehicle_tab_controller.dart';
 import '../controllers/reminder_actions_controller.dart';
 import '../controllers/reminder_list_controller.dart';
+import '../widgets/reminder_card.dart';
 import '../widgets/reminder_dialogs.dart';
 import '../widgets/reminder_texts.dart';
 import '../widgets/reminder_tile.dart';
 
-/// The page of one reminder (`Docs/08_recordatorios.md`): status, next due,
-/// the applied and reference criteria, the snooze, the anchor with its
-/// entry, note, manual reference and source, and the reminder's history.
+/// The page of one reminder (`Docs/08_recordatorios.md`), one card per
+/// question, the most important first: header (vehicle and origin), the
+/// status card with the next due, the criterion (applied over reference,
+/// postponement, own warning), the last time with its entry, the note,
+/// and the folded history.
 /// Its actions are "Mark done", Postpone, the criterion ones, Edit and
 /// Delete; none on an archived vehicle, only Delete on a completed one.
 class ReminderDetailPage extends ConsumerWidget {
@@ -229,19 +231,21 @@ class _ReminderDetailView extends ConsumerWidget {
     final completed = reminder.isCompleted;
     final actions = ref.read(reminderActionsControllerProvider.notifier);
     final canWrite = !readOnly && !completed;
+    final note = reminder.note;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(reminder.title),
+        title: Text(reminder.title, overflow: TextOverflow.ellipsis),
         actions: [
           if (canWrite) ...[
             IconButton(
               tooltip: l10n.reminderActionMarkDone,
-              icon: const Icon(Icons.task_alt),
+              icon: const Icon(Icons.check_circle_outline),
               onPressed: () => _markDone(context, ref),
             ),
             IconButton(
               tooltip: l10n.actionEdit,
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.edit_outlined),
               onPressed: () => context.push(
                 AppRoutes.editReminder(vehicle.id, reminder.id),
               ),
@@ -288,63 +292,42 @@ class _ReminderDetailView extends ConsumerWidget {
             ),
         ],
       ),
+      // One card per question, the most important first; 20 dp between
+      // blocks and at the sides.
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          ListTile(
-            leading: CircleAvatar(
-              child: Icon(
-                reminder.kind.icon,
-                semanticLabel: reminder.kind.label(l10n),
-              ),
-            ),
-            title: Text(reminder.kind.label(l10n)),
-            subtitle: Text(vehicle.displayNameWithPlate(l10n)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: ReminderStatusLine(
-              status: view.due.status,
-              detail: reminderDueLine(reminder, view.due, l10n, units),
-            ),
-          ),
-          if (!completed) _NextDue(view: view, units: units),
-          _Criteria(view: view, units: units),
-          if (reminder.isSnoozed) ...[
-            SectionHeader(title: l10n.reminderChipSnoozed),
-            DetailField(
-              label: l10n.reminderSnoozedUntil(
-                snoozeTargetText(reminder, l10n, units),
-              ),
-              value: l10n.reminderReason(reminder.snoozeReason ?? ''),
+          _Header(view: view),
+          const SizedBox(height: 20),
+          _StatusCard(view: view, units: units),
+          if (!reminder.isOneShot ||
+              reminder.isSnoozed ||
+              reminder.leadDays != null ||
+              reminder.leadKm != null) ...[
+            const SizedBox(height: 20),
+            _CriterionCard(
+              view: view,
+              units: units,
+              onRestoreReference:
+                  canWrite ? () => _restoreReference(context, ref) : null,
             ),
           ],
-          _Anchor(reminder: reminder, units: units),
-          if (reminder.leadDays != null || reminder.leadKm != null)
-            DetailField(
-              label: l10n.reminderLeadLabel,
-              value: joinParts(l10n, [
-                if (reminder.leadDays case final days?)
-                  l10n.reminderLeadDaysValue(days),
-                if (reminder.leadKm case final km?)
-                  l10n.reminderLeadDistanceValue(units.distance.format(km)),
-              ]),
+          if (!reminder.isOneShot &&
+              (reminder.lastDoneDate != null ||
+                  reminder.lastDoneKm != null)) ...[
+            const SizedBox(height: 20),
+            _LastTimeCard(reminder: reminder, units: units),
+          ],
+          if (note != null) ...[
+            const SizedBox(height: 20),
+            Text(
+              note,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          if (reminder.note case final note?)
-            DetailField(label: l10n.reminderFieldNote, value: note),
-          if (reminder.manualRef case final manualRef?)
-            DetailField(label: l10n.reminderFieldManualRef, value: manualRef),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              reminder.source == ReminderSource.generated
-                  ? l10n.reminderSourceGenerated
-                  : l10n.reminderSourceManual,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
+          ],
+          const SizedBox(height: 20),
           _History(reminder: reminder, units: units),
         ],
       ),
@@ -352,47 +335,62 @@ class _ReminderDetailView extends ConsumerWidget {
   }
 }
 
-/// "Next due": the due value of each axis with what is left, after the
-/// snooze if any.
-class _NextDue extends StatelessWidget {
-  const _NextDue({required this.view, required this.units});
+/// The header: the kind icon in a 48 dp circle, the vehicle, and where the
+/// reminder comes from ("Created by hand", "From the manual · p. 174").
+/// The title is the app bar's.
+class _Header extends StatelessWidget {
+  const _Header({required this.view});
 
   final ReminderView view;
-  final UnitFormatter units;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final due = view.due;
-    final date = due.effectiveDate;
-    final km = due.effectiveKm;
-    if (date == null && km == null) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final theme = Theme.of(context);
+    final reminder = view.reminder;
+    return Row(
       children: [
-        SectionHeader(title: l10n.reminderNextDue),
-        if (date != null)
-          DetailField(
-            label: l10n.reminderAxisDate,
-            value: l10n.dateValue(date.toLocalDateTime()),
-            note: dueDateText(due, l10n),
+        CircleAvatar(
+          radius: 24,
+          child: Icon(
+            reminder.kind.icon,
+            semanticLabel: reminder.kind.label(l10n),
           ),
-        if (km != null)
-          DetailField(
-            label: l10n.reminderAxisDistance,
-            value: units.distance.format(km),
-            note: dueDistanceText(due, l10n, units),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                vehicleLine(view.vehicle, l10n),
+                style: theme.textTheme.titleMedium,
+              ),
+              Text(
+                joinParts(l10n, [
+                  reminder.source == ReminderSource.generated
+                      ? l10n.reminderSourceGenerated
+                      : l10n.reminderSourceManual,
+                  reminder.manualRef ?? '',
+                ]),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
+        ),
       ],
     );
   }
 }
 
-/// The criterion; when overridden, the applied one first, large, then the
-/// reference one small with what the manufacturer would say, and the
-/// warning when the applied one is laxer.
-class _Criteria extends StatelessWidget {
-  const _Criteria({required this.view, required this.units});
+/// The status card, tinted by the state: the state word with its icon,
+/// then the next due as the hero value (both axes side by side when the
+/// reminder has two), each with what is left. A completed one-shot shows
+/// its completion day.
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({required this.view, required this.units});
 
   final ReminderView view;
   final UnitFormatter units;
@@ -403,93 +401,324 @@ class _Criteria extends StatelessWidget {
     final theme = Theme.of(context);
     final reminder = view.reminder;
     final due = view.due;
-    if (!reminder.overrideActive) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final status = due.status;
+    final style = reminderStatusStyle(status, theme);
+    final muted = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final word = switch (status) {
+      ReminderStatus.dueSoon => l10n.reminderStatusHeadlineDueSoon,
+      _ => status.label(l10n),
+    };
+    // An axis of the reference that the override turned off.
+    final noTimeLimit = reminder.overrideActive &&
+        reminder.refIntervalMonths != null &&
+        reminder.appliedIntervalMonths == null;
+    final noDistanceLimit = reminder.overrideActive &&
+        reminder.refIntervalKm != null &&
+        reminder.appliedIntervalKm == null;
+    final date = due.effectiveDate;
+    final km = due.effectiveKm;
+    final completedAt = reminder.completedAt;
+
+    final Widget body;
+    if (completedAt != null) {
+      body = _Hero(
+        value: l10n.dateValue(completedAt.toLocal()),
+        color: style.color,
+      );
+    } else if (date != null && km != null) {
+      body = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: l10n.reminderCriterion),
-          DetailField(
-            label: l10n.reminderCriterion,
-            value: referenceCriterionText(reminder, l10n, units),
+          Expanded(
+            child: _Axis(
+              label: l10n.reminderAxisByDistance(units.distance.symbol),
+              value: units.distance.format(km),
+              remaining: remainingDistanceText(due, l10n, units),
+              color: style.color,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _Axis(
+              label: l10n.reminderAxisDate,
+              value: l10n.dateValue(date.toLocalDateTime()),
+              remaining: remainingDateText(due, l10n),
+              color: style.color,
+            ),
+          ),
+        ],
+      );
+    } else {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Hero(
+            value: date != null
+                ? l10n.dateValue(date.toLocalDateTime())
+                : units.distance.format(km ?? 0),
+            color: style.color,
+          ),
+          Text(
+            joinParts(l10n, [
+              (date != null
+                      ? remainingDateText(due, l10n)
+                      : remainingDistanceText(due, l10n, units)) ??
+                  '',
+              if (noTimeLimit) l10n.reminderNoTimeLimit,
+              if (noDistanceLimit)
+                l10n.reminderNoDistanceLimit(units.distance.symbol),
+            ]),
+            style: muted,
           ),
         ],
       );
     }
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final amber = reminderStatusStyle(ReminderStatus.dueSoon, theme).color;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionHeader(title: l10n.reminderAppliedCriterion),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+
+    return Container(
+      key: const ValueKey('reminder-status-card'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: style.color.withValues(alpha: 0.10),
+        border: Border.all(color: style.color.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
+              Icon(style.icon, size: 20, color: style.color),
+              const SizedBox(width: 8),
               Text(
-                appliedCriterionText(reminder, l10n, units),
-                style: theme.textTheme.titleLarge,
+                word,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: style.color,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              if (reminder.overrideReason case final reason?)
-                Text(l10n.reminderReason(reason)),
-              if (reminder.overrideAt case final at?)
-                Text(
-                  l10n.reminderOverriddenOn(at.toLocal()),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.reminderReferenceCriterion,
-                style: theme.textTheme.labelLarge?.copyWith(color: muted),
-              ),
-              Text(
-                referenceCriterionText(reminder, l10n, units),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-              ),
-              if (due.referenceDueDate case final date?)
-                Text(
-                  l10n.reminderReferenceDueDate(date.toLocalDateTime()),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                ),
-              if (due.referenceDueKm case final km?)
-                Text(
-                  l10n.reminderReferenceDueDistance(units.distance.format(km)),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                ),
-              if (due.laxerThanReference)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_outlined,
-                        size: 18,
-                        color: amber,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          l10n.reminderLaxerWarning,
-                          style:
-                              theme.textTheme.bodySmall?.copyWith(color: amber),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
+          const SizedBox(height: 8),
+          body,
+        ],
+      ),
+    );
+  }
+}
+
+/// The hero value of the status card.
+class _Hero extends StatelessWidget {
+  const _Hero({required this.value, required this.color});
+
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        value,
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+      );
+}
+
+/// One axis of a two-axis status card: its label, its due value and what
+/// is left.
+class _Axis extends StatelessWidget {
+  const _Axis({
+    required this.label,
+    required this.value,
+    required this.remaining,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String? remaining;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final remaining = this.remaining;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CardLabel(label),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        if (remaining != null)
+          Text(
+            remaining,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }
 }
 
+/// The criterion card: the reference, or the applied criterion over the
+/// reference with what the reference would say on the axes that differ;
+/// the postponement and the reminder's own warning when set.
+class _CriterionCard extends StatelessWidget {
+  const _CriterionCard({
+    required this.view,
+    required this.units,
+    required this.onRestoreReference,
+  });
+
+  final ReminderView view;
+  final UnitFormatter units;
+
+  /// Puts the reference back; `null` on a read-only reminder.
+  final VoidCallback? onRestoreReference;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final reminder = view.reminder;
+    final due = view.due;
+    final manual = reminder.source == ReminderSource.generated;
+    final muted = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final amber = reminderStatusStyle(ReminderStatus.dueSoon, theme).color;
+    final overridden = reminder.overrideActive;
+    final restore = onRestoreReference;
+    return ReminderCard(
+      label:
+          overridden ? l10n.reminderAppliedCriterion : l10n.reminderCriterion,
+      trailing: Wrap(
+        spacing: 6,
+        children: [
+          if (overridden && due.laxerThanReference)
+            ReminderChip(
+              label: l10n.reminderChipLaxer,
+              icon: Icons.warning_amber_outlined,
+              color: amber,
+            ),
+          if (reminder.isSnoozed) ReminderChip(label: l10n.reminderChipSnoozed),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            reminder.isOneShot
+                ? l10n.reminderModeOneShot
+                : overridden
+                    ? appliedCriterionText(reminder, l10n, units)
+                    : referenceCriterionText(reminder, l10n, units),
+            style: theme.textTheme.titleMedium,
+          ),
+          if (!reminder.isOneShot && !overridden)
+            Text(
+              manual
+                  ? l10n.reminderManufacturerSays
+                  : l10n.reminderOwnReference,
+              style: muted,
+            ),
+          if (overridden) ...[
+            Text(
+              joinParts(l10n, [
+                if (reminder.overrideReason case final reason?)
+                  l10n.reminderQuoted(reason),
+                if (reminder.overrideAt case final at?)
+                  l10n.reminderOverriddenOn(at.toLocal()),
+              ]),
+              style: muted,
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1),
+            ),
+            Text(
+              () {
+                final reference = criterionText(
+                  km: reminder.refIntervalKm,
+                  months: reminder.refIntervalMonths,
+                  sentence: false,
+                  l10n: l10n,
+                  units: units,
+                );
+                return manual
+                    ? l10n.reminderManufacturerCriterion(reference)
+                    : l10n.reminderReferenceLine(reference);
+              }(),
+              style: muted,
+            ),
+            if (due.referenceDueDate case final date? when date != due.dueDate)
+              Text(
+                l10n.reminderReferenceByTime(date.toLocalDateTime()),
+                style: muted,
+              ),
+            if (due.referenceDueKm case final km? when km != due.dueKm)
+              Text(
+                l10n.reminderReferenceByDistance(
+                  units.distance.symbol,
+                  units.distance.format(km),
+                ),
+                style: muted,
+              ),
+            if (restore != null)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton(
+                  onPressed: restore,
+                  child: Text(l10n.reminderActionRestoreReference),
+                ),
+              ),
+          ],
+          if (reminder.isSnoozed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                joinParts(l10n, [
+                  snoozedUntilText(reminder, l10n, units),
+                  if (reminder.snoozeReason case final reason?)
+                    l10n.reminderQuoted(reason),
+                ]),
+                style: muted,
+              ),
+            ),
+          if (reminder.leadDays != null || reminder.leadKm != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                l10n.reminderLeadLine(
+                  joinParts(l10n, [
+                    if (reminder.leadDays case final days?)
+                      l10n.reminderLeadDaysValue(days),
+                    if (reminder.leadKm case final km?)
+                      l10n.reminderLeadDistanceValue(
+                        units.distance.format(km),
+                      ),
+                  ]),
+                ),
+                style: muted,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// "Last time": the anchor day and odometer, and a link to the entry that
-/// last closed the reminder when it is still there.
-class _Anchor extends ConsumerWidget {
-  const _Anchor({required this.reminder, required this.units});
+/// last closed the reminder while it is still there.
+class _LastTimeCard extends ConsumerWidget {
+  const _LastTimeCard({required this.reminder, required this.units});
 
   final Reminder reminder;
   final UnitFormatter units;
@@ -497,53 +726,65 @@ class _Anchor extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final day = reminder.lastDoneDate;
-    final km = reminder.lastDoneKm;
+    final theme = Theme.of(context);
     final entryId = reminder.lastEntryId;
-    final entry =
-        entryId == null ? null : ref.watch(logEntryDetailProvider(entryId));
-    final linked = entry?.value;
-    if (day == null && km == null && linked == null) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionHeader(title: l10n.reminderAnchor),
-        if (day != null)
-          DetailField(
-            label: l10n.fieldEntryDate,
-            value: l10n.dateValue(day.toLocalDateTime()),
+    final linked = entryId == null
+        ? null
+        : ref.watch(logEntryDetailProvider(entryId)).value;
+    return ReminderCard(
+      child: Row(
+        children: [
+          Icon(Icons.history, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CardLabel(l10n.reminderAnchor),
+                Text(
+                  joinParts(l10n, [
+                    if (reminder.lastDoneDate case final day?)
+                      l10n.dateValue(day.toLocalDateTime()),
+                    if (reminder.lastDoneKm case final km?)
+                      units.distance.format(km),
+                  ]),
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ],
+            ),
           ),
-        if (km != null)
-          DetailField(
-            label: l10n.fieldEntryKm,
-            value: units.distance.format(km),
-          ),
-        if (linked != null && linked.vehicleId == reminder.vehicleId)
-          ListTile(
-            leading: const Icon(Icons.history),
-            title: Text(l10n.reminderAnchorEntryLink),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () =>
-                context.push(AppRoutes.entry(linked.vehicleId, linked.id)),
-          ),
-      ],
+          if (linked != null && linked.vehicleId == reminder.vehicleId)
+            TextButton(
+              onPressed: () =>
+                  context.push(AppRoutes.entry(linked.vehicleId, linked.id)),
+              child: Text(l10n.reminderAnchorEntryLink),
+            ),
+        ],
+      ),
     );
   }
 }
 
-/// "Reminder history": one line per change, newest first, e.g. "3 Nov
-/// 2026 · Criterion customised · Every 80,000 km · time off · “reason”".
-class _History extends ConsumerWidget {
+/// "Reminder history": a folded outlined row with the number of changes;
+/// opened in place, one line per change, newest first, e.g. "3 Nov 2026 ·
+/// Criterion customised · Every 80,000 km · no time limit · “reason”".
+class _History extends ConsumerStatefulWidget {
   const _History({required this.reminder, required this.units});
 
   final Reminder reminder;
   final UnitFormatter units;
 
+  @override
+  ConsumerState<_History> createState() => _HistoryState();
+}
+
+class _HistoryState extends ConsumerState<_History> {
+  bool _open = false;
+
   /// What the change of [change] set, as one short text.
   String _detail(ReminderChange change, AppLocalizations l10n) {
-    final asReminder = reminder.copyWith(
+    final units = widget.units;
+    final asReminder = widget.reminder.copyWith(
       dueDate: change.dueDate,
       lastDoneDate: change.lastDoneDate,
       lastDoneKm: change.lastDoneKm,
@@ -563,40 +804,108 @@ class _History extends ConsumerWidget {
       ReminderChangeType.applyOverride =>
         appliedCriterionText(asReminder, l10n, units),
       ReminderChangeType.snooze => snoozeTargetText(asReminder, l10n, units),
-      ReminderChangeType.close => joinParts(l10n, [
-          if (change.lastDoneDate case final day?)
-            l10n.dateValue(day.toLocalDateTime()),
-          if (change.lastDoneKm case final km?) units.distance.format(km),
-        ]),
-      ReminderChangeType.unsnooze || ReminderChangeType.complete => '',
+      // Closes and completions read their own line (`_rest`).
+      ReminderChangeType.close ||
+      ReminderChangeType.unsnooze ||
+      ReminderChangeType.complete =>
+        '',
     };
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final changes = ref.watch(reminderChangesProvider(reminder.id)).value;
+    final changes =
+        ref.watch(reminderChangesProvider(widget.reminder.id)).value;
     if (changes == null || changes.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionHeader(title: l10n.reminderHistoryTitle),
-        for (final change in changes)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Text(
-              joinParts(l10n, [
-                l10n.dateValue(change.changedAt.toLocal()),
-                change.type.label(l10n),
-                _detail(change, l10n),
-                if (change.reason case final reason?)
-                  l10n.reminderQuoted(reason),
-              ]),
-              style: theme.textTheme.bodyMedium,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            key: const ValueKey('reminder-history-row'),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.reminderHistoryTitle,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  Text(
+                    l10n.reminderHistoryCount(changes.length),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(_open ? Icons.expand_less : Icons.expand_more),
+                ],
+              ),
             ),
           ),
-      ],
+          if (_open)
+            for (final change in changes)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                // The action in its colour, then the rest of the line.
+                child: ActionLabel(
+                  meaning: change.type.meaning,
+                  icon: change.type.icon,
+                  word: change.type == ReminderChangeType.create &&
+                          widget.reminder.source == ReminderSource.generated
+                      ? l10n.reminderChangeLoaded
+                      : change.type.label(l10n),
+                  separator: l10n.partsSeparator,
+                  rest: _rest(change, l10n),
+                ),
+              ),
+        ],
+      ),
     );
+  }
+
+  /// What follows the action word. A close or a completion reads the day
+  /// and km of its entry, with the registration day only when it differs;
+  /// any other change reads its day, what it set and its reason.
+  String _rest(ReminderChange change, AppLocalizations l10n) {
+    switch (change.type) {
+      case ReminderChangeType.close:
+        return closeLineText(
+          day: change.lastDoneDate,
+          km: change.lastDoneKm,
+          registeredAt: change.changedAt,
+          l10n: l10n,
+          units: widget.units,
+        );
+      case ReminderChangeType.complete:
+        // A one-shot keeps no anchor: the day and km are its entry's.
+        final entryId = change.entryId;
+        final entry = entryId == null
+            ? null
+            : ref.watch(logEntryDetailProvider(entryId)).value;
+        return closeLineText(
+          day: entry?.date,
+          km: entry?.km,
+          registeredAt: change.changedAt,
+          l10n: l10n,
+          units: widget.units,
+        );
+      default:
+        return joinParts(l10n, [
+          l10n.dateValue(change.changedAt.toLocal()),
+          _detail(change, l10n),
+          if (change.reason case final reason?) l10n.reminderQuoted(reason),
+        ]);
+    }
   }
 }

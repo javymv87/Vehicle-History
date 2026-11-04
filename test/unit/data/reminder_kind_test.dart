@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_history/data/db/converters.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
@@ -135,6 +138,27 @@ void main() {
     }
     expect(ReminderKind.fromCode('nope'), isNull);
     expect(() => converter.fromSql('nope'), throwsStateError);
+  });
+
+  test('no ARB file repeats a key', () {
+    // A repeated key is valid JSON: the last value silently wins, as when
+    // the picker's "Other…" replaced the name of the kind "Other".
+    for (final language in ['en', 'es', 'it']) {
+      final text = File('lib/l10n/app_$language.arb').readAsStringSync();
+      final keys = [
+        for (final match
+            in RegExp(r'^  "([^"]+)":', multiLine: true).allMatches(text))
+          match.group(1)!,
+      ];
+      final seen = <String>{};
+      final repeated = [
+        for (final key in keys)
+          if (!seen.add(key)) key,
+      ];
+      expect(repeated, isEmpty, reason: 'app_$language.arb');
+      // Every top-level key was found, so none hides from the check.
+      expect(keys, hasLength((jsonDecode(text) as Map).length));
+    }
   });
 
   group('appliesTo', () {

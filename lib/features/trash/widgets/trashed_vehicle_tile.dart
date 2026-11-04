@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/models/trashed_vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/localized_labels.dart';
+import '../../../shared/widgets/action_label.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 
 /// One row of the Trash (U17): kind icon, make and model, plate, owner, when
@@ -58,8 +59,15 @@ class TrashedVehicleTile extends StatelessWidget {
             children: [
               if (makeAndModel != null) Text(vehicle.plate),
               Text(item.owner.fullName),
-              // A timestamp shown as the user's local day.
-              Text(l10n.trashDeletedOn(item.deletedAt.toLocal())),
+              // The deletion in its action colour; the timestamp shown as
+              // the user's local day.
+              ActionLabel(
+                meaning: ActionMeaning.gone,
+                icon: Icons.delete_outline,
+                word: l10n.trashDeleted,
+                separator: l10n.partsSeparator,
+                rest: l10n.dateValue(item.deletedAt.toLocal()),
+              ),
               Text(l10n.trashPurgeIn(item.daysUntilPurge(now))),
               Text(item.contents.trashLine(l10n)),
             ],
@@ -74,15 +82,19 @@ class TrashedVehicleTile extends StatelessWidget {
             overflowAlignment: OverflowBarAlignment.end,
             spacing: 8,
             children: [
+              // Each action in the colour of what it means.
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
+                  foregroundColor: actionColor(ActionMeaning.gone, theme),
                 ),
                 onPressed: onPurge,
                 icon: const Icon(Icons.delete_forever),
                 label: Text(l10n.actionPurge),
               ),
               TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: actionColor(ActionMeaning.fulfilled, theme),
+                ),
                 onPressed: onRestore,
                 icon: const Icon(Icons.restore_from_trash),
                 label: Text(l10n.actionRestore),

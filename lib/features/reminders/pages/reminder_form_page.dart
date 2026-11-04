@@ -22,6 +22,7 @@ import '../../../shared/widgets/searchable_picker.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../../vehicles/controllers/vehicle_tab_controller.dart';
 import '../controllers/reminder_form_controller.dart';
+import '../widgets/reminder_card.dart';
 
 /// The form that creates or edits a reminder (`Docs/08_recordatorios.md`):
 /// kind (searchable, grouped, filtered by the vehicle), title, recurring or
@@ -229,7 +230,7 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
       showAllLabel: l10n.reminderKindShowAll,
       labelOf: (kind) => kind.label(l10n),
       sectionOf: (kind) => kind.group.label(l10n),
-      otherLabel: l10n.reminderKindOther,
+      otherLabel: l10n.reminderKindPickerOther,
     );
     if (!mounted) return;
     switch (result) {
@@ -382,10 +383,15 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
     _units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
     const gap = SizedBox(height: 16);
+    // 20 dp between the cards.
+    const cardGap = SizedBox(height: 20);
     final kind = _kind;
     final distanceField = InputDecoration(
       suffixText: _units.distance.symbol,
       border: const OutlineInputBorder(),
+    );
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
     );
     return Scaffold(
       appBar: AppBar(
@@ -402,128 +408,159 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
         // A Column, not a lazy ListView: Form.validate only checks fields
         // that are built.
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PickerFormField(
-                key: const ValueKey('reminder-kind-field'),
-                label: l10n.reminderFieldKind,
-                value: kind?.label(l10n),
-                onTap: _pickKind,
-                enabled: !widget.kindLocked,
-                validator: (value) =>
-                    value == null ? l10n.validationReminderKindRequired : null,
+              ReminderCard(
+                label: l10n.reminderFormSectionKind,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PickerFormField(
+                      key: const ValueKey('reminder-kind-field'),
+                      label: l10n.reminderFieldKind,
+                      value: kind?.label(l10n),
+                      onTap: _pickKind,
+                      enabled: !widget.kindLocked,
+                      validator: (value) => value == null
+                          ? l10n.validationReminderKindRequired
+                          : null,
+                    ),
+                    gap,
+                    TextFormField(
+                      key: const ValueKey('reminder-title-field'),
+                      controller: _title,
+                      decoration: InputDecoration(
+                        labelText: l10n.reminderFieldTitle,
+                        border: const OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
+                      validator: (value) => (value ?? '').trim().isEmpty
+                          ? l10n.validationReminderTitleRequired
+                          : null,
+                    ),
+                  ],
+                ),
               ),
-              gap,
-              TextFormField(
-                key: const ValueKey('reminder-title-field'),
-                controller: _title,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldTitle,
-                  border: const OutlineInputBorder(),
+              cardGap,
+              ReminderCard(
+                label: l10n.reminderCriterion,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SegmentedButton<bool>(
+                      key: const ValueKey('reminder-mode'),
+                      segments: [
+                        ButtonSegment(
+                          value: false,
+                          icon: const Icon(Icons.repeat),
+                          label: Text(l10n.reminderModePeriodic),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          icon: const Icon(Icons.event),
+                          label: Text(l10n.reminderModeOneShot),
+                        ),
+                      ],
+                      selected: {_oneShot},
+                      onSelectionChanged: widget.kindLocked
+                          ? null
+                          : (selection) => setState(() {
+                                _oneShot = selection.single;
+                                _dateError = null;
+                              }),
+                    ),
+                    if (widget.kindLocked) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.reminderKindLockedHint,
+                        key: const ValueKey('reminder-kind-locked'),
+                        style: muted,
+                      ),
+                    ],
+                    gap,
+                    if (_oneShot)
+                      _DateField(
+                        key: const ValueKey('reminder-due-date'),
+                        label: l10n.reminderFieldDueDate,
+                        date: _dueDate,
+                        error: _dateError,
+                        onTap: () => _pickDate(due: true),
+                      )
+                    else ...[
+                      TextFormField(
+                        key: const ValueKey('reminder-interval-km'),
+                        controller: _intervalKm,
+                        decoration: distanceField.copyWith(
+                          labelText: l10n.reminderFieldIntervalDistance,
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        // The months field and the anchor depend on this one.
+                        onChanged: (_) => setState(() {}),
+                        validator: (value) => _validateIntervalKm(value, l10n),
+                      ),
+                      gap,
+                      TextFormField(
+                        key: const ValueKey('reminder-interval-months'),
+                        controller: _intervalMonths,
+                        decoration: InputDecoration(
+                          labelText: l10n.reminderFieldIntervalMonths,
+                          suffixText: l10n.unitMonthsSuffix,
+                          helperText: l10n.reminderIntervalHelp,
+                          helperMaxLines: 3,
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (value) =>
+                            _validateIntervalMonths(value, l10n),
+                      ),
+                      gap,
+                      _DateField(
+                        key: const ValueKey('reminder-anchor-date'),
+                        label: l10n.reminderFieldAnchorDate,
+                        date: _anchorDate,
+                        error: _dateError,
+                        onTap: () => _pickDate(due: false),
+                      ),
+                      gap,
+                      TextFormField(
+                        key: const ValueKey('reminder-anchor-km'),
+                        controller: _anchorKm,
+                        decoration: distanceField.copyWith(
+                          labelText: l10n.reminderFieldAnchorDistance,
+                          helperText: l10n.reminderAnchorKmRequiredHelp(
+                            _units.distance.symbol,
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (value) => _validateAnchorKm(value, l10n),
+                      ),
+                    ],
+                    if (widget.initial != null) ...[
+                      gap,
+                      Text(l10n.reminderAppliedHint, style: muted),
+                    ],
+                  ],
                 ),
-                textCapitalization: TextCapitalization.sentences,
-                validator: (value) => (value ?? '').trim().isEmpty
-                    ? l10n.validationReminderTitleRequired
-                    : null,
               ),
-              gap,
-              SegmentedButton<bool>(
-                key: const ValueKey('reminder-mode'),
-                segments: [
-                  ButtonSegment(
-                    value: false,
-                    icon: const Icon(Icons.repeat),
-                    label: Text(l10n.reminderModePeriodic),
-                  ),
-                  ButtonSegment(
-                    value: true,
-                    icon: const Icon(Icons.event),
-                    label: Text(l10n.reminderModeOneShot),
-                  ),
-                ],
-                selected: {_oneShot},
-                onSelectionChanged: widget.kindLocked
-                    ? null
-                    : (selection) => setState(() {
-                          _oneShot = selection.single;
-                          _dateError = null;
-                        }),
-              ),
-              if (widget.kindLocked) ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.reminderKindLockedHint,
-                  key: const ValueKey('reminder-kind-locked'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              gap,
-              if (_oneShot)
-                _DateField(
-                  key: const ValueKey('reminder-due-date'),
-                  label: l10n.reminderFieldDueDate,
-                  date: _dueDate,
-                  error: _dateError,
-                  onTap: () => _pickDate(due: true),
-                )
-              else ...[
-                TextFormField(
-                  key: const ValueKey('reminder-interval-km'),
-                  controller: _intervalKm,
-                  decoration: distanceField.copyWith(
-                    labelText: l10n.reminderFieldIntervalDistance,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  // The months field and the anchor depend on this one.
-                  onChanged: (_) => setState(() {}),
-                  validator: (value) => _validateIntervalKm(value, l10n),
-                ),
-                gap,
-                TextFormField(
-                  key: const ValueKey('reminder-interval-months'),
-                  controller: _intervalMonths,
-                  decoration: InputDecoration(
-                    labelText: l10n.reminderFieldIntervalMonths,
-                    suffixText: l10n.unitMonthsSuffix,
-                    helperText: l10n.reminderIntervalHelp,
-                    helperMaxLines: 3,
-                    border: const OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) => _validateIntervalMonths(value, l10n),
-                ),
-                gap,
-                _DateField(
-                  key: const ValueKey('reminder-anchor-date'),
-                  label: l10n.reminderFieldAnchorDate,
-                  date: _anchorDate,
-                  error: _dateError,
-                  onTap: () => _pickDate(due: false),
-                ),
-                gap,
-                TextFormField(
-                  key: const ValueKey('reminder-anchor-km'),
-                  controller: _anchorKm,
-                  decoration: distanceField.copyWith(
-                    labelText: l10n.reminderFieldAnchorDistance,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) => _validateAnchorKm(value, l10n),
-                ),
-              ],
-              gap,
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextFormField(
+              cardGap,
+              ReminderCard(
+                label: l10n.reminderFormSectionLead,
+                // One under the other: side by side the labels are cut.
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
                       key: const ValueKey('reminder-lead-days'),
                       controller: _leadDays,
                       decoration: InputDecoration(
@@ -533,13 +570,13 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: (value) => _validateLead(value, l10n),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
+                    gap,
+                    TextFormField(
                       key: const ValueKey('reminder-lead-km'),
                       controller: _leadKm,
                       decoration: distanceField.copyWith(
@@ -547,41 +584,42 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
                         hintText: l10n.reminderLeadUseGlobal,
                       ),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: (value) => _validateLead(value, l10n),
                     ),
-                  ),
-                ],
-              ),
-              gap,
-              TextFormField(
-                controller: _note,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldNote,
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                textCapitalization: TextCapitalization.sentences,
-                minLines: 2,
-                maxLines: 6,
-              ),
-              gap,
-              TextFormField(
-                controller: _manualRef,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldManualRef,
-                  border: const OutlineInputBorder(),
+                  ],
                 ),
               ),
-              if (widget.initial != null) ...[
-                gap,
-                Text(
-                  l10n.reminderAppliedHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+              cardGap,
+              ReminderCard(
+                label: l10n.reminderFormSectionNotes,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _note,
+                      decoration: InputDecoration(
+                        labelText: l10n.reminderFieldNote,
+                        border: const OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
+                      minLines: 2,
+                      maxLines: 6,
+                    ),
+                    gap,
+                    TextFormField(
+                      controller: _manualRef,
+                      decoration: InputDecoration(
+                        labelText: l10n.reminderFieldManualRef,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         ),

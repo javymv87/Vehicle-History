@@ -50,8 +50,8 @@ void main() {
       await openMileage(tester);
       expect(find.textContaining('Initial reading'), findsOneWidget);
       // Header and row both show the km; the FAB updates it.
-      expect(find.text('12,345 km'), findsOneWidget);
-      expect(find.text('AB123CD · 12,345 km'), findsOneWidget);
+      expect(find.text('12,345\u00A0km'), findsOneWidget);
+      expect(find.text('AB123CD · 12,345\u00A0km'), findsOneWidget);
       expect(
         find.widgetWithText(FloatingActionButton, 'Update odometer'),
         findsOneWidget,
@@ -66,10 +66,13 @@ void main() {
         km: 13595,
       );
       await openMileage(tester);
-      expect(find.text('13,595 km'), findsOneWidget);
-      expect(find.textContaining('+1,250 km'), findsOneWidget);
+      expect(find.text('13,595\u00A0km'), findsOneWidget);
+      expect(find.textContaining('+1,250\u00A0km'), findsOneWidget);
       // With the days since the previous reading (step 12).
-      expect(find.text('Jan 10, 2025 · +1,250 km in 312 days'), findsOneWidget);
+      expect(
+        find.text('Jan 10, 2025 · +1,250\u00A0km in 312 days'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Initial reading'), findsOneWidget);
     });
   });
@@ -81,7 +84,7 @@ void main() {
       await tester.tap(find.text('Update odometer'));
       await tester.pumpAndSettle();
       expect(find.byType(MileageReadingFormPage), findsOneWidget);
-      expect(find.textContaining('Last: 12,345 km'), findsOneWidget);
+      expect(find.textContaining('Last: 12,345\u00A0km'), findsOneWidget);
 
       await tester.enterText(
         find.byKey(const ValueKey('reading-km-field')),
@@ -91,8 +94,8 @@ void main() {
 
       expect(find.byType(MileageReadingFormPage), findsNothing);
       expect(readingKms(), [13000, 12345]);
-      expect(find.text('AB123CD · 13,000 km'), findsOneWidget);
-      expect(find.textContaining('+655 km'), findsOneWidget);
+      expect(find.text('AB123CD · 13,000\u00A0km'), findsOneWidget);
+      expect(find.textContaining('+655\u00A0km'), findsOneWidget);
     });
 
     testWidgets('a km below the last reading is blocked', (tester) async {
@@ -106,7 +109,7 @@ void main() {
         '12000',
       );
       await save(tester);
-      expect(find.textContaining('At least 12,345 km'), findsOneWidget);
+      expect(find.textContaining('At least 12,345\u00A0km'), findsOneWidget);
       expect(readingKms(), [12345]);
     });
 
@@ -124,7 +127,7 @@ void main() {
       expect(find.text('Are you sure?'), findsOneWidget);
       expect(
         find.textContaining(
-          '60,001 km more than the last reading, above the 50,000 km check',
+          '60,001\u00A0km more than the last reading, above the 50,000\u00A0km check',
         ),
         findsOneWidget,
       );
@@ -149,7 +152,7 @@ void main() {
       );
       await openMileage(tester);
 
-      await tester.tap(find.text('13,000 km'));
+      await tester.tap(find.text('13,000\u00A0km'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -158,13 +161,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(readingKms(), [12345]);
-      expect(find.text('AB123CD · 12,345 km'), findsOneWidget);
+      expect(find.text('AB123CD · 12,345\u00A0km'), findsOneWidget);
       expect(find.text('Reading deleted'), findsOneWidget);
 
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
       expect(readingKms(), [13000, 12345]);
-      expect(find.text('AB123CD · 13,000 km'), findsOneWidget);
+      expect(find.text('AB123CD · 13,000\u00A0km'), findsOneWidget);
     });
 
     testWidgets('an older reading only explains; the sole one offers Correct',
@@ -205,7 +208,7 @@ void main() {
       );
       await save(tester);
       expect(readingKms(), [12000]);
-      expect(find.text('AB123CD · 12,000 km'), findsOneWidget);
+      expect(find.text('AB123CD · 12,000\u00A0km'), findsOneWidget);
     });
   });
 
@@ -226,7 +229,7 @@ void main() {
       await addMaintenance(tester, '13000');
       expect(store.entries, hasLength(1));
       expect(
-        find.text('Entry saved. Update the odometer to 13,000 km?'),
+        find.text('Entry saved. Update the odometer to 13,000\u00A0km?'),
         findsOneWidget,
       );
       // The entry alone never moves the odometer.
@@ -235,9 +238,9 @@ void main() {
       await tester.tap(find.text('Update'));
       await tester.pumpAndSettle();
       expect(readingKms(), [13000, 12345]);
-      expect(find.text('AB123CD · 13,000 km'), findsOneWidget);
+      expect(find.text('AB123CD · 13,000\u00A0km'), findsOneWidget);
       // The page switched to the Mileage tab, where the reading shows.
-      expect(find.textContaining('+655 km'), findsOneWidget);
+      expect(find.textContaining('+655\u00A0km'), findsOneWidget);
     });
 
     testWidgets('ignoring the offer changes nothing', (tester) async {
@@ -246,7 +249,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('Update the odometer'), findsNothing);
       expect(readingKms(), [12345]);
-      expect(find.text('AB123CD · 12,345 km'), findsOneWidget);
+      expect(find.text('AB123CD · 12,345\u00A0km'), findsOneWidget);
     });
 
     testWidgets('a km not above the odometer makes no offer', (tester) async {
@@ -285,7 +288,7 @@ void main() {
       await save(tester);
       expect(find.text('Check the reading'), findsOneWidget);
       expect(
-        find.textContaining('reading of Jun 1, 2025 (20,000 km)'),
+        find.textContaining('reading of Jun 1, 2025 (20,000\u00A0km)'),
         findsOneWidget,
       );
       await tester.tap(find.text('Save anyway'));
