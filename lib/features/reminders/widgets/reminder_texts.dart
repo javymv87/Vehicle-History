@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/theme/status_colors.dart';
 import '../../../data/models/calendar_date.dart';
 import '../../../data/models/reminder.dart';
 import '../../../data/models/reminder_kind.dart';
@@ -12,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/action_label.dart';
+import '../../../shared/widgets/app_card.dart';
 
 // The texts and visuals a reminder shows in several places (rows, detail,
 // dialogs), built in one place from the computed state. Every distance goes
@@ -73,26 +73,21 @@ extension ReminderKindIcon on ReminderKind {
   IconData get icon => group.icon;
 }
 
-/// Colour and icon of a [ReminderStatus] (`Docs/07_design_and_theming.md`:
-/// colour only for the state, always with an icon and a text): overdue red,
-/// due soon amber, ok green, completed muted.
-({Color color, IconData icon}) reminderStatusStyle(
+/// Colour, icon and card tint of a [ReminderStatus]
+/// (`Docs/07_design_and_theming.md`: colour only for the state, always with
+/// an icon and a text): overdue red, due soon amber, ok green, completed
+/// muted. The colour is the tint's, through [appCardTintColor].
+({Color color, IconData icon, AppCardTint tint}) reminderStatusStyle(
   ReminderStatus status,
   ThemeData theme,
 ) {
-  final colors = theme.extension<StatusColors>()!;
-  return switch (status) {
-    ReminderStatus.overdue => (
-        color: colors.overdue,
-        icon: Icons.error_outline
-      ),
-    ReminderStatus.dueSoon => (color: colors.dueSoon, icon: Icons.schedule),
-    ReminderStatus.ok => (color: colors.ok, icon: Icons.check_circle_outline),
-    ReminderStatus.completed => (
-        color: theme.colorScheme.onSurfaceVariant,
-        icon: Icons.task_alt,
-      ),
+  final (AppCardTint tint, IconData icon) = switch (status) {
+    ReminderStatus.overdue => (AppCardTint.overdue, Icons.error_outline),
+    ReminderStatus.dueSoon => (AppCardTint.dueSoon, Icons.schedule),
+    ReminderStatus.ok => (AppCardTint.ok, Icons.check_circle_outline),
+    ReminderStatus.completed => (AppCardTint.neutral, Icons.task_alt),
   };
+  return (color: appCardTintColor(tint, theme), icon: icon, tint: tint);
 }
 
 /// [text] with a capital first letter in the language of [l10n].

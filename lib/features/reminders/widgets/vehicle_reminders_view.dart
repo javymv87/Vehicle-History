@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../controllers/reminder_list_controller.dart';
 import 'reminder_tile.dart';
 
@@ -23,7 +24,7 @@ class VehicleRemindersView extends ConsumerWidget {
     return AsyncValueView(
       value: ref.watch(vehicleRemindersProvider(vehicleId)),
       data: (views) => views.isEmpty
-          ? MessageView(
+          ? EmptyState(
               icon: Icons.notifications_none,
               message: l10n.vehicleRemindersEmpty,
             )

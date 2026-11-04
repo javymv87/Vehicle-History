@@ -13,10 +13,14 @@ import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/unit_formatter.dart';
-import '../../../shared/widgets/action_label.dart';
-import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_chip.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/history_line.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/section_label.dart';
+import '../../../shared/widgets/status_card.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../mileage/controllers/odometer_update_offer_controller.dart';
 import '../../mileage/widgets/odometer_update_offer.dart';
@@ -25,10 +29,8 @@ import '../../vehicles/controllers/vehicle_archive_controller.dart';
 import '../../vehicles/controllers/vehicle_tab_controller.dart';
 import '../controllers/reminder_actions_controller.dart';
 import '../controllers/reminder_list_controller.dart';
-import '../widgets/reminder_card.dart';
 import '../widgets/reminder_dialogs.dart';
 import '../widgets/reminder_texts.dart';
-import '../widgets/reminder_tile.dart';
 
 /// The page of one reminder (`Docs/08_recordatorios.md`), one card per
 /// question, the most important first: header (vehicle and origin), the
@@ -64,7 +66,7 @@ class ReminderDetailPage extends ConsumerWidget {
           ),
           error: (error, stackTrace) => Scaffold(
             appBar: AppBar(),
-            body: MessageView(
+            body: EmptyState(
               icon: Icons.error_outline,
               message: l10n.loadError,
             ),
@@ -385,10 +387,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// The status card, tinted by the state: the state word with its icon,
-/// then the next due as the hero value (both axes side by side when the
-/// reminder has two), each with what is left. A completed one-shot shows
-/// its completion day.
+/// The status card, a `StatusCard` tinted by the state: the state word
+/// with its icon, then the next due as the hero value (both axes side by
+/// side when the reminder has two), each with what is left. A completed
+/// one-shot shows its completion day.
 class _StatusCard extends StatelessWidget {
   const _StatusCard({required this.view, required this.units});
 
@@ -403,9 +405,6 @@ class _StatusCard extends StatelessWidget {
     final due = view.due;
     final status = due.status;
     final style = reminderStatusStyle(status, theme);
-    final muted = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
     final word = switch (status) {
       ReminderStatus.dueSoon => l10n.reminderStatusHeadlineDueSoon,
       _ => status.label(l10n),
@@ -420,149 +419,54 @@ class _StatusCard extends StatelessWidget {
     final date = due.effectiveDate;
     final km = due.effectiveKm;
     final completedAt = reminder.completedAt;
+    const key = ValueKey('reminder-status-card');
 
-    final Widget body;
     if (completedAt != null) {
-      body = _Hero(
+      return StatusCard(
+        key: key,
+        tint: style.tint,
+        icon: style.icon,
+        word: word,
         value: l10n.dateValue(completedAt.toLocal()),
-        color: style.color,
       );
-    } else if (date != null && km != null) {
-      body = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _Axis(
-              label: l10n.reminderAxisByDistance(units.distance.symbol),
-              value: units.distance.format(km),
-              remaining: remainingDistanceText(due, l10n, units),
-              color: style.color,
-            ),
+    }
+    if (date != null && km != null) {
+      return StatusCard.twoAxes(
+        key: key,
+        tint: style.tint,
+        icon: style.icon,
+        word: word,
+        axes: [
+          StatusAxis(
+            label: l10n.reminderAxisByDistance(units.distance.symbol),
+            value: units.distance.format(km),
+            remaining: remainingDistanceText(due, l10n, units),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _Axis(
-              label: l10n.reminderAxisDate,
-              value: l10n.dateValue(date.toLocalDateTime()),
-              remaining: remainingDateText(due, l10n),
-              color: style.color,
-            ),
-          ),
-        ],
-      );
-    } else {
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Hero(
-            value: date != null
-                ? l10n.dateValue(date.toLocalDateTime())
-                : units.distance.format(km ?? 0),
-            color: style.color,
-          ),
-          Text(
-            joinParts(l10n, [
-              (date != null
-                      ? remainingDateText(due, l10n)
-                      : remainingDistanceText(due, l10n, units)) ??
-                  '',
-              if (noTimeLimit) l10n.reminderNoTimeLimit,
-              if (noDistanceLimit)
-                l10n.reminderNoDistanceLimit(units.distance.symbol),
-            ]),
-            style: muted,
+          StatusAxis(
+            label: l10n.reminderAxisDate,
+            value: l10n.dateValue(date.toLocalDateTime()),
+            remaining: remainingDateText(due, l10n),
           ),
         ],
       );
     }
-
-    return Container(
-      key: const ValueKey('reminder-status-card'),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: style.color.withValues(alpha: 0.10),
-        border: Border.all(color: style.color.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(style.icon, size: 20, color: style.color),
-              const SizedBox(width: 8),
-              Text(
-                word,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: style.color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          body,
-        ],
-      ),
-    );
-  }
-}
-
-/// The hero value of the status card.
-class _Hero extends StatelessWidget {
-  const _Hero({required this.value, required this.color});
-
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Text(
-        value,
-        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-      );
-}
-
-/// One axis of a two-axis status card: its label, its due value and what
-/// is left.
-class _Axis extends StatelessWidget {
-  const _Axis({
-    required this.label,
-    required this.value,
-    required this.remaining,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final String? remaining;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final remaining = this.remaining;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CardLabel(label),
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (remaining != null)
-          Text(
-            remaining,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
+    return StatusCard(
+      key: key,
+      tint: style.tint,
+      icon: style.icon,
+      word: word,
+      value: date != null
+          ? l10n.dateValue(date.toLocalDateTime())
+          : units.distance.format(km ?? 0),
+      line: joinParts(l10n, [
+        (date != null
+                ? remainingDateText(due, l10n)
+                : remainingDistanceText(due, l10n, units)) ??
+            '',
+        if (noTimeLimit) l10n.reminderNoTimeLimit,
+        if (noDistanceLimit)
+          l10n.reminderNoDistanceLimit(units.distance.symbol),
+      ]),
     );
   }
 }
@@ -593,22 +497,21 @@ class _CriterionCard extends StatelessWidget {
     final muted = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final amber = reminderStatusStyle(ReminderStatus.dueSoon, theme).color;
     final overridden = reminder.overrideActive;
     final restore = onRestoreReference;
-    return ReminderCard(
+    return AppCard(
       label:
           overridden ? l10n.reminderAppliedCriterion : l10n.reminderCriterion,
       trailing: Wrap(
         spacing: 6,
         children: [
           if (overridden && due.laxerThanReference)
-            ReminderChip(
+            AppChip(
               label: l10n.reminderChipLaxer,
               icon: Icons.warning_amber_outlined,
-              color: amber,
+              variant: AppChipVariant.warning,
             ),
-          if (reminder.isSnoozed) ReminderChip(label: l10n.reminderChipSnoozed),
+          if (reminder.isSnoozed) AppChip(label: l10n.reminderChipSnoozed),
         ],
       ),
       child: Column(
@@ -731,7 +634,7 @@ class _LastTimeCard extends ConsumerWidget {
     final linked = entryId == null
         ? null
         : ref.watch(logEntryDetailProvider(entryId)).value;
-    return ReminderCard(
+    return AppCard(
       child: Row(
         children: [
           Icon(Icons.history, color: theme.colorScheme.onSurfaceVariant),
@@ -740,7 +643,7 @@ class _LastTimeCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CardLabel(l10n.reminderAnchor),
+                SectionLabel(l10n.reminderAnchor),
                 Text(
                   joinParts(l10n, [
                     if (reminder.lastDoneDate case final day?)
@@ -855,19 +758,16 @@ class _HistoryState extends ConsumerState<_History> {
           ),
           if (_open)
             for (final change in changes)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                // The action in its colour, then the rest of the line.
-                child: ActionLabel(
-                  meaning: change.type.meaning,
-                  icon: change.type.icon,
-                  word: change.type == ReminderChangeType.create &&
-                          widget.reminder.source == ReminderSource.generated
-                      ? l10n.reminderChangeLoaded
-                      : change.type.label(l10n),
-                  separator: l10n.partsSeparator,
-                  rest: _rest(change, l10n),
-                ),
+              // The action in its colour, then the rest of the line.
+              HistoryLine(
+                meaning: change.type.meaning,
+                icon: change.type.icon,
+                word: change.type == ReminderChangeType.create &&
+                        widget.reminder.source == ReminderSource.generated
+                    ? l10n.reminderChangeLoaded
+                    : change.type.label(l10n),
+                separator: l10n.partsSeparator,
+                rest: _rest(change, l10n),
               ),
         ],
       ),

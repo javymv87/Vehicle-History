@@ -7,7 +7,7 @@ import '../../../app/router/navigation.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../data/models/attachment.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../controllers/attachment_actions_controller.dart';
 import '../controllers/attachment_list_controller.dart';
@@ -47,7 +47,7 @@ class _AttachmentViewerPageState extends ConsumerState<AttachmentViewerPage> {
         loading: () => const _LoadingPage(),
         error: (error, stackTrace) => Scaffold(
           appBar: AppBar(),
-          body: MessageView(icon: Icons.error_outline, message: l10n.loadError),
+          body: EmptyState(icon: Icons.error_outline, message: l10n.loadError),
         ),
         data: (attachment) {
           if (attachment == null) {

@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/app_menu_button.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../trash/controllers/trash_controller.dart';
 import '../controllers/vehicle_list_controller.dart';
 import '../widgets/vehicle_tile.dart';
@@ -35,7 +36,7 @@ class VehicleListPage extends ConsumerWidget {
           final archivedCount =
               ref.watch(archivedVehiclesProvider).value?.length ?? 0;
           if (items.isEmpty && archivedCount == 0) {
-            return MessageView(
+            return EmptyState(
               icon: Icons.directions_car_outlined,
               message: l10n.vehicleListEmpty,
             );

@@ -6,14 +6,17 @@ import '../../../app/router/app_routes.dart';
 import '../../../data/models/reminder_status.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/localized_labels.dart';
-import '../../../shared/widgets/section_header.dart';
+import '../../../shared/widgets/app_chip.dart';
+import '../../../shared/widgets/list_row.dart';
+import '../../../shared/widgets/list_sections.dart';
+import '../../../shared/widgets/state_line.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/reminder_list_controller.dart';
 import 'reminder_texts.dart';
 
-/// One reminder row (`Docs/08_recordatorios.md`): the kind icon in a
-/// 40 dp circle, the title, the status in its colour with its icon and the
-/// due axes ("Overdue · 3 days ago", "Up to date · in 12,000 km ·
+/// One reminder row (`Docs/08_recordatorios.md`), a `ListRow`: the kind
+/// icon in the circle, the title, the status in its colour with its icon
+/// and the due axes ("Overdue · 3 days ago", "Up to date · in 12,000 km ·
 /// 10 months"), on Home the vehicle, and trailing the chips "Custom" (with
 /// the warning icon when laxer than the reference) and "Postponed". Opens
 /// the reminder.
@@ -32,154 +35,45 @@ class ReminderTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final units = unitFormatterOf(context, ref);
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
     final reminder = view.reminder;
     final vehicle = view.vehicle;
     final status = view.due.status;
     final style = reminderStatusStyle(status, theme);
-    return InkWell(
+    return ListRow(
       onTap: () => context.push(AppRoutes.reminder(vehicle.id, reminder.id)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 72),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                child: Icon(
-                  reminder.kind.icon,
-                  semanticLabel: reminder.kind.label(l10n),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(reminder.title, style: theme.textTheme.bodyLarge),
-                    const SizedBox(height: 2),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1),
-                          child: Icon(style.icon, size: 16, color: style.color),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            joinParts(l10n, [
-                              status.label(l10n),
-                              rowDueText(
-                                reminder,
-                                view.due,
-                                view.lead,
-                                l10n,
-                                units,
-                              ),
-                            ]),
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(color: style.color),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (showVehicle)
-                      Text(
-                        vehicleLine(vehicle, l10n),
-                        style:
-                            theme.textTheme.bodyMedium?.copyWith(color: muted),
-                      ),
-                  ],
-                ),
-              ),
-              if (reminder.overrideActive || reminder.isSnoozed) ...[
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (reminder.overrideActive)
-                      ReminderChip(
-                        label: l10n.reminderChipCustom,
-                        icon: view.due.laxerThanReference
-                            ? Icons.warning_amber_outlined
-                            : null,
-                        iconLabel: l10n.reminderChipLaxer,
-                      ),
-                    if (reminder.overrideActive && reminder.isSnoozed)
-                      const SizedBox(height: 4),
-                    if (reminder.isSnoozed)
-                      ReminderChip(label: l10n.reminderChipSnoozed),
-                  ],
-                ),
-              ],
-            ],
+      leading: Icon(
+        reminder.kind.icon,
+        semanticLabel: reminder.kind.label(l10n),
+      ),
+      title: reminder.title,
+      secondLine: StateLine(
+        icon: style.icon,
+        color: style.color,
+        text: joinParts(l10n, [
+          status.label(l10n),
+          rowDueText(reminder, view.due, view.lead, l10n, units),
+        ]),
+      ),
+      thirdLine: showVehicle ? vehicleLine(vehicle, l10n) : null,
+      trailing: [
+        if (reminder.overrideActive)
+          AppChip(
+            label: l10n.reminderChipCustom,
+            icon: view.due.laxerThanReference
+                ? Icons.warning_amber_outlined
+                : null,
+            iconLabel: l10n.reminderChipLaxer,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A small chip of a reminder ("Custom", "Postponed", "Less strict") with
-/// an optional leading [icon] described by [iconLabel], tinted with
-/// [color] when given.
-class ReminderChip extends StatelessWidget {
-  /// Creates the chip.
-  const ReminderChip({
-    super.key,
-    required this.label,
-    this.icon,
-    this.iconLabel,
-    this.color,
-  });
-
-  /// The text of the chip.
-  final String label;
-
-  /// Optional leading icon.
-  final IconData? icon;
-
-  /// What [icon] means, for screen readers.
-  final String? iconLabel;
-
-  /// The tint of the chip; the theme's neutral one when `null`.
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final icon = this.icon;
-    final color = this.color ?? theme.colorScheme.onSurfaceVariant;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: this.color == null
-            ? theme.colorScheme.surfaceContainerHighest
-            : color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: color, semanticLabel: iconLabel),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(color: color),
-          ),
-        ],
-      ),
+        if (reminder.isSnoozed) AppChip(label: l10n.reminderChipSnoozed),
+      ],
     );
   }
 }
 
 /// The reminders of [views] grouped Overdue / Due soon / Up to date, in
 /// their order (most urgent first), and, with [foldCompleted], the
-/// completed ones folded at the bottom ("Completed (n)").
+/// completed ones folded at the bottom ("Completed (n)"): a
+/// `ListSections` of `ReminderTile`s.
 class ReminderSections extends StatelessWidget {
   /// Creates the grouped list.
   const ReminderSections({
@@ -206,32 +100,22 @@ class ReminderSections extends StatelessWidget {
             if (view.due.status == status) view,
         ];
     final completed = of(ReminderStatus.completed);
-    // No dividers: 4 dp between rows.
-    Widget tile(ReminderView view) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: ReminderTile(view: view, showVehicle: showVehicle),
-        );
-    return ListView(
-      // Room at the bottom so the FAB never covers the last row.
-      padding: const EdgeInsets.only(bottom: 88),
-      children: [
+    return ListSections<ReminderView>(
+      sections: [
         for (final (status, title) in [
           (ReminderStatus.overdue, l10n.reminderSectionOverdue),
           (ReminderStatus.dueSoon, l10n.reminderSectionDueSoon),
           (ReminderStatus.ok, l10n.reminderSectionOk),
         ])
-          if (of(status) case final group when group.isNotEmpty) ...[
-            SectionHeader(title: title),
-            for (final view in group) tile(view),
-          ],
-        if (foldCompleted && completed.isNotEmpty)
-          ExpansionTile(
-            title: Text(l10n.reminderSectionCompleted(completed.length)),
-            shape: const Border(),
-            collapsedShape: const Border(),
-            children: [for (final view in completed) tile(view)],
-          ),
+          ListSection(title: title, items: of(status)),
       ],
+      folded: foldCompleted
+          ? ListSection(
+              title: l10n.reminderSectionCompleted(completed.length),
+              items: completed,
+            )
+          : null,
+      row: (view) => ReminderTile(view: view, showVehicle: showVehicle),
     );
   }
 }

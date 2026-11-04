@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../l10n/app_localizations.dart';
-import 'async_value_view.dart';
+import 'empty_state.dart';
 
 /// Full page shown when the item named in the path does not exist, or when
 /// the path itself is unknown.
@@ -21,7 +21,7 @@ class NotFoundPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.notFoundTitle)),
-      body: MessageView(
+      body: EmptyState(
         icon: Icons.search_off,
         message: message,
         action: FilledButton.tonal(

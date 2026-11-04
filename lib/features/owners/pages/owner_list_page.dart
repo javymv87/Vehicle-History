@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/app_menu_button.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../controllers/owner_list_controller.dart';
 import '../widgets/owner_tile.dart';
 
@@ -28,7 +29,7 @@ class OwnerListPage extends ConsumerWidget {
       body: AsyncValueView(
         value: ref.watch(ownerListProvider),
         data: (owners) => owners.isEmpty
-            ? MessageView(
+            ? EmptyState(
                 icon: Icons.people_outline,
                 message: l10n.ownerListEmpty,
               )

@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../controllers/trash_controller.dart';
 import '../widgets/trashed_vehicle_tile.dart';
@@ -43,7 +44,7 @@ class TrashPage extends ConsumerWidget {
       body: AsyncValueView(
         value: trashed,
         data: (items) => items.isEmpty
-            ? MessageView(icon: Icons.delete_outline, message: l10n.trashEmpty)
+            ? EmptyState(icon: Icons.delete_outline, message: l10n.trashEmpty)
             : _TrashList(items: items),
       ),
     );

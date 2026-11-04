@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../attachments/controllers/attachment_list_controller.dart';
 import '../../reminders/controllers/reminder_list_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
@@ -61,12 +62,12 @@ class LogEntryHistoryView extends ConsumerWidget {
               }
               if (filter.isEmpty) {
                 // The FAB is the only "add": the empty state never repeats it.
-                return MessageView(
+                return EmptyState(
                   icon: Icons.history,
                   message: l10n.historyEmpty,
                 );
               }
-              return MessageView(
+              return EmptyState(
                 icon: Icons.filter_alt_off,
                 message: l10n.historyNoMatches,
                 action: FilledButton.tonal(
