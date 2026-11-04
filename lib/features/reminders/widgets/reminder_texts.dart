@@ -391,6 +391,39 @@ String snoozeTargetText(
       if (reminder.snoozeUntilKm case final km?) units.distance.format(km),
     ]);
 
+/// The rest of a "Done" / "Completed" line of the history: the day and km
+/// of the closing entry ([day], [km], the anchor it copied), then, only when
+/// the change was registered on another local day than [day], that day in
+/// brackets: "3 Nov 2026 · 190,000 km (registered on Nov 5)". The year is
+/// added to the registration day only when it differs from [day]'s. Without
+/// [day] (the entry is gone), the registration day alone.
+String closeLineText({
+  required CalendarDate? day,
+  required double? km,
+  required DateTime registeredAt,
+  required AppLocalizations l10n,
+  required UnitFormatter units,
+}) {
+  final registered = calendarDateOf(registeredAt.toLocal());
+  if (day == null) {
+    return joinParts(l10n, [
+      l10n.dateValue(registered.toLocalDateTime()),
+      if (km != null) units.distance.format(km),
+    ]);
+  }
+  final line = joinParts(l10n, [
+    l10n.dateValue(day.toLocalDateTime()),
+    if (km != null) units.distance.format(km),
+  ]);
+  if (registered == day) return line;
+  final format = registered.year == day.year
+      ? DateFormat.MMMd(l10n.localeName)
+      : DateFormat.yMMMd(l10n.localeName);
+  return '$line ${l10n.reminderRegisteredOn(
+    format.format(registered.toLocalDateTime()),
+  )}';
+}
+
 /// The localised message of a refusal of `ReminderCloser.checkEntry` for
 /// [reminder], shown inline under the field of the entry form or the
 /// mark-done dialog.

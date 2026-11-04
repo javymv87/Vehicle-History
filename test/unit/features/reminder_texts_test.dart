@@ -250,6 +250,50 @@ void main() {
     });
   });
 
+  group('a close line of the history', () {
+    // Noon UTC is the same local day in any time zone near Europe.
+    String line(CalendarDate day, DateTime registeredAt, {double? km}) =>
+        closeLineText(
+          day: day,
+          km: km,
+          registeredAt: registeredAt,
+          l10n: es,
+          units: units,
+        );
+
+    test('registered the same day: the entry day once, with its km', () {
+      expect(
+        line(today, DateTime.utc(2026, 11, 3, 12), km: 190000),
+        '3 nov 2026 · 190.000${nonBreakingSpace}km',
+      );
+    });
+
+    test('registered another day: that day at the end, in brackets', () {
+      expect(
+        line(today, DateTime.utc(2026, 11, 5, 12), km: 190000),
+        '3 nov 2026 · 190.000${nonBreakingSpace}km (registrado el 5 nov)',
+      );
+      // Another year carries its year.
+      expect(
+        line(const CalendarDate(2026, 12, 30), DateTime.utc(2027, 1, 2, 12)),
+        '30 dic 2026 (registrado el 2 ene 2027)',
+      );
+    });
+
+    test('without the entry: the registration day alone', () {
+      expect(
+        closeLineText(
+          day: null,
+          km: null,
+          registeredAt: DateTime.utc(2026, 11, 5, 12),
+          l10n: es,
+          units: units,
+        ),
+        '5 nov 2026',
+      );
+    });
+  });
+
   test('each history change has the colour of its meaning', () {
     // Docs/07, "Colores de acción": painted by meaning, not by name.
     expect(

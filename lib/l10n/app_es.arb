@@ -613,6 +613,7 @@
   "reminderSectionDueSoon": "Próximos",
   "reminderSectionOk": "Al día",
   "reminderSectionCompleted": "Completados ({count})",
+  "reminderRegisteredOn": "(registrado el {date})",
   "reminderChangeLoaded": "Cargado del manual",
   "trashDeleted": "Borrado",
   "reminderEvery": "cada {interval}",

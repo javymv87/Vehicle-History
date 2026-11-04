@@ -804,12 +804,11 @@ class _HistoryState extends ConsumerState<_History> {
       ReminderChangeType.applyOverride =>
         appliedCriterionText(asReminder, l10n, units),
       ReminderChangeType.snooze => snoozeTargetText(asReminder, l10n, units),
-      ReminderChangeType.close => joinParts(l10n, [
-          if (change.lastDoneDate case final day?)
-            l10n.dateValue(day.toLocalDateTime()),
-          if (change.lastDoneKm case final km?) units.distance.format(km),
-        ]),
-      ReminderChangeType.unsnooze || ReminderChangeType.complete => '',
+      // Closes and completions read their own line (`_rest`).
+      ReminderChangeType.close ||
+      ReminderChangeType.unsnooze ||
+      ReminderChangeType.complete =>
+        '',
     };
   }
 
@@ -867,16 +866,46 @@ class _HistoryState extends ConsumerState<_History> {
                       ? l10n.reminderChangeLoaded
                       : change.type.label(l10n),
                   separator: l10n.partsSeparator,
-                  rest: joinParts(l10n, [
-                    l10n.dateValue(change.changedAt.toLocal()),
-                    _detail(change, l10n),
-                    if (change.reason case final reason?)
-                      l10n.reminderQuoted(reason),
-                  ]),
+                  rest: _rest(change, l10n),
                 ),
               ),
         ],
       ),
     );
+  }
+
+  /// What follows the action word. A close or a completion reads the day
+  /// and km of its entry, with the registration day only when it differs;
+  /// any other change reads its day, what it set and its reason.
+  String _rest(ReminderChange change, AppLocalizations l10n) {
+    switch (change.type) {
+      case ReminderChangeType.close:
+        return closeLineText(
+          day: change.lastDoneDate,
+          km: change.lastDoneKm,
+          registeredAt: change.changedAt,
+          l10n: l10n,
+          units: widget.units,
+        );
+      case ReminderChangeType.complete:
+        // A one-shot keeps no anchor: the day and km are its entry's.
+        final entryId = change.entryId;
+        final entry = entryId == null
+            ? null
+            : ref.watch(logEntryDetailProvider(entryId)).value;
+        return closeLineText(
+          day: entry?.date,
+          km: entry?.km,
+          registeredAt: change.changedAt,
+          l10n: l10n,
+          units: widget.units,
+        );
+      default:
+        return joinParts(l10n, [
+          l10n.dateValue(change.changedAt.toLocal()),
+          _detail(change, l10n),
+          if (change.reason case final reason?) l10n.reminderQuoted(reason),
+        ]);
+    }
   }
 }

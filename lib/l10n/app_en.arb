@@ -3089,6 +3089,15 @@
       }
     }
   },
+  "reminderRegisteredOn": "(registered on {date})",
+  "@reminderRegisteredOn": {
+    "description": "Reminder history, after the day of a closing entry: the day the close was registered, only when it is another day. The date is already formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "reminderChangeLoaded": "Loaded from the manual",
   "@reminderChangeLoaded": {
     "description": "Reminder history: the creation of a reminder loaded from the manual."
