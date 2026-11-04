@@ -11,6 +11,7 @@ import '../../../data/repositories/repository_exceptions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/unit_formatter.dart';
+import '../../../shared/widgets/action_label.dart';
 
 // The texts and visuals a reminder shows in several places (rows, detail,
 // dialogs), built in one place from the computed state. Every distance goes
@@ -32,6 +33,37 @@ extension ReminderKindGroupIcon on ReminderKindGroup {
         ReminderKindGroup.highVoltage => Icons.electric_bolt,
         ReminderKindGroup.legal => Icons.gavel,
         ReminderKindGroup.general => Icons.build_outlined,
+      };
+}
+
+/// The action colour and icon of a [ReminderChangeType] in the history
+/// (`Docs/07_design_and_theming.md`, "Colores de acción").
+extension ReminderChangeTypeAction on ReminderChangeType {
+  /// What the change means: decides its colour.
+  ActionMeaning get meaning => switch (this) {
+        ReminderChangeType.create => ActionMeaning.born,
+        ReminderChangeType.close ||
+        ReminderChangeType.complete =>
+          ActionMeaning.fulfilled,
+        ReminderChangeType.snooze ||
+        ReminderChangeType.unsnooze =>
+          ActionMeaning.deferred,
+        ReminderChangeType.applyOverride ||
+        ReminderChangeType.restoreReference ||
+        ReminderChangeType.edit =>
+          ActionMeaning.ruleChanged,
+      };
+
+  /// The icon of the change.
+  IconData get icon => switch (this) {
+        ReminderChangeType.create => Icons.add_circle_outline,
+        ReminderChangeType.edit => Icons.edit_outlined,
+        ReminderChangeType.applyOverride => Icons.tune,
+        ReminderChangeType.restoreReference => Icons.settings_backup_restore,
+        ReminderChangeType.snooze => Icons.snooze,
+        ReminderChangeType.unsnooze => Icons.update,
+        ReminderChangeType.close => Icons.check_circle_outline,
+        ReminderChangeType.complete => Icons.task_alt,
       };
 }
 

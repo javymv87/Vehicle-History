@@ -902,16 +902,6 @@
   "@trashEmpty": {
     "description": "Empty state of the Trash page."
   },
-  "trashDeletedOn": "Deleted on {date}",
-  "@trashDeletedOn": {
-    "description": "Trash row: the day the vehicle was deleted.",
-    "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
   "trashPurgeIn": "{days, plural, =0{Will be removed at the next start} =1{Will be removed in 1 day} other{Will be removed in {days} days}}",
   "@trashPurgeIn": {
     "description": "Trash row: days left before the vehicle is removed for good. 0 means the next app start removes it.",
@@ -3098,6 +3088,14 @@
         "type": "int"
       }
     }
+  },
+  "reminderChangeLoaded": "Loaded from the manual",
+  "@reminderChangeLoaded": {
+    "description": "Reminder history: the creation of a reminder loaded from the manual."
+  },
+  "trashDeleted": "Deleted",
+  "@trashDeleted": {
+    "description": "Trash row: the action word before the day the vehicle was deleted, in the colour of a deletion."
   },
   "reminderEvery": "every {interval}",
   "@reminderEvery": {

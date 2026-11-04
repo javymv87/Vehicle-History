@@ -959,6 +959,12 @@ litres, no automatic total).
 - Each vehicle has an in-app, read-only Reports tab since step 12
   (consumption, fuel spend, distance over time). The PDF reports (expenses,
   by type, fuel, general) come later, built on them.
+- Actions are painted by meaning, never by name (`Docs/07`, "Colores de
+  acción"): born = primary, fulfilled = the ok green, deferred = the
+  due-soon amber, rule changed = tertiary, gone = error; always icon + the
+  word in colour and medium weight + the rest of the line in the normal
+  colour, through `ActionLabel` / `actionColor`
+  (`lib/shared/widgets/action_label.dart`).
 - Time-based deadlines will produce local notifications (step 13b); km-based
   ones are surfaced through visual highlighting, not notifications. Since
   step 13a both are shown in the app (status and the Reminders badge).

@@ -69,6 +69,25 @@ estado, icono siempre) con la palabra del estado en la primera línea y el
 dato decisivo como cifra grande debajo. Primer uso: la tarjeta de estado del
 detalle de un recordatorio (`08_recordatorios.md`).
 
+### Colores de acción
+
+Regla para toda la app: **cada acción se pinta con el color de su
+significado, no de su nombre**, allí donde se enumeran acciones (historial de
+un recordatorio, filas de la papelera, sus botones).
+
+| Significado | Color | Acciones |
+| --- | --- | --- |
+| Nace | primario | crear, cargado del manual |
+| Se cumple | el verde de "al día" | cerrado, marcado hecho, completado, restaurado de la papelera |
+| Se aplaza | el ámbar de "pronto" | pospuesto, aplazamiento quitado |
+| Cambia la regla | terciario | personalizado, referencia restaurada, editado |
+| Desaparece | error | eliminado, borrado definitivamente |
+
+Siempre **icono + palabra de la acción en su color y peso medio + el resto de
+la línea en el color normal** ("✓ **Hecho** · 3 nov 2026 · 200.000 km");
+nunca el color solo. En el código, `ActionMeaning`, `actionColor` y
+`ActionLabel` (`lib/shared/widgets/action_label.dart`).
+
 ### Una tarjeta por pregunta
 
 Las pantallas de detalle se ordenan por las preguntas que se hace quien las

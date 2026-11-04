@@ -349,10 +349,10 @@ void main() {
       final row = find.byKey(const ValueKey('reminder-history-row'));
       await tester.scrollUntilVisible(row, 200);
       expect(find.text('1 change'), findsOneWidget);
-      expect(find.textContaining('· Created'), findsNothing);
+      expect(find.textContaining('Created · '), findsNothing);
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(find.textContaining('· Created'), findsOneWidget);
+      expect(find.textContaining('Created · '), findsOneWidget);
     });
 
     testWidgets('marks done with a new entry that closes it', (tester) async {

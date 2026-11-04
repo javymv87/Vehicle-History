@@ -8,6 +8,7 @@ import 'package:vehicle_history/data/models/reminder_status.dart';
 import 'package:vehicle_history/data/models/units.dart';
 import 'package:vehicle_history/features/reminders/widgets/reminder_texts.dart';
 import 'package:vehicle_history/l10n/app_localizations.dart';
+import 'package:vehicle_history/shared/widgets/action_label.dart';
 import 'package:vehicle_history/shared/utils/unit_formatter.dart';
 
 /// The shared reminder texts (`Docs/08_recordatorios.md`, formatting
@@ -247,6 +248,23 @@ void main() {
         [DueAxis.date, DueAxis.distance],
       );
     });
+  });
+
+  test('each history change has the colour of its meaning', () {
+    // Docs/07, "Colores de acción": painted by meaning, not by name.
+    expect(
+      {for (final type in ReminderChangeType.values) type: type.meaning},
+      {
+        ReminderChangeType.create: ActionMeaning.born,
+        ReminderChangeType.close: ActionMeaning.fulfilled,
+        ReminderChangeType.complete: ActionMeaning.fulfilled,
+        ReminderChangeType.snooze: ActionMeaning.deferred,
+        ReminderChangeType.unsnooze: ActionMeaning.deferred,
+        ReminderChangeType.applyOverride: ActionMeaning.ruleChanged,
+        ReminderChangeType.restoreReference: ActionMeaning.ruleChanged,
+        ReminderChangeType.edit: ActionMeaning.ruleChanged,
+      },
+    );
   });
 
   group('the due part of a row', () {

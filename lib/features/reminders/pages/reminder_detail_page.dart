@@ -13,6 +13,7 @@ import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/unit_formatter.dart';
+import '../../../shared/widgets/action_label.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
@@ -857,15 +858,21 @@ class _HistoryState extends ConsumerState<_History> {
             for (final change in changes)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text(
-                  joinParts(l10n, [
+                // The action in its colour, then the rest of the line.
+                child: ActionLabel(
+                  meaning: change.type.meaning,
+                  icon: change.type.icon,
+                  word: change.type == ReminderChangeType.create &&
+                          widget.reminder.source == ReminderSource.generated
+                      ? l10n.reminderChangeLoaded
+                      : change.type.label(l10n),
+                  separator: l10n.partsSeparator,
+                  rest: joinParts(l10n, [
                     l10n.dateValue(change.changedAt.toLocal()),
-                    change.type.label(l10n),
                     _detail(change, l10n),
                     if (change.reason case final reason?)
                       l10n.reminderQuoted(reason),
                   ]),
-                  style: theme.textTheme.bodyMedium,
                 ),
               ),
         ],
