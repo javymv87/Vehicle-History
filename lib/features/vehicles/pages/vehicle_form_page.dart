@@ -16,6 +16,7 @@ import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/unit_formatter.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
 import '../../../shared/widgets/picker_form_field.dart';
@@ -51,7 +52,7 @@ class VehicleFormPage extends ConsumerWidget {
       ),
       error: (error, stackTrace) => Scaffold(
         appBar: AppBar(title: Text(title)),
-        body: MessageView(icon: Icons.error_outline, message: l10n.loadError),
+        body: EmptyState(icon: Icons.error_outline, message: l10n.loadError),
       ),
       data: (vehicle) {
         if (vehicleId != null && vehicle == null) {

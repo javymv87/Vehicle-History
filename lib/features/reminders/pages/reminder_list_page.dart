@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/app_menu_button.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../controllers/reminder_list_controller.dart';
 import '../widgets/reminder_tile.dart';
 
@@ -28,7 +29,7 @@ class ReminderListPage extends ConsumerWidget {
       body: AsyncValueView(
         value: ref.watch(reminderAgendaProvider),
         data: (agenda) => agenda.due.isEmpty
-            ? MessageView(
+            ? EmptyState(
                 icon: Icons.notifications_none,
                 message: l10n.reminderAgendaEmpty,
                 detail: agenda.okCount > 0

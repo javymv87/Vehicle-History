@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'empty_state.dart';
 
 /// Builds the right widget for each state of an [AsyncValue].
 ///
@@ -24,72 +25,9 @@ class AsyncValueView<T> extends StatelessWidget {
       skipLoadingOnReload: true,
       data: data,
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => MessageView(
+      error: (error, stackTrace) => EmptyState(
         icon: Icons.error_outline,
         message: AppLocalizations.of(context).loadError,
-      ),
-    );
-  }
-}
-
-/// A centred icon and message, optionally with an action button below.
-///
-/// Used for empty lists, not-found pages and load errors.
-class MessageView extends StatelessWidget {
-  /// Creates the view showing [icon] and [message].
-  const MessageView({
-    super.key,
-    required this.icon,
-    required this.message,
-    this.detail,
-    this.action,
-  });
-
-  /// Icon above the message.
-  final IconData icon;
-
-  /// The message.
-  final String message;
-
-  /// Optional muted line under the message.
-  final String? detail;
-
-  /// Optional button below the message.
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Scrollable so that very large system text never overflows.
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (detail case final detail?) ...[
-              const SizedBox(height: 4),
-              Text(
-                detail,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            if (action != null) ...[
-              const SizedBox(height: 24),
-              action!,
-            ],
-          ],
-        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../controllers/vehicle_list_controller.dart';
 import '../widgets/vehicle_tile.dart';
 
@@ -24,7 +25,7 @@ class ArchivedVehicleListPage extends ConsumerWidget {
       body: AsyncValueView(
         value: ref.watch(archivedVehicleListProvider),
         data: (items) => items.isEmpty
-            ? MessageView(
+            ? EmptyState(
                 icon: Icons.archive_outlined,
                 message: l10n.archivedListEmpty,
               )

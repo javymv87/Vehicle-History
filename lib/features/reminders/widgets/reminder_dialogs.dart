@@ -16,31 +16,17 @@ import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
 import '../../../shared/utils/unit_formatter.dart';
+import '../../../shared/widgets/action_dialog.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/reminder_actions_controller.dart';
 import 'reminder_texts.dart';
 
-// The dialogs of a reminder's detail page. Each validates its fields, shows
-// a refusal of the repository inside itself (it stays open), and resolves to
-// what was written, or `null` when cancelled.
+// The dialogs of a reminder's detail page, each an `ActionDialog`. Each
+// validates its fields, shows a refusal of the repository inside itself (it
+// stays open), and resolves to what was written, or `null` when cancelled.
 
 /// Today's calendar day on the phone.
 CalendarDate _today() => calendarDateOf(DateTime.now());
-
-/// The error text shown under a dialog's fields, or nothing.
-Widget _errorText(BuildContext context, String? error) {
-  if (error == null) return const SizedBox.shrink();
-  final theme = Theme.of(context);
-  return Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: Text(
-      error,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.error,
-      ),
-    ),
-  );
-}
 
 /// Opens the "Mark done" dialog of [reminder] on [vehicle]: day (today by
 /// default, never later), odometer, cost and description (prefilled with
@@ -179,113 +165,97 @@ class _MarkDoneDialogState extends ConsumerState<_MarkDoneDialog> {
     final type = widget.reminder.kind.markDoneEntryType;
     final currency =
         NumberFormat.simpleCurrency(locale: l10n.localeName, name: 'EUR');
-    return AlertDialog(
-      scrollable: true,
-      title: Text(l10n.reminderActionMarkDone),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Context(l10n.reminderMarkDoneIntro(type.label(l10n))),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: _saving ? null : _pickDate,
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: l10n.fieldEntryDate,
-                  errorText: _dateError,
-                  errorMaxLines: 3,
-                  suffixIcon: const Icon(Icons.calendar_today),
-                ),
-                child: Text(l10n.dateValue(_date.toLocalDateTime())),
+    return ActionDialog(
+      title: l10n.reminderActionMarkDone,
+      contextLine: l10n.reminderMarkDoneIntro(type.label(l10n)),
+      formKey: _formKey,
+      fields: [
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: _saving ? null : _pickDate,
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.fieldEntryDate,
+              errorText: _dateError,
+              errorMaxLines: 3,
+              suffixIcon: const Icon(Icons.calendar_today),
+            ),
+            child: Text(l10n.dateValue(_date.toLocalDateTime())),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          key: const ValueKey('mark-done-km'),
+          controller: _km,
+          enabled: !_saving,
+          decoration: InputDecoration(
+            labelText:
+                _kmRequired ? l10n.fieldEntryKm : l10n.fieldEntryKmOptional,
+            suffixText: _units.distance.symbol,
+            errorText: _kmError,
+            errorMaxLines: 3,
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            final text = (value ?? '').trim();
+            if (text.isEmpty) {
+              return _kmRequired ? l10n.validationEntryKmRequired : null;
+            }
+            final km = _typedKm;
+            return km == null || km < 0 ? l10n.validationKmInvalid : null;
+          },
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: ActionChip(
+            avatar: const Icon(Icons.speed),
+            label: Text(
+              l10n.useCurrentKm(
+                _units.distance.format(widget.vehicle.currentOdometerKm),
               ),
             ),
-            const SizedBox(height: 8),
-            TextFormField(
-              key: const ValueKey('mark-done-km'),
-              controller: _km,
-              enabled: !_saving,
-              decoration: InputDecoration(
-                labelText:
-                    _kmRequired ? l10n.fieldEntryKm : l10n.fieldEntryKmOptional,
-                suffixText: _units.distance.symbol,
-                errorText: _kmError,
-                errorMaxLines: 3,
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (value) {
-                final text = (value ?? '').trim();
-                if (text.isEmpty) {
-                  return _kmRequired ? l10n.validationEntryKmRequired : null;
-                }
-                final km = _typedKm;
-                return km == null || km < 0 ? l10n.validationKmInvalid : null;
-              },
+            onPressed: () => setState(
+              () => _km.text =
+                  _units.distance.inputText(widget.vehicle.currentOdometerKm),
             ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: ActionChip(
-                avatar: const Icon(Icons.speed),
-                label: Text(
-                  l10n.useCurrentKm(
-                    _units.distance.format(widget.vehicle.currentOdometerKm),
-                  ),
-                ),
-                onPressed: () => setState(
-                  () => _km.text = _units.distance
-                      .inputText(widget.vehicle.currentOdometerKm),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _cost,
-              enabled: !_saving,
-              decoration: InputDecoration(
-                labelText: l10n.fieldEntryCost,
-                suffixText: currency.currencySymbol,
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(amountCharacters),
-              ],
-              validator: (value) {
-                final text = (value ?? '').trim();
-                if (text.isEmpty) return null;
-                return tryParseEuroCents(text) == null
-                    ? l10n.validationCostInvalid
-                    : null;
-              },
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _description,
-              enabled: !_saving,
-              decoration:
-                  InputDecoration(labelText: l10n.fieldEntryDescription),
-              textCapitalization: TextCapitalization.sentences,
-              minLines: 1,
-              maxLines: 4,
-            ),
-            _errorText(context, _error),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _cost,
+          enabled: !_saving,
+          decoration: InputDecoration(
+            labelText: l10n.fieldEntryCost,
+            suffixText: currency.currencySymbol,
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(amountCharacters),
           ],
+          validator: (value) {
+            final text = (value ?? '').trim();
+            if (text.isEmpty) return null;
+            return tryParseEuroCents(text) == null
+                ? l10n.validationCostInvalid
+                : null;
+          },
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _confirm,
-          child: Text(l10n.reminderActionMarkDone),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _description,
+          enabled: !_saving,
+          decoration: InputDecoration(labelText: l10n.fieldEntryDescription),
+          textCapitalization: TextCapitalization.sentences,
+          minLines: 1,
+          maxLines: 4,
         ),
       ],
+      error: _error,
+      confirmLabel: l10n.reminderActionMarkDone,
+      onConfirm: _confirm,
+      busy: _saving,
     );
   }
 }
@@ -414,105 +384,85 @@ class _SnoozeDialogState extends ConsumerState<_SnoozeDialog> {
     final due = widget.due;
     final dueKm = due.dueKm;
     final until = _until;
-    return AlertDialog(
-      scrollable: true,
-      title: Text(l10n.reminderActionSnooze),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Context(
-              l10n.reminderSnoozeCurrentDue(
-                joinParts(l10n, [
-                  if (due.dueDate case final date?)
-                    l10n.dateValue(date.toLocalDateTime()),
-                  if (dueKm != null) _units.distance.format(dueKm),
-                ]),
-              ),
-            ),
-            if (due.dueDate != null) ...[
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: _saving ? null : _pickDate,
-                child: InputDecorator(
-                  isEmpty: until == null,
-                  decoration: InputDecoration(
-                    labelText: l10n.reminderSnoozeUntilDate,
-                    errorText: _dateError,
-                    errorMaxLines: 3,
-                    suffixIcon: until == null
-                        ? const Icon(Icons.calendar_today)
-                        : IconButton(
-                            tooltip: MaterialLocalizations.of(context)
-                                .deleteButtonTooltip,
-                            icon: const Icon(Icons.clear),
-                            onPressed: () => setState(() => _until = null),
-                          ),
-                  ),
-                  child: Text(
-                    until == null
-                        ? ''
-                        : l10n.dateValue(until.toLocalDateTime()),
-                  ),
-                ),
-              ),
-            ],
-            if (dueKm != null) ...[
-              const SizedBox(height: 8),
-              TextFormField(
-                key: const ValueKey('snooze-km'),
-                controller: _km,
-                enabled: !_saving,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderSnoozeUntilDistance,
-                  suffixText: _units.distance.symbol,
-                  errorMaxLines: 3,
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return due.dueDate == null
-                        ? l10n.validationSnoozeAxisRequired
-                        : null;
-                  }
-                  final km = _typedKm;
-                  if (km == null) return l10n.validationKmInvalid;
-                  return km <= dueKm
-                      ? l10n.validationSnoozeNotLater(
-                          _units.distance.format(dueKm),
-                        )
-                      : null;
-                },
-              ),
-            ],
-            const SizedBox(height: 8),
-            TextFormField(
-              key: const ValueKey('snooze-reason'),
-              controller: _reason,
-              enabled: !_saving,
-              decoration: InputDecoration(labelText: l10n.reminderReasonField),
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) => (value ?? '').trim().isEmpty
-                  ? l10n.validationReasonRequired
-                  : null,
-            ),
-            _errorText(context, _error),
-          ],
-        ),
+    return ActionDialog(
+      title: l10n.reminderActionSnooze,
+      contextLine: l10n.reminderSnoozeCurrentDue(
+        joinParts(l10n, [
+          if (due.dueDate case final date?)
+            l10n.dateValue(date.toLocalDateTime()),
+          if (dueKm != null) _units.distance.format(dueKm),
+        ]),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _confirm,
-          child: Text(l10n.reminderActionSnooze),
-        ),
+      formKey: _formKey,
+      fields: [
+        if (due.dueDate != null) ...[
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: _saving ? null : _pickDate,
+            child: InputDecorator(
+              isEmpty: until == null,
+              decoration: InputDecoration(
+                labelText: l10n.reminderSnoozeUntilDate,
+                errorText: _dateError,
+                errorMaxLines: 3,
+                suffixIcon: until == null
+                    ? const Icon(Icons.calendar_today)
+                    : IconButton(
+                        tooltip: MaterialLocalizations.of(context)
+                            .deleteButtonTooltip,
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => setState(() => _until = null),
+                      ),
+              ),
+              child: Text(
+                until == null ? '' : l10n.dateValue(until.toLocalDateTime()),
+              ),
+            ),
+          ),
+        ],
+        if (dueKm != null) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            key: const ValueKey('snooze-km'),
+            controller: _km,
+            enabled: !_saving,
+            decoration: InputDecoration(
+              labelText: l10n.reminderSnoozeUntilDistance,
+              suffixText: _units.distance.symbol,
+              errorMaxLines: 3,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if ((value ?? '').trim().isEmpty) {
+                return due.dueDate == null
+                    ? l10n.validationSnoozeAxisRequired
+                    : null;
+              }
+              final km = _typedKm;
+              if (km == null) return l10n.validationKmInvalid;
+              return km <= dueKm
+                  ? l10n.validationSnoozeNotLater(
+                      _units.distance.format(dueKm),
+                    )
+                  : null;
+            },
+          ),
+        ],
       ],
+      reason: TextFormField(
+        key: const ValueKey('snooze-reason'),
+        controller: _reason,
+        enabled: !_saving,
+        decoration: InputDecoration(labelText: l10n.reminderReasonField),
+        textCapitalization: TextCapitalization.sentences,
+        validator: (value) =>
+            (value ?? '').trim().isEmpty ? l10n.validationReasonRequired : null,
+      ),
+      error: _error,
+      confirmLabel: l10n.reminderActionSnooze,
+      onConfirm: _confirm,
+      busy: _saving,
     );
   }
 }
@@ -650,154 +600,109 @@ class _OverrideDialogState extends ConsumerState<_OverrideDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     _units = unitFormatterOf(context, ref);
-    final theme = Theme.of(context);
-    return AlertDialog(
-      scrollable: true,
-      title: Text(l10n.reminderActionCustomise),
-      content: Form(
-        key: _formKey,
-        // The summary line follows every keystroke.
-        onChanged: () => setState(() {}),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Context(() {
-              final reminder = widget.reminder;
-              final reference = criterionText(
-                km: reminder.refIntervalKm,
-                months: reminder.refIntervalMonths,
-                sentence: false,
-                l10n: l10n,
-                units: _units,
-              );
-              return reminder.source == ReminderSource.generated
-                  ? l10n.reminderManufacturerCriterion(reference)
-                  : l10n.reminderReferenceLine(reference);
-            }()),
-            const SizedBox(height: 16),
-            _AxisRow(
-              switchKey: const ValueKey('override-km-off'),
-              off: _kmOff,
-              onChanged:
-                  _saving ? null : (value) => setState(() => _kmOff = value),
-              field: TextFormField(
-                key: const ValueKey('override-km'),
-                controller: _km,
-                enabled: !_saving && !_kmOff,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldIntervalDistance,
-                  suffixText: _units.distance.symbol,
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  if (_kmOff) return null;
-                  final km = _typedKm;
-                  return km == null || km <= 0
-                      ? l10n.validationWholeNumberAboveZero
-                      : null;
-                },
-              ),
+    final reminder = widget.reminder;
+    final reference = criterionText(
+      km: reminder.refIntervalKm,
+      months: reminder.refIntervalMonths,
+      sentence: false,
+      l10n: l10n,
+      units: _units,
+    );
+    return ActionDialog(
+      title: l10n.reminderActionCustomise,
+      contextLine: reminder.source == ReminderSource.generated
+          ? l10n.reminderManufacturerCriterion(reference)
+          : l10n.reminderReferenceLine(reference),
+      formKey: _formKey,
+      // The summary line follows every keystroke.
+      onFormChanged: () => setState(() {}),
+      fields: [
+        const SizedBox(height: 16),
+        _AxisRow(
+          switchKey: const ValueKey('override-km-off'),
+          off: _kmOff,
+          onChanged: _saving ? null : (value) => setState(() => _kmOff = value),
+          field: TextFormField(
+            key: const ValueKey('override-km'),
+            controller: _km,
+            enabled: !_saving && !_kmOff,
+            decoration: InputDecoration(
+              labelText: l10n.reminderFieldIntervalDistance,
+              suffixText: _units.distance.symbol,
             ),
-            if (_needsAnchorKm)
-              TextFormField(
-                key: const ValueKey('override-anchor-km'),
-                controller: _anchorKm,
-                enabled: !_saving,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldAnchorDistance,
-                  helperText: l10n.reminderAnchorKmNeededHelp,
-                  helperMaxLines: 3,
-                  suffixText: _units.distance.symbol,
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  final text = (value ?? '').trim();
-                  if (text.isEmpty) {
-                    return l10n.validationReminderAnchorKmRequired;
-                  }
-                  final km = _units.distance.parse(text);
-                  return km == null || km < 0 ? l10n.validationKmInvalid : null;
-                },
-              ),
-            const SizedBox(height: 8),
-            _AxisRow(
-              switchKey: const ValueKey('override-months-off'),
-              off: _monthsOff,
-              onChanged: _saving
-                  ? null
-                  : (value) => setState(() => _monthsOff = value),
-              field: TextFormField(
-                key: const ValueKey('override-months'),
-                controller: _months,
-                enabled: !_saving && !_monthsOff,
-                decoration: InputDecoration(
-                  labelText: l10n.reminderFieldIntervalMonths,
-                  suffixText: l10n.unitMonthsSuffix,
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  if (_monthsOff) return null;
-                  final months = _typedMonths;
-                  return months == null || months <= 0
-                      ? l10n.validationWholeNumberAboveZero
-                      : null;
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              key: const ValueKey('override-reason'),
-              controller: _reason,
-              enabled: !_saving,
-              decoration: InputDecoration(labelText: l10n.reminderReasonField),
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) => (value ?? '').trim().isEmpty
-                  ? l10n.validationReasonRequired
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _summary(l10n),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            _errorText(context, _error),
-          ],
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if (_kmOff) return null;
+              final km = _typedKm;
+              return km == null || km <= 0
+                  ? l10n.validationWholeNumberAboveZero
+                  : null;
+            },
+          ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _confirm,
-          child: Text(l10n.reminderActionCustomise),
+        if (_needsAnchorKm)
+          TextFormField(
+            key: const ValueKey('override-anchor-km'),
+            controller: _anchorKm,
+            enabled: !_saving,
+            decoration: InputDecoration(
+              labelText: l10n.reminderFieldAnchorDistance,
+              helperText: l10n.reminderAnchorKmNeededHelp,
+              helperMaxLines: 3,
+              suffixText: _units.distance.symbol,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              final text = (value ?? '').trim();
+              if (text.isEmpty) {
+                return l10n.validationReminderAnchorKmRequired;
+              }
+              final km = _units.distance.parse(text);
+              return km == null || km < 0 ? l10n.validationKmInvalid : null;
+            },
+          ),
+        const SizedBox(height: 8),
+        _AxisRow(
+          switchKey: const ValueKey('override-months-off'),
+          off: _monthsOff,
+          onChanged:
+              _saving ? null : (value) => setState(() => _monthsOff = value),
+          field: TextFormField(
+            key: const ValueKey('override-months'),
+            controller: _months,
+            enabled: !_saving && !_monthsOff,
+            decoration: InputDecoration(
+              labelText: l10n.reminderFieldIntervalMonths,
+              suffixText: l10n.unitMonthsSuffix,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if (_monthsOff) return null;
+              final months = _typedMonths;
+              return months == null || months <= 0
+                  ? l10n.validationWholeNumberAboveZero
+                  : null;
+            },
+          ),
         ),
       ],
-    );
-  }
-}
-
-/// The muted sentence of context at the top of a reminder dialog.
-class _Context extends StatelessWidget {
-  const _Context(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      text,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
+      reason: TextFormField(
+        key: const ValueKey('override-reason'),
+        controller: _reason,
+        enabled: !_saving,
+        decoration: InputDecoration(labelText: l10n.reminderReasonField),
+        textCapitalization: TextCapitalization.sentences,
+        validator: (value) =>
+            (value ?? '').trim().isEmpty ? l10n.validationReasonRequired : null,
       ),
+      note: _summary(l10n),
+      error: _error,
+      confirmLabel: l10n.reminderActionCustomise,
+      onConfirm: _confirm,
+      busy: _saving,
     );
   }
 }
