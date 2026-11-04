@@ -642,7 +642,8 @@ no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
 `appVersion`
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
 they differ. A revision between steps bumps the patch version and the build
-number instead (the reminder screens rework after step 13a = `0.13.1+16`).
+number instead (the reminder screens rework after step 13a = `0.13.1+16`,
+the shared archetype widgets = `0.13.2+17`).
 
 Signing (Android): `android/app/build.gradle.kts` loads
 `android/key.properties` **if present** and signs **both `debug` and
@@ -721,7 +722,9 @@ lib/
     attachments/         # shared attachment pieces: sheet, list, viewer
   l10n/                  # .arb files, gen_l10n output
   shared/
-    widgets/             # widgets reused across features
+    widgets/             # widgets reused across features: the archetype
+                         # pieces of Docs/07 "Arquetipos" (AppCard,
+                         # StatusCard, ListRow, ActionDialog, ...)
     utils/
     constants/
 
@@ -737,6 +740,14 @@ Docs/                    # Spanish conceptual documentation (source of truth)
 CLAUDE.md                # this file
 README.md                # public project description
 ```
+
+**Archetype widgets.** Every new or reworked screen is built from the
+shared widgets of `lib/shared/widgets/` described in
+`Docs/07_design_and_theming.md`, "Arquetipos" (detail, form, list and
+dialog): when one does not fit, extend the widget, never copy it. They take
+theme roles only (`ColorScheme` and the `StatusColors` theme extension of
+`lib/app/theme/`), never literal colours. The reminder screens are their
+first consumer (0.13.2).
 
 **Layering rule.** Models, database and repositories live **only** in `data/`
 and are shared between features. Everything under `features/` is presentation:

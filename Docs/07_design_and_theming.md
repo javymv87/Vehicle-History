@@ -99,6 +99,61 @@ Las tarjetas usan `surfaceContainer`, radio de 16 dp y 20 dp de separación;
 lo secundario (como un historial) va plegado. Primer uso: el detalle y el
 formulario de los recordatorios (versión 0.13.1).
 
+### Arquetipos
+
+Desde la versión 0.13.2 las piezas con las que se construyeron las pantallas
+de recordatorios viven en `lib/shared/widgets/` y son el canon de **toda
+pantalla nueva o rehecha**. Hay cuatro tipos de pantalla:
+
+- **Detalle.** Un `ListView` con 20 dp a los lados y entre bloques: una
+  cabecera (icono en círculo, dos líneas), la **tarjeta de estado**
+  (`StatusCard`, una `AppCard` teñida con la palabra del estado y su icono
+  en `StateLine.heading`, la cifra decisiva grande y una línea gris, o dos
+  columnas con `StatusCard.twoAxes`), una `AppCard` por pregunta con su
+  `SectionLabel` (y un `AppChip` al final de la etiqueta si hace falta), lo
+  secundario plegado, y el historial en filas `HistoryLine` (un
+  `ActionLabel` con el resto de la línea y un paréntesis opcional).
+- **Formulario.** `SingleChildScrollView` + `Column` con 20 dp a los lados y
+  entre secciones; cada sección es una `FormSection` (una `AppCard` con su
+  `SectionLabel` y los campos uno bajo otro, 16 dp entre ellos). Guardar va
+  en la barra.
+- **Lista.** `ListSections`: una cabecera de sección (`SectionHeader`) y
+  sus filas `ListRow` (icono en círculo de 40 dp, título, segunda línea
+  —normalmente una `StateLine`—, tercera línea gris, etiquetas `AppChip`
+  apiladas a la derecha; alto mínimo 72 dp, 16 dp a los lados, sin
+  separadores, 4 dp entre filas), con una sección plegada al final si la
+  hay. Sin nada que listar, un `EmptyState` (icono, frase y una segunda
+  línea gris opcional).
+- **Diálogo.** `ActionDialog`: el título es el verbo; arriba una frase gris
+  de contexto; los campos; el motivo siempre el último; debajo, si hace
+  falta, una línea gris que dice qué cambia, y el error del rechazo; botón
+  principal con el verbo y "Cancelar".
+
+| Widget | Qué es |
+| --- | --- |
+| `AppCard` | Tarjeta de 16 dp de radio y 16 dp de relleno sobre `surfaceContainer`; con tinte (`AppCardTint.ok / dueSoon / overdue / neutral`), fondo al 10 % y borde al 35 % del color del estado, texto e iconos en el color |
+| `SectionLabel` | Etiqueta pequeña en mayúsculas (`labelSmall`, espaciado 0,8, `onSurfaceVariant`), con un widget opcional al final |
+| `StatusCard` | La tarjeta teñida de "¿cómo está esto?": palabra del estado con icono, cifra grande (`headlineMedium` 600) y línea gris; o dos ejes (`twoAxes`) |
+| `StateLine` | Icono de 16 dp + texto en el color del estado (fila); `heading` = icono de 20 dp + `titleSmall` 600 (tarjeta) |
+| `AppChip` | Etiqueta pequeña con icono opcional; variantes `neutral`, `warning` (ámbar de "pronto" al 14 %), `info` (primario al 14 %) |
+| `ListRow` | Fila de lista: círculo de 40 dp, título, segunda y tercera línea, etiquetas a la derecha; mínimo 72 dp |
+| `ListSections` | Lista por secciones con cabeceras y una sección plegada opcional con su recuento |
+| `EmptyState` | Vista vacía: icono, frase, segunda línea gris y botón opcionales (también la de error y la de "no existe") |
+| `ActionLabel` | Icono + palabra de la acción en el color de su significado + el resto en color normal |
+| `HistoryLine` | Una fila de historial: `ActionLabel` + resto + paréntesis opcional |
+| `ActionDialog` | Diálogo de una acción: verbo, contexto, campos, motivo, nota, error, botones |
+| `FormSection` | Sección de formulario: `AppCard` con `SectionLabel` y campos a 16 dp |
+
+Reglas:
+
+- Un widget recibe **roles del tema**, nunca colores literales: todo color
+  sale de `ColorScheme` o de los tres colores de estado (`StatusColors`, la
+  extensión de tema de `lib/app/theme/status_colors.dart`).
+- **Una pantalla nueva o rehecha usa estos widgets; si uno no sirve, se
+  amplía el widget, no se copia.**
+- Los valores de este documento son los del código: donde difieran, manda
+  el código y se corrige el documento.
+
 ### Coherencia claro/oscuro en las imágenes
 
 La app muestra fotos (documentos y entradas; las fotos de perfil de los

@@ -139,7 +139,10 @@ documented procedure that writes into an exported package. Version 0.13.1
 reworked those screens: Home lists only what is overdue or due soon, the
 reminder detail is one card per question with a status card tinted by the
 state, and the texts follow shared rules (years for multiples of 12 months,
-"left / ago"). Next are local notifications (13b).
+"left / ago"). Version 0.13.2 moved the pieces of those screens into shared
+archetype widgets (card, status card, list row, sectioned list, dialog, form
+section) with no visible change, so the other screens can be rebuilt on
+them. Next are local notifications (13b).
 
 Roadmap to the first usable version:
 

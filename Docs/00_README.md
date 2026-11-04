@@ -118,8 +118,11 @@ escribe en un paquete exportado. La versión 0.13.1 rehízo esas pantallas
 (doc 08, "Pantallas"; doc 07, "Una tarjeta por pregunta"): Inicio es ahora
 una agenda de lo vencido y lo próximo, el detalle se ordena en tarjetas (el
 estado teñido arriba) y los textos siguen unas reglas comunes (años en vez
-de múltiplos de 12 meses, "faltan / hace"). Lo siguiente son las
-notificaciones locales (13b).
+de múltiplos de 12 meses, "faltan / hace"). La 0.13.2 sacó las piezas de
+esas pantallas a widgets compartidos (doc 07, "Arquetipos": tarjeta,
+tarjeta de estado, fila, lista por secciones, diálogo, sección de
+formulario) sin cambiar nada a la vista, para que las demás pantallas se
+rehagan sobre ellos. Lo siguiente son las notificaciones locales (13b).
 
 Hoja de ruta hasta la primera versión usable:
 
