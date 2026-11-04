@@ -70,9 +70,9 @@ void main() {
     test('one or both intervals, the distance first', () {
       String text({double? km, int? months}) =>
           criterionText(km: km, months: months, l10n: es, units: units);
-      expect(text(km: 15000, months: 12), 'Cada 15.000 km o 1 año');
-      expect(text(km: 15000, months: 18), 'Cada 15.000 km o 18 meses');
-      expect(text(km: 15000), 'Cada 15.000 km');
+      expect(text(km: 15000, months: 12), 'Cada 15.000\u00A0km o 1 año');
+      expect(text(km: 15000, months: 18), 'Cada 15.000\u00A0km o 18 meses');
+      expect(text(km: 15000), 'Cada 15.000\u00A0km');
       expect(text(months: 24), 'Cada 2 años');
     });
 
@@ -85,7 +85,7 @@ void main() {
           l10n: es,
           units: units,
         ),
-        'Cada 100.000 km · sin límite de tiempo',
+        'Cada 100.000\u00A0km · sin límite de tiempo',
       );
       expect(
         criterionText(
@@ -108,7 +108,7 @@ void main() {
           l10n: es,
           units: units,
         ),
-        'cada 15.000 km o 5 años',
+        'cada 15.000\u00A0km o 5 años',
       );
     });
   });
@@ -180,11 +180,11 @@ void main() {
     test('distance left, past, or reached exactly', () {
       expect(
         remainingDistanceText(due(remainingKm: 850), es, units),
-        'faltan 850 km',
+        'faltan 850\u00A0km',
       );
       expect(
         remainingDistanceText(due(remainingKm: -1200), es, units),
-        'hace 1.200 km',
+        'hace 1.200\u00A0km',
       );
       expect(
         remainingDistanceText(due(remainingKm: 0), es, units),
@@ -258,20 +258,20 @@ void main() {
     test('an axis after a future one drops its "en"', () {
       expect(
         row(due(date: today.addMonths(13), remainingKm: 12000)),
-        'en 12.000 km · 13 meses',
+        'en 12.000\u00A0km · 13 meses',
       );
       expect(
         row(due(date: today.addDays(12), remainingKm: 30000)),
-        'en 12 días · 30.000 km',
+        'en 12 días · 30.000\u00A0km',
       );
     });
 
     test('past axes say ago; a future one after them keeps "en"', () {
       expect(
         row(due(date: today.addDays(-3), remainingKm: 2000)),
-        'hace 3 días · en 2.000 km',
+        'hace 3 días · en 2.000\u00A0km',
       );
-      expect(row(due(remainingKm: 850)), 'en 850 km');
+      expect(row(due(remainingKm: 850)), 'en 850\u00A0km');
       expect(row(due(date: today)), 'vence hoy');
     });
 

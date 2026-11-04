@@ -32,7 +32,9 @@ final class PickedOther<T> extends PickerResult<T> {
 ///
 /// [search] returns the items matching a query, already in display order.
 /// [otherLabel] is the last option ("Other make…"), pinned at the bottom so
-/// it is always visible: the list helps, it never blocks. While the search
+/// it is always visible: the list helps, it never blocks. When the screen
+/// is too short for that (landscape with the keyboard open), everything
+/// scrolls as one list ending with it, so nothing overflows. While the search
 /// box is empty, [headers] maps an item index to a section title shown above
 /// that item. With [sectionOf] instead, a section title is shown above every
 /// item whose section differs from the previous one's, while searching too.
@@ -98,6 +100,10 @@ class _SearchablePicker<T> extends StatefulWidget {
 }
 
 class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
+  /// Below this height for the body, the search box, the switch, the
+  /// results and "Other…" scroll as one list instead of pinning "Other…".
+  static const double _compactHeight = 320;
+
   final _query = TextEditingController();
 
   /// Whether the "show all" switch is on.
@@ -120,102 +126,128 @@ class _SearchablePickerState<T> extends State<_SearchablePicker<T>> {
     setState(() => _results = _run(query));
   }
 
+  /// The row of the result at [index], with its section title above it when
+  /// a new section starts there.
+  Widget _row(BuildContext context, int index) {
+    final theme = Theme.of(context);
+    final item = _results[index];
+    final sectionOf = widget.sectionOf;
+    final tile = ListTile(
+      title: Text(widget.labelOf(item)),
+      onTap: () => Navigator.of(context).pop(Picked(item)),
+    );
+    final String? header;
+    if (sectionOf != null) {
+      final section = sectionOf(item);
+      header = index == 0 || sectionOf(_results[index - 1]) != section
+          ? section
+          : null;
+    } else {
+      header = _query.text.trim().isEmpty ? widget.headers[index] : null;
+    }
+    if (header == null) return tile;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text(
+            header,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+        tile,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final showHeaders = _query.text.trim().isEmpty;
-    final sectionOf = widget.sectionOf;
     final showAllLabel = widget.showAllLabel;
+    final search = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: _query,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: l10n.pickerSearchHint,
+          prefixIcon: const Icon(Icons.search),
+          border: const OutlineInputBorder(),
+        ),
+        onChanged: _onQueryChanged,
+      ),
+    );
+    final showAll = showAllLabel != null && widget.searchAll != null
+        ? SwitchListTile(
+            title: Text(showAllLabel),
+            value: _showAll,
+            onChanged: (value) {
+              _showAll = value;
+              _onQueryChanged(_query.text);
+            },
+          )
+        : null;
+    final noResults = Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(l10n.pickerNoResults, textAlign: TextAlign.center),
+    );
+    final other = SafeArea(
+      top: false,
+      child: ListTile(
+        leading: const Icon(Icons.edit),
+        title: Text(widget.otherLabel),
+        onTap: () =>
+            Navigator.of(context).pop(PickedOther<T>(_query.text.trim())),
+      ),
+    );
     return Scaffold(
       appBar: AppBar(
         leading: const CloseButton(),
         title: Text(widget.title),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
-              controller: _query,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: l10n.pickerSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: _onQueryChanged,
-            ),
-          ),
-          if (showAllLabel != null && widget.searchAll != null)
-            SwitchListTile(
-              title: Text(showAllLabel),
-              value: _showAll,
-              onChanged: (value) {
-                _showAll = value;
-                _onQueryChanged(_query.text);
-              },
-            ),
-          Expanded(
-            child: _results.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        l10n.pickerNoResults,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Too short for the fixed parts plus a few rows (a phone in
+          // landscape with the keyboard open): everything scrolls together,
+          // "Other…" at the end, so nothing overflows.
+          if (constraints.maxHeight < _compactHeight) {
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: search),
+                if (showAll != null) SliverToBoxAdapter(child: showAll),
+                if (_results.isEmpty)
+                  SliverToBoxAdapter(child: noResults)
+                else
+                  SliverList.builder(
                     itemCount: _results.length,
-                    itemBuilder: (context, index) {
-                      final item = _results[index];
-                      final tile = ListTile(
-                        title: Text(widget.labelOf(item)),
-                        onTap: () => Navigator.of(context).pop(Picked(item)),
-                      );
-                      final String? header;
-                      if (sectionOf != null) {
-                        final section = sectionOf(item);
-                        header = index == 0 ||
-                                sectionOf(_results[index - 1]) != section
-                            ? section
-                            : null;
-                      } else {
-                        header = showHeaders ? widget.headers[index] : null;
-                      }
-                      if (header == null) return tile;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                            child: Text(
-                              header,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          tile,
-                        ],
-                      );
-                    },
+                    itemBuilder: _row,
                   ),
-          ),
-          const Divider(height: 1),
-          SafeArea(
-            top: false,
-            child: ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(widget.otherLabel),
-              onTap: () =>
-                  Navigator.of(context).pop(PickedOther<T>(_query.text.trim())),
-            ),
-          ),
-        ],
+                const SliverToBoxAdapter(child: Divider(height: 1)),
+                SliverToBoxAdapter(child: other),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              search,
+              if (showAll != null) showAll,
+              Expanded(
+                child: _results.isEmpty
+                    ? Center(child: noResults)
+                    : ListView.builder(
+                        itemCount: _results.length,
+                        itemBuilder: _row,
+                      ),
+              ),
+              const Divider(height: 1),
+              other,
+            ],
+          );
+        },
       ),
     );
   }

@@ -270,13 +270,13 @@ void main() {
       // Two axes side by side, each with what is left.
       expect(find.text('BY KM'), findsOneWidget);
       expect(find.text('BY DATE'), findsOneWidget);
-      expect(find.text('25,000 km'), findsOneWidget);
-      expect(find.text('12,655 km left'), findsOneWidget);
+      expect(find.text('25,000\u00A0km'), findsOneWidget);
+      expect(find.text('12,655\u00A0km left'), findsOneWidget);
       expect(find.text('CRITERION'), findsOneWidget);
-      expect(find.text('Every 15,000 km or 1 year'), findsOneWidget);
+      expect(find.text('Every 15,000\u00A0km or 1 year'), findsOneWidget);
       expect(find.text('Your reference'), findsOneWidget);
       expect(find.text('LAST TIME'), findsOneWidget);
-      expect(find.textContaining('10,000 km'), findsOneWidget);
+      expect(find.textContaining('10,000\u00A0km'), findsOneWidget);
       // No grey per-field labels, no separate due block.
       expect(find.text('Next due'), findsNothing);
       expect(find.text('Odometer'), findsNothing);
@@ -288,18 +288,24 @@ void main() {
       await openDetail(tester, 'rem-oil');
       expect(find.text('APPLIED CRITERION'), findsOneWidget);
       expect(find.text('Less strict'), findsOneWidget);
-      expect(find.text('Every 80,000 km · no time limit'), findsOneWidget);
-      expect(find.text('Reference: every 15,000 km or 1 year'), findsOneWidget);
+      expect(find.text('Every 80,000\u00A0km · no time limit'), findsOneWidget);
+      expect(
+        find.text('Reference: every 15,000\u00A0km or 1 year'),
+        findsOneWidget,
+      );
       // Only the axes that differ say what the reference would do.
       expect(
         find.textContaining('By time it would be due on'),
         findsOneWidget,
       );
-      expect(find.text('By km it would be due at 25,000 km'), findsOneWidget);
+      expect(
+        find.text('By km it would be due at 25,000\u00A0km'),
+        findsOneWidget,
+      );
       expect(find.widgetWithText(TextButton, 'Restore reference'), findsOne);
       // One axis left: the hero and what is left, with the axis turned off.
-      expect(find.text('90,000 km'), findsOneWidget);
-      expect(find.text('77,655 km left · no time limit'), findsOneWidget);
+      expect(find.text('90,000\u00A0km'), findsOneWidget);
+      expect(find.text('77,655\u00A0km left · no time limit'), findsOneWidget);
     });
 
     testWidgets('postponed: the chip and where it goes, with its reason',

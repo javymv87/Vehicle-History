@@ -556,41 +556,38 @@ class _ReminderFormState extends ConsumerState<_ReminderForm> {
               cardGap,
               ReminderCard(
                 label: l10n.reminderFormSectionLead,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // One under the other: side by side the labels are cut.
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        key: const ValueKey('reminder-lead-days'),
-                        controller: _leadDays,
-                        decoration: InputDecoration(
-                          labelText: l10n.reminderFieldLeadDays,
-                          hintText: l10n.reminderLeadUseGlobal,
-                          suffixText: l10n.unitDaysSuffix,
-                          border: const OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) => _validateLead(value, l10n),
+                    TextFormField(
+                      key: const ValueKey('reminder-lead-days'),
+                      controller: _leadDays,
+                      decoration: InputDecoration(
+                        labelText: l10n.reminderFieldLeadDays,
+                        hintText: l10n.reminderLeadUseGlobal,
+                        suffixText: l10n.unitDaysSuffix,
+                        border: const OutlineInputBorder(),
                       ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      validator: (value) => _validateLead(value, l10n),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        key: const ValueKey('reminder-lead-km'),
-                        controller: _leadKm,
-                        decoration: distanceField.copyWith(
-                          labelText: l10n.reminderFieldLeadDistance,
-                          hintText: l10n.reminderLeadUseGlobal,
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) => _validateLead(value, l10n),
+                    gap,
+                    TextFormField(
+                      key: const ValueKey('reminder-lead-km'),
+                      controller: _leadKm,
+                      decoration: distanceField.copyWith(
+                        labelText: l10n.reminderFieldLeadDistance,
+                        hintText: l10n.reminderLeadUseGlobal,
                       ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      validator: (value) => _validateLead(value, l10n),
                     ),
                   ],
                 ),

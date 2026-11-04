@@ -60,7 +60,7 @@ void main() {
       await pumpApp(tester, store, location: AppRoutes.vehicle(vehicleId));
 
       expect(find.text('Fiat Punto'), findsOneWidget);
-      expect(find.text('AB123CD · 12,345 km'), findsOneWidget);
+      expect(find.text('AB123CD · 12,345\u00A0km'), findsOneWidget);
       expect(find.textContaining('Nothing recorded yet'), findsOneWidget);
       expect(find.text('New entry'), findsOneWidget);
       expect(
@@ -103,7 +103,7 @@ void main() {
         'Note',
         'Sep 28, 2026',
         'Maintenance',
-        'Sep 3, 2026 · 1,000 km',
+        'Sep 3, 2026 · 1,000\u00A0km',
         'Tagliando',
       ]);
     });
@@ -133,7 +133,10 @@ void main() {
       await tester.pumpAndSettle();
       // The km is never prefilled: only the chip fills it.
       expect(find.widgetWithText(TextFormField, '12345'), findsNothing);
-      await tapVisible(tester, find.text('Use current reading (12,345 km)'));
+      await tapVisible(
+        tester,
+        find.text('Use current reading (12,345\u00A0km)'),
+      );
       expect(find.widgetWithText(TextFormField, '12345'), findsOneWidget);
       await tester.enterText(
         find.byKey(const ValueKey('entry-cost-field')),

@@ -209,7 +209,9 @@ void main() {
         200,
       );
       expect(
-        find.text('6 L/100 km · 600 km in 10 days · €10.50/100 km'),
+        find.text(
+          '6\u00A0L/100\u00A0km · 600\u00A0km in 10 days · €10.50/100 km',
+        ),
         findsOneWidget,
       );
     });
