@@ -122,7 +122,11 @@ de múltiplos de 12 meses, "faltan / hace"). La 0.13.2 sacó las piezas de
 esas pantallas a widgets compartidos (doc 07, "Arquetipos": tarjeta,
 tarjeta de estado, fila, lista por secciones, diálogo, sección de
 formulario) sin cambiar nada a la vista, para que las demás pantallas se
-rehagan sobre ellos. Lo siguiente son las notificaciones locales (13b).
+rehagan sobre ellos. La 0.14.0 (paso 14b) rehízo sobre ellos las tres
+pantallas de detalle, la Ficha del vehículo, el detalle de una entrada y la
+ficha del propietario, con una tarjeta por pregunta y lo mismo que antes a la
+vista (doc 03, "Pantallas de detalle"). Lo siguiente son las notificaciones
+locales (13b).
 
 Hoja de ruta hasta la primera versión usable:
 

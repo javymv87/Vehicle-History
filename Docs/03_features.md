@@ -31,12 +31,12 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
   creado antes de existir marca y modelo se abre y se ve normalmente, pero al
   guardarlo el formulario pide marca y modelo. La ficha del
   vehículo muestra el km en solo lectura, con una nota breve: se cambia solo
-  desde la pestaña Kilometraje.
+  desde la pestaña Kilometraje (ver "Pantallas de detalle").
 - **Formulario del propietario:** nombre (obligatorio), apellidos, fecha de
   nacimiento (selector de fecha de Material; fecha de calendario sin hora),
   nacionalidad (selector de países, abajo), teléfono, email y notas.
 - **Ficha del propietario:** muestra sus vehículos; al tocar uno se abre su
-  ficha.
+  ficha (ver "Pantallas de detalle").
 - **Validación** en línea bajo cada campo y traducida: matrícula
   obligatoria; matrícula duplicada (otro vehículo no borrado ya la usa)
   señalada en el propio campo; km actual obligatorio, número entero ≥ 0 en
@@ -93,6 +93,60 @@ valor que no esté en la lista.
   oficiales) y los nombres de países de **Unicode CLDR**. Los dos van
   incluidos en la app: no se consulta nada en internet.
 
+## Pantallas de detalle (paso 14b)
+
+Desde la versión 0.14.0 la pestaña Ficha del vehículo, el detalle de una
+entrada y la ficha del propietario siguen el arquetipo de detalle
+(`07_design_and_theming.md`, "Una tarjeta por pregunta" y "Arquetipos"):
+una tarjeta por pregunta, la más importante arriba, 20 dp a los lados y
+entre bloques, y solo los campos rellenos. Muestran lo mismo que antes,
+reordenado; las acciones siguen en la barra y en su menú ⋮.
+
+- **Ficha del vehículo** (¿qué es y dónde está ahora?):
+  1. **Tarjeta del cuentakilómetros:** el km actual como cifra grande y,
+     debajo en gris, "Lectura del 3 nov 2026" (el día de la última lectura)
+     y la nota "Solo se cambia desde la pestaña Kilometraje". Sin tinte
+     mientras está activo; archivado, en gris con el icono de archivo y
+     "Archivado · 4 mar 2024" encima (el banner de arriba sigue con el
+     motivo, la nota y Reactivar).
+  2. **IDENTIFICACIÓN:** matrícula, marca, modelo, versión, año y nombre
+     común, en filas de dos columnas (etiqueta gris a la izquierda, valor a
+     la derecha).
+  3. **MOTOR Y COMBUSTIBLE:** tipo de vehículo, combustible y aceite
+     recomendado.
+  4. **Propietario:** una fila con su nombre que abre su ficha.
+  5. Las **notas del fabricante**, como párrafo gris.
+- **Detalle de una entrada** (¿qué se hizo, cuándo y cuánto costó?). El
+  tipo es el título de la barra.
+  1. **Cabecera:** el icono del tipo en un círculo, el vehículo ("Fiat Punto
+     · FS548KS") y, si la entrada cerró un recordatorio, "Cerró: Aceite de
+     motor" en gris, que abre el recordatorio.
+  2. **Tarjeta de estado,** sin tinte: la descripción (o el nombre del tipo
+     si no la hay) como título y, debajo, los valores sin etiqueta (cada uno
+     lleva su unidad): fecha, km y coste; en un repostaje, cantidad, precio
+     por unidad e importe en la primera fila y fecha y km en la segunda. Con
+     km, la nota gris "no cambia el km del vehículo".
+  3. **CONSUMO** (solo repostajes): lo que el repostaje significa para el
+     consumo en una línea con icono y color de estado (tramo válido en
+     verde, sospechoso en ámbar con la frase "¿Faltó un repostaje?" y el
+     enlace **Editar repostaje**, no calculable en gris con el motivo; un
+     parcial o el primer lleno, en gris), y las filas carburante (en
+     bifuel), depósito lleno y "me salté uno".
+  4. **ADJUNTOS (n)** con el botón "Añadir adjunto": la cuadrícula de
+     miniaturas y las filas de los demás archivos (U23).
+- **Ficha del propietario** (¿quién es y cuáles son sus vehículos?). La
+  barra no lleva título: el nombre está en la cabecera.
+  1. **Cabecera:** icono de persona, nombre y apellidos, y teléfono · email
+     en gris cuando los hay.
+  2. **Vehículos:** una fila por vehículo activo (icono del tipo, marca y
+     modelo, y "matrícula · km actual" en gris) y, al final, la sección
+     plegada "Archivados (n)" con el icono de archivo, cada uno con su chip
+     ("Vendido · mar 2024"). Sin vehículos, la vista vacía con el texto de
+     siempre.
+  3. **DATOS PERSONALES:** fecha de nacimiento y nacionalidad.
+  4. Las **notas**, como párrafo gris.
+  5. **DOCUMENTOS (n)** con el botón "Añadir documento" (U26).
+
 ## Historial de entradas
 
 Cada vehículo tiene una lista desplazable de LogEntry ordenadas por fecha (las
@@ -138,7 +192,8 @@ Lo que hace hoy la app (paso 4 de la hoja de ruta):
 - **U7 — Detalle:** todos los campos; editar y borrar (confirmación +
   toast con Deshacer). Bajo los km, una nota recuerda que solo se registran
   en la entrada y no cambian el km del vehículo. Un repostaje enseña además
-  sus campos y su consumo (ver "Repostajes").
+  sus campos y su consumo (ver "Repostajes"). Desde 0.14.0 sigue el
+  arquetipo de detalle (ver "Pantallas de detalle").
 - **U9 — Historial vacío:** un texto breve; para añadir, el botón flotante.
 - **U10 — Validación** en línea y traducida: tipo obligatorio; fecha
   obligatoria; km entero ≥ 0 en la unidad elegida, obligatorio para los
@@ -201,9 +256,10 @@ cálculo en `04_maintenance_logic.md` ("Repostajes y consumos"); columnas en
   Si además procede la oferta de E3, el mismo aviso termina con "¿Actualizar
   el cuentakilómetros…?" y su botón **Actualizar**; si no, el botón es
   **Ver**, que abre el repostaje.
-- **Detalle:** carburante (en bifuel), cantidad, precio por unidad (calculado),
-  depósito lleno, "me salté uno" y una sección **Consumo** con lo mismo que el
-  aviso. Un tramo sospechoso añade la línea ámbar "Consumo muy distinto de la
+- **Detalle:** cantidad, precio por unidad (calculado) e importe en la
+  tarjeta de estado; carburante (en bifuel), depósito lleno, "me salté uno" y
+  lo mismo que el aviso en la tarjeta **Consumo** (ver "Pantallas de
+  detalle"). Un tramo sospechoso añade la línea ámbar "Consumo muy distinto de la
   media. ¿Faltó un repostaje?" (con icono) y el enlace **Editar repostaje**;
   un parcial dice en qué tramo cuenta o que contará en el del siguiente
   lleno.
@@ -636,7 +692,7 @@ Pantallas:
   lo añadido también espera y lo quitado se borra (lógicamente) al guardar.
   Cancelar descarta lo elegido. Mientras se copian los archivos se ve un
   indicador de progreso y Guardar espera.
-- **U23 — Detalle de la entrada:** sección "Adjuntos" con un botón
+- **U23 — Detalle de la entrada:** tarjeta "Adjuntos (n)" con un botón
   "Añadir adjunto": miniaturas en cuadrícula para las imágenes y filas para
   los PDF / otros (icono, nombre, tamaño y día). Tocar abre.
 - **U24 — Fila del historial:** un clip con el número de adjuntos cuando la
@@ -647,8 +703,8 @@ Pantallas:
   En esa pestaña el botón flotante es "Añadir documento". Lista los adjuntos
   del propio vehículo (permiso de circulación, póliza, inspección…), con las
   mismas acciones. Las pestañas se desplazan si no caben (texto grande).
-- **U26 — Ficha del propietario:** sección "Documentos" con la misma lista
-  y el botón "Añadir documento".
+- **U26 — Ficha del propietario:** tarjeta "Documentos (n)" con la misma
+  lista y el botón "Añadir documento".
 - **U27 — Copia de seguridad:** debajo de la fecha de la última exportación,
   "N adjuntos, 123 MB" (todos los archivos que llevará el paquete, también
   los de adjuntos borrados).

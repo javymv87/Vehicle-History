@@ -113,6 +113,27 @@ pantalla nueva o rehecha**. Hay cuatro tipos de pantalla:
   `SectionLabel` (y un `AppChip` al final de la etiqueta si hace falta), lo
   secundario plegado, y el historial en filas `HistoryLine` (un
   `ActionLabel` con el resto de la línea y un paréntesis opcional).
+  Una tarjeta que agrupa varios valores los pone en filas de dos columnas
+  (`DetailField.row`: etiqueta gris a la izquierda, valor a la derecha).
+  Cuando la pantalla responde "¿qué es esto?" y no "¿cómo está?", la
+  tarjeta de estado va sin tinte ni palabra de estado (nunca un color sin
+  palabra); si la cifra grande es un texto, va en tamaño de título; y puede
+  llevar debajo una cuadrícula de valores sin etiqueta, porque cada uno
+  lleva su unidad. Ejemplos (versión 0.14.0, doc 03 "Pantallas de
+  detalle"):
+  - **Ficha del vehículo:** tarjeta del cuentakilómetros (el km grande, la
+    última lectura en gris; archivado, teñida en gris con "Archivado ·
+    fecha"), "IDENTIFICACIÓN", "MOTOR Y COMBUSTIBLE", la fila del
+    propietario dentro de una tarjeta y las notas como párrafo.
+  - **Detalle de una entrada:** cabecera (icono del tipo, vehículo,
+    "Cerró: …"), tarjeta de estado con la descripción y la cuadrícula
+    fecha · km · coste (en un repostaje, cantidad · precio · importe y
+    fecha · km), "CONSUMO" con su `StateLine` y "ADJUNTOS (n)" con el botón
+    de añadir en la etiqueta.
+  - **Ficha del propietario:** cabecera (persona, nombre, teléfono ·
+    email), sus vehículos como `ListSections` integrada en la página con
+    los archivados plegados, "DATOS PERSONALES", las notas y "DOCUMENTOS
+    (n)".
 - **Formulario.** `SingleChildScrollView` + `Column` con 20 dp a los lados y
   entre secciones; cada sección es una `FormSection` (una `AppCard` con su
   `SectionLabel` y los campos uno bajo otro, 16 dp entre ellos). Guardar va
@@ -131,13 +152,14 @@ pantalla nueva o rehecha**. Hay cuatro tipos de pantalla:
 
 | Widget | Qué es |
 | --- | --- |
-| `AppCard` | Tarjeta de 16 dp de radio y 16 dp de relleno sobre `surfaceContainer`; con tinte (`AppCardTint.ok / dueSoon / overdue / neutral`), fondo al 10 % y borde al 35 % del color del estado, texto e iconos en el color |
+| `AppCard` | Tarjeta de 16 dp de radio y 16 dp de relleno (ajustable con `padding`, p. ej. para una fila táctil cuya tinta queda dentro de la tarjeta) sobre `surfaceContainer`; con tinte (`AppCardTint.ok / dueSoon / overdue / neutral`), fondo al 10 % y borde al 35 % del color del estado, texto e iconos en el color |
 | `SectionLabel` | Etiqueta pequeña en mayúsculas (`labelSmall`, espaciado 0,8, `onSurfaceVariant`), con un widget opcional al final |
-| `StatusCard` | La tarjeta teñida de "¿cómo está esto?": palabra del estado con icono, cifra grande (`headlineMedium` 600) y línea gris; o dos ejes (`twoAxes`) |
+| `StatusCard` | La tarjeta teñida de "¿cómo está esto?": palabra del estado con icono, cifra grande (`headlineMedium` 600; `titleLarge` si es un texto), una cuadrícula opcional de valores (`facts`) y línea gris; o dos ejes (`twoAxes`). Sin tinte, sin palabra ni icono |
 | `StateLine` | Icono de 16 dp + texto en el color del estado (fila); `heading` = icono de 20 dp + `titleSmall` 600 (tarjeta) |
 | `AppChip` | Etiqueta pequeña con icono opcional; variantes `neutral`, `warning` (ámbar de "pronto" al 14 %), `info` (primario al 14 %) |
 | `ListRow` | Fila de lista: círculo de 40 dp, título, segunda y tercera línea, etiquetas a la derecha; mínimo 72 dp |
-| `ListSections` | Lista por secciones con cabeceras y una sección plegada opcional con su recuento |
+| `ListSections` | Lista por secciones con cabeceras y una sección plegada opcional con su recuento y su icono; con `embedded`, una columna dentro de la lista de un detalle |
+| `DetailField.row` | Fila de valor de una tarjeta: etiqueta gris a la izquierda, valor a la derecha, ambos con salto de línea |
 | `EmptyState` | Vista vacía: icono, frase, segunda línea gris y botón opcionales (también la de error y la de "no existe") |
 | `ActionLabel` | Icono + palabra de la acción en el color de su significado + el resto en color normal |
 | `HistoryLine` | Una fila de historial: `ActionLabel` + resto + paréntesis opcional |
