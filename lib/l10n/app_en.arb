@@ -4022,5 +4022,55 @@
         "format": "yMMMd"
       }
     }
+  },
+  "vehicleIdentityCard": "Identification",
+  "@vehicleIdentityCard": {
+    "description": "Label of the card of the vehicle's Details tab holding the plate, make, model, version, model year and nickname."
+  },
+  "vehicleEngineCard": "Engine and fuel",
+  "@vehicleEngineCard": {
+    "description": "Label of the card of the vehicle's Details tab holding the kind of vehicle, the fuel type and the recommended engine oil."
+  },
+  "vehicleLastReading": "Reading of {date}",
+  "@vehicleLastReading": {
+    "description": "Muted line under the current odometer on the vehicle's Details tab: the day of the last odometer reading.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "vehicleArchivedOn": "Archived · {date}",
+  "@vehicleArchivedOn": {
+    "description": "State line of the odometer card of an archived vehicle's Details tab: the state and the archive day.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "ownerDataCard": "Personal details",
+  "@ownerDataCard": {
+    "description": "Label of the card of the owner page holding the birth date and the nationality."
+  },
+  "attachmentsCount": "Attachments ({count})",
+  "@attachmentsCount": {
+    "description": "Label of the attachments card of an entry detail, with how many there are.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsCount": "Documents ({count})",
+  "@documentsCount": {
+    "description": "Label of the documents card of the owner page, with how many there are.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

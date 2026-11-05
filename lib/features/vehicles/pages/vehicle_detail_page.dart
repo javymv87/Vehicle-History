@@ -10,10 +10,14 @@ import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/localized_labels.dart';
-import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/utils/calendar_date_conversion.dart';
+import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/detail_field.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/list_row.dart';
 import '../../../shared/widgets/not_found_page.dart';
+import '../../../shared/widgets/status_card.dart';
 import '../../../shared/widgets/vehicle_kind_icon.dart';
 import '../../attachments/controllers/attachment_selection_controller.dart';
 import '../../attachments/widgets/attachment_actions.dart';
@@ -21,6 +25,7 @@ import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../../attachments/widgets/attachments_section.dart';
 import '../../entries/controllers/log_entry_history_controller.dart';
 import '../../entries/widgets/log_entry_history_view.dart';
+import '../../mileage/controllers/mileage_history_controller.dart';
 import '../../mileage/widgets/mileage_history_view.dart';
 import '../../reports/controllers/report_filter_controller.dart';
 import '../../reminders/widgets/vehicle_reminders_view.dart';
@@ -409,7 +414,13 @@ class _VehicleHeader extends ConsumerWidget {
   }
 }
 
-/// The Details tab: every field of the vehicle, read-only.
+/// The Details tab (Ficha), built as a detail archetype
+/// (`Docs/07_design_and_theming.md`, "Una tarjeta por pregunta"): what the
+/// vehicle is and where it is now. First the odometer card (the current
+/// km, the day of the last reading and how the km changes; on an archived
+/// vehicle, the state and the archive day above it), then the
+/// identification, the engine and fuel, the owner (opening their page)
+/// and the manufacturer's notes. Only filled fields are shown.
 class _VehicleInfo extends ConsumerWidget {
   const _VehicleInfo({required this.item});
 
@@ -418,50 +429,98 @@ class _VehicleInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final units = unitFormatterOf(context, ref);
     final vehicle = item.vehicle;
     final owner = item.owner;
+    // Newest first: the first reading is the last one.
+    final readings = ref.watch(mileageReadingsProvider(vehicle.id)).value;
+    final lastReading =
+        readings == null || readings.isEmpty ? null : readings.first;
+    final archivedAt = vehicle.archivedAt;
+    const gap = SizedBox(height: 20);
     return ListView(
-      // Room at the bottom so the FAB never covers the last field.
-      padding: const EdgeInsets.only(top: 8, bottom: 88),
+      // 20 dp at the sides and between cards; room at the bottom so the
+      // FAB never covers the last card.
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 88),
       children: [
-        ListTile(
-          leading: Icon(vehicle.kind.icon),
-          title: Text(vehicle.kind.label(l10n)),
-          subtitle: Text(l10n.fieldKind),
-        ),
-        if (vehicle.make case final make?)
-          DetailField(label: l10n.fieldMake, value: make),
-        if (vehicle.model case final model?)
-          DetailField(label: l10n.fieldModel, value: model),
-        if (vehicle.modelYear case final year?)
-          DetailField(label: l10n.fieldModelYear, value: '$year'),
-        if (vehicle.version case final version?)
-          DetailField(label: l10n.fieldVersion, value: version),
-        DetailField(label: l10n.fieldPlate, value: vehicle.plate),
-        if (vehicle.nickname case final nickname?)
-          DetailField(label: l10n.fieldNickname, value: nickname),
-        if (owner != null)
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(owner.fullName),
-            subtitle: Text(l10n.fieldOwner),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(AppRoutes.owner(owner.id)),
-          ),
-        DetailField(
-          label: l10n.fieldFuelType,
-          value: vehicle.fuelType.label(l10n),
-        ),
-        DetailField(
-          label: l10n.fieldCurrentKm,
+        StatusCard(
+          key: const ValueKey('vehicle-odometer-card'),
+          // Archived is a state, not a warning: grey, never a status colour.
+          tint: archivedAt == null ? null : AppCardTint.neutral,
+          icon: archivedAt == null ? null : Icons.archive_outlined,
+          word: archivedAt == null
+              ? null
+              : l10n.vehicleArchivedOn(archivedAt.toLocalDateTime()),
           value: units.distance.format(vehicle.currentOdometerKm),
-          note: l10n.vehicleKmNote,
+          line: [
+            if (lastReading != null)
+              l10n.vehicleLastReading(lastReading.date.toLocalDateTime()),
+            l10n.vehicleKmNote,
+          ].join('\n'),
         ),
-        if (vehicle.recommendedEngineOil case final oil?)
-          DetailField(label: l10n.fieldRecommendedOil, value: oil),
-        if (vehicle.manufacturerNotes case final notes?)
-          DetailField(label: l10n.fieldManufacturerNotes, value: notes),
+        gap,
+        AppCard(
+          label: l10n.vehicleIdentityCard,
+          gap: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DetailField.row(label: l10n.fieldPlate, value: vehicle.plate),
+              if (vehicle.make case final make?)
+                DetailField.row(label: l10n.fieldMake, value: make),
+              if (vehicle.model case final model?)
+                DetailField.row(label: l10n.fieldModel, value: model),
+              if (vehicle.version case final version?)
+                DetailField.row(label: l10n.fieldVersion, value: version),
+              if (vehicle.modelYear case final year?)
+                DetailField.row(label: l10n.fieldModelYear, value: '$year'),
+              if (vehicle.nickname case final nickname?)
+                DetailField.row(label: l10n.fieldNickname, value: nickname),
+            ],
+          ),
+        ),
+        gap,
+        AppCard(
+          label: l10n.vehicleEngineCard,
+          gap: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DetailField.row(
+                label: l10n.fieldKind,
+                value: vehicle.kind.label(l10n),
+              ),
+              DetailField.row(
+                label: l10n.fieldFuelType,
+                value: vehicle.fuelType.label(l10n),
+              ),
+              if (vehicle.recommendedEngineOil case final oil?)
+                DetailField.row(label: l10n.fieldRecommendedOil, value: oil),
+            ],
+          ),
+        ),
+        if (owner != null) ...[
+          gap,
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: ListRow(
+              leading: Icon(Icons.person, semanticLabel: l10n.fieldOwner),
+              title: owner.fullName,
+              trailing: const [Icon(Icons.chevron_right)],
+              onTap: () => context.push(AppRoutes.owner(owner.id)),
+            ),
+          ),
+        ],
+        if (vehicle.manufacturerNotes case final notes?) ...[
+          gap,
+          Text(
+            notes,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }

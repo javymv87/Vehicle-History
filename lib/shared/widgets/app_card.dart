@@ -42,7 +42,9 @@ Color appCardTintColor(AppCardTint tint, ThemeData theme) {
 /// An optional small upper-case [label] names the question the card
 /// answers, with [trailing] (such as a chip) at the end of its row; [gap]
 /// separates that row from [child]. The child is stretched to the card's
-/// width.
+/// width. [padding] is 16 dp all round; a card holding a full-width row
+/// (a `ListRow`, a `ListTile`) passes less, and the row's ink stays inside
+/// the rounded card.
 class AppCard extends StatelessWidget {
   /// Creates the card.
   const AppCard({
@@ -51,6 +53,7 @@ class AppCard extends StatelessWidget {
     this.trailing,
     this.tint,
     this.gap = 8,
+    this.padding = const EdgeInsets.all(16),
     required this.child,
   });
 
@@ -65,6 +68,9 @@ class AppCard extends StatelessWidget {
 
   /// Space between the label row and [child], when there is a label row.
   final double gap;
+
+  /// Space between the card's edge and its content.
+  final EdgeInsetsGeometry padding;
 
   /// The content.
   final Widget child;
@@ -90,17 +96,24 @@ class AppCard extends StatelessWidget {
       );
     }
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: padding,
       decoration: decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (label != null || trailing != null) ...[
-            SectionLabel(label ?? '', trailing: trailing),
-            SizedBox(height: gap),
+      // Rows with ink inside (a tappable `ListRow`) are clipped to the card.
+      clipBehavior: Clip.antiAlias,
+      // A transparent Material, so that the ink of a tappable row paints
+      // above the card's colour instead of under it.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (label != null || trailing != null) ...[
+              SectionLabel(label ?? '', trailing: trailing),
+              SizedBox(height: gap),
+            ],
+            child,
           ],
-          child,
-        ],
+        ),
       ),
     );
   }

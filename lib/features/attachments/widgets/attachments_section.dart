@@ -27,13 +27,15 @@ import 'attachment_thumbnail.dart';
 ///
 /// Not scrollable itself: it is placed inside the page's list. Shows
 /// [emptyText] when there is nothing, and a progress bar while an
-/// attachment action works on files.
+/// attachment action works on files. [inset] is the space at the sides:
+/// 16 dp on a page, 0 inside an `AppCard`, which has its own.
 class AttachmentsSection extends ConsumerWidget {
   /// Creates the section for [target].
   const AttachmentsSection({
     super.key,
     required this.target,
     required this.emptyText,
+    this.inset = 16,
   });
 
   /// The entry, vehicle or owner whose attachments are shown.
@@ -41,6 +43,9 @@ class AttachmentsSection extends ConsumerWidget {
 
   /// Text shown when [target] has no attachments.
   final String emptyText;
+
+  /// Space at the start and the end of every row.
+  final double inset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,18 +90,18 @@ class AttachmentsSection extends ConsumerWidget {
           if (busy) ...[
             const LinearProgressIndicator(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: EdgeInsets.fromLTRB(inset, 4, inset, 0),
               child: Text(l10n.attachmentsWorking),
             ),
           ],
           if (list.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: inset, vertical: 12),
               child: Text(emptyText),
             ),
           if (images.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(inset, 8, inset, 8),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -106,7 +111,7 @@ class AttachmentsSection extends ConsumerWidget {
               ),
             ),
           for (final document in documents)
-            AttachmentFileTile(attachment: document),
+            AttachmentFileTile(attachment: document, inset: inset),
         ],
       ),
     );
@@ -177,10 +182,17 @@ enum _FileAction { share, saveTo, editCaption, delete }
 /// selection mode a tap selects it and a check box replaces the menu.
 class AttachmentFileTile extends ConsumerWidget {
   /// Creates the row of [attachment].
-  const AttachmentFileTile({super.key, required this.attachment});
+  const AttachmentFileTile({
+    super.key,
+    required this.attachment,
+    this.inset = 16,
+  });
 
   /// The attachment shown.
   final Attachment attachment;
+
+  /// Space at the start and the end of the row.
+  final double inset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,6 +211,7 @@ class AttachmentFileTile extends ConsumerWidget {
       attachment.createdAt.toLocal(),
     );
     return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: inset),
       leading: Icon(
         exists ? attachmentKindIcon(attachment.kind) : Icons.broken_image,
         color: exists ? null : theme.colorScheme.error,

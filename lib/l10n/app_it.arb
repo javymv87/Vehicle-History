@@ -768,5 +768,12 @@
   "errorReminderKindInUse": "Questo veicolo ha già un promemoria di questo tipo. Non è stato salvato nulla.",
   "errorReminderRule": "Questo promemoria non consente questa azione ora. Non è stato modificato nulla.",
   "validationDueDateRequired": "Scegli la data di scadenza",
-  "importConfirmContentsWithReminders": "Questo file contiene {vehicles, plural, =1{1 veicolo} other{{vehicles} veicoli}}, {entries, plural, =1{1 voce} other{{entries} voci}}, {readings, plural, =1{1 lettura} other{{readings} letture}} e {reminders, plural, =1{1 promemoria} other{{reminders} promemoria}}; ultima modifica {date}."
+  "importConfirmContentsWithReminders": "Questo file contiene {vehicles, plural, =1{1 veicolo} other{{vehicles} veicoli}}, {entries, plural, =1{1 voce} other{{entries} voci}}, {readings, plural, =1{1 lettura} other{{readings} letture}} e {reminders, plural, =1{1 promemoria} other{{reminders} promemoria}}; ultima modifica {date}.",
+  "vehicleIdentityCard": "Identificazione",
+  "vehicleEngineCard": "Motore e carburante",
+  "vehicleLastReading": "Lettura del {date}",
+  "vehicleArchivedOn": "Archiviato · {date}",
+  "ownerDataCard": "Dati personali",
+  "attachmentsCount": "Allegati ({count})",
+  "documentsCount": "Documenti ({count})"
 }

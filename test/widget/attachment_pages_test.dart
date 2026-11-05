@@ -148,7 +148,7 @@ void main() {
     await tester.tap(find.text('Tagliando'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Fattura.pdf'), 100);
-    expect(find.text('Attachments'), findsOneWidget);
+    expect(find.text('ATTACHMENTS (2)'), findsOneWidget);
     expect(find.text('Fattura.pdf'), findsOneWidget);
     expect(find.textContaining('2 KB'), findsOneWidget);
     // One thumbnail for the image, the PDF as a row.
@@ -357,7 +357,7 @@ void main() {
       backup: fakes,
     );
     await tester.scrollUntilVisible(find.text('Patente.pdf'), 100);
-    expect(find.text('Documents'), findsOneWidget);
+    expect(find.text('DOCUMENTS (1)'), findsOneWidget);
     expect(find.text('Add document'), findsOneWidget);
   });
 

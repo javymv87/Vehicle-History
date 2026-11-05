@@ -6,6 +6,7 @@ import 'package:vehicle_history/shared/widgets/action_dialog.dart';
 import 'package:vehicle_history/shared/widgets/action_label.dart';
 import 'package:vehicle_history/shared/widgets/app_card.dart';
 import 'package:vehicle_history/shared/widgets/app_chip.dart';
+import 'package:vehicle_history/shared/widgets/detail_field.dart';
 import 'package:vehicle_history/shared/widgets/empty_state.dart';
 import 'package:vehicle_history/shared/widgets/form_section.dart';
 import 'package:vehicle_history/shared/widgets/history_line.dart';
@@ -187,6 +188,114 @@ void main() {
     await tester.tap(find.text('Completed (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Tax'), findsOneWidget);
+  });
+
+  inBothThemes('ListSections embedded is a column with its folded icon',
+      (tester, theme) async {
+    await pump(
+      tester,
+      theme,
+      ListView(
+        children: [
+          ListSections<String>(
+            embedded: true,
+            sections: const [
+              ListSection(title: 'Vehicles', items: ['Fiat 500']),
+            ],
+            folded: const ListSection(
+              title: 'Archived (1)',
+              items: ['Fiat Punto'],
+            ),
+            foldedIcon: const Icon(Icons.archive_outlined),
+            row: (item) => ListTile(title: Text(item)),
+          ),
+        ],
+      ),
+    );
+    // One scrolling list only: the page's.
+    expect(find.byType(Scrollable), findsOneWidget);
+    expect(find.text('Vehicles'), findsOneWidget);
+    expect(find.text('Fiat 500'), findsOneWidget);
+    expect(find.byIcon(Icons.archive_outlined), findsOneWidget);
+    expect(find.text('Fiat Punto'), findsNothing);
+    await tester.tap(find.text('Archived (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fiat Punto'), findsOneWidget);
+  });
+
+  inBothThemes('DetailField.row shows the label and the value on one line',
+      (tester, theme) async {
+    await pump(
+      tester,
+      theme,
+      const DetailField.row(label: 'Plate', value: 'FS548KS'),
+    );
+    final label = tester.getTopLeft(find.text('Plate'));
+    final value = tester.getTopLeft(find.text('FS548KS'));
+    expect(label.dy, value.dy);
+    expect(value.dx, greaterThan(label.dx));
+  });
+
+  inBothThemes('AppCard with a tappable row and no padding',
+      (tester, theme) async {
+    var tapped = false;
+    await pump(
+      tester,
+      theme,
+      AppCard(
+        padding: EdgeInsets.zero,
+        child: ListRow(
+          leading: const Icon(Icons.person),
+          title: 'Mario Rossi',
+          onTap: () => tapped = true,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Mario Rossi'));
+    expect(tapped, isTrue);
+  });
+
+  inBothThemes('StatusCard without a state: a text hero, facts and a line',
+      (tester, theme) async {
+    await pump(
+      tester,
+      theme,
+      const StatusCard(
+        value: 'Oil and filters',
+        textValue: true,
+        facts: [
+          ['36 L', '€1.750/L', '€63.00'],
+          ['1 Oct 2026', '10,600 km'],
+          [],
+        ],
+        line: 'Does not change the odometer',
+      ),
+    );
+    expect(find.byType(StateLine), findsNothing);
+    for (final text in [
+      'Oil and filters',
+      '36 L',
+      '€1.750/L',
+      '€63.00',
+      '1 Oct 2026',
+      '10,600 km',
+      'Does not change the odometer',
+    ]) {
+      expect(find.text(text), findsOneWidget);
+    }
+    // The text hero is a title, not a headline figure.
+    expect(
+      tester.widget<Text>(find.text('Oil and filters')).style?.fontSize,
+      Theme.of(tester.element(find.text('Oil and filters')))
+          .textTheme
+          .titleLarge
+          ?.fontSize,
+    );
+    // The short row keeps the columns of the long one.
+    expect(
+      tester.getTopLeft(find.text('10,600 km')).dx,
+      tester.getTopLeft(find.text('€1.750/L')).dx,
+    );
   });
 
   inBothThemes('EmptyState shows the icon, the message and the detail',

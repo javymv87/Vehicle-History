@@ -4,6 +4,7 @@ import 'package:vehicle_history/app/router/app_routes.dart';
 import 'package:vehicle_history/data/models/calendar_date.dart';
 import 'package:vehicle_history/data/models/fuel_type.dart';
 import 'package:vehicle_history/data/models/log_entry_type.dart';
+import 'package:vehicle_history/data/models/refuel.dart';
 import 'package:vehicle_history/data/models/vehicle_kind.dart';
 import 'package:vehicle_history/features/vehicles/controllers/vehicle_tab_controller.dart';
 
@@ -17,6 +18,7 @@ void main() {
   late String ownerId;
   late String vehicleId;
   late String entryId;
+  late String refuelId;
 
   setUp(() {
     store = FakeStore();
@@ -52,6 +54,21 @@ void main() {
       date: const CalendarDate(2026, 9, 1),
       type: LogEntryType.genericCheck,
     );
+    // A refuel with the widest figures, for the status card's grid.
+    refuelId = store
+        .addEntry(
+          vehicleId,
+          date: const CalendarDate(2026, 9, 15),
+          type: LogEntryType.refuel,
+          km: 1234000,
+          costCents: 99999999,
+          refuel: const RefuelDetails(
+            fuel: RefuelFuel.petrol,
+            volume: 12345.678,
+            missedPrevious: true,
+          ),
+        )
+        .id;
     store.addReading(
       vehicleId,
       date: const CalendarDate(2026, 10, 1),
@@ -77,7 +94,9 @@ void main() {
     'vehicle form': () => AppRoutes.newVehicle,
     'vehicle edit': () => AppRoutes.editVehicle(vehicleId),
     'entry form': () => AppRoutes.newEntry(vehicleId),
+    'details tab': () => AppRoutes.vehicle(vehicleId, tab: VehicleTab.details),
     'entry detail': () => AppRoutes.entry(vehicleId, entryId),
+    'refuel detail': () => AppRoutes.entry(vehicleId, refuelId),
     'entry edit': () => AppRoutes.editEntry(vehicleId, entryId),
     'owner list': () => AppRoutes.owners,
     'owner detail': () => AppRoutes.owner(ownerId),

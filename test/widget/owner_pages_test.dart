@@ -47,8 +47,8 @@ void main() {
       await pumpApp(tester, store, location: AppRoutes.owner(owner.id));
 
       expect(find.byType(OwnerDetailPage), findsOneWidget);
-      expect(find.text('Rossi'), findsOneWidget);
-      expect(find.text('AB123CD'), findsOneWidget);
+      expect(find.text('Mario Rossi'), findsOneWidget);
+      expect(find.textContaining('AB123CD'), findsOneWidget);
     });
 
     testWidgets('owner form builds', (tester) async {
