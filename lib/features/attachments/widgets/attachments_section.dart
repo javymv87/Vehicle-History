@@ -28,7 +28,9 @@ import 'attachment_thumbnail.dart';
 /// Not scrollable itself: it is placed inside the page's list. Shows
 /// [emptyText] when there is nothing, and a progress bar while an
 /// attachment action works on files. [inset] is the space at the sides:
-/// 16 dp on a page, 0 inside an `AppCard`, which has its own.
+/// 16 dp on a page, 0 inside an `AppCard`, which has its own padding and
+/// its own gap under the label, so there the empty text and the
+/// thumbnails get no space above them either.
 class AttachmentsSection extends ConsumerWidget {
   /// Creates the section for [target].
   const AttachmentsSection({
@@ -76,6 +78,8 @@ class AttachmentsSection extends ConsumerWidget {
       for (final a in list)
         if (!a.isImage) a,
     ];
+    // Inside an `AppCard` the card's padding and gap already give the room.
+    final inCard = inset == 0;
     return PopScope(
       // In the selection mode Back ends the mode, not the page.
       canPop: selected.isEmpty,
@@ -96,12 +100,20 @@ class AttachmentsSection extends ConsumerWidget {
           ],
           if (list.isEmpty)
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: inset, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: inset,
+                vertical: inCard ? 0 : 12,
+              ),
               child: Text(emptyText),
             ),
           if (images.isNotEmpty)
             Padding(
-              padding: EdgeInsets.fromLTRB(inset, 8, inset, 8),
+              padding: EdgeInsets.fromLTRB(
+                inset,
+                inCard ? 0 : 8,
+                inset,
+                inCard && documents.isEmpty ? 0 : 8,
+              ),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,

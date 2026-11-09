@@ -30,8 +30,9 @@ Primera parte usable de la app (paso 3 de la hoja de ruta).
 - **Editar un vehículo:** el mismo formulario sin el km actual. Un vehículo
   creado antes de existir marca y modelo se abre y se ve normalmente, pero al
   guardarlo el formulario pide marca y modelo. La ficha del
-  vehículo muestra el km en solo lectura, con una nota breve: se cambia solo
-  desde la pestaña Kilometraje (ver "Pantallas de detalle").
+  vehículo muestra el km en solo lectura, con el día de la última lectura;
+  se cambia solo desde la pestaña Kilometraje (ver "Pantallas de
+  detalle").
 - **Formulario del propietario:** nombre (obligatorio), apellidos, fecha de
   nacimiento (selector de fecha de Material; fecha de calendario sin hora),
   nacionalidad (selector de países, abajo), teléfono, email y notas.
@@ -104,8 +105,9 @@ reordenado; las acciones siguen en la barra y en su menú ⋮.
 
 - **Ficha del vehículo** (¿qué es y dónde está ahora?):
   1. **Tarjeta del cuentakilómetros:** el km actual como cifra grande y,
-     debajo en gris, "Lectura del 3 nov 2026" (el día de la última lectura)
-     y la nota "Solo se cambia desde la pestaña Kilometraje". Sin tinte
+     debajo en gris, "Lectura del 3 nov 2026" (el día de la última
+     lectura); desde 0.14.0 sin la nota "Solo se cambia desde la pestaña
+     Kilometraje" (decisión del owner en la revisión). Sin tinte
      mientras está activo; archivado, en gris con el icono de archivo y
      "Archivado · 4 mar 2024" encima (el banner de arriba sigue con el
      motivo, la nota y Reactivar).
@@ -132,7 +134,8 @@ reordenado; las acciones siguen en la barra y en su menú ⋮.
      enlace **Editar repostaje**, no calculable en gris con el motivo; un
      parcial o el primer lleno, en gris), y las filas carburante (en
      bifuel), depósito lleno y "me salté uno".
-  4. **ADJUNTOS (n)** con el botón "Añadir adjunto": la cuadrícula de
+  4. **ADJUNTOS (n)** con el botón "Añadir adjunto" (un icono + de 40 dp
+     al final de la etiqueta, que no hace más alta su fila): la cuadrícula de
      miniaturas y las filas de los demás archivos (U23).
 - **Ficha del propietario** (¿quién es y cuáles son sus vehículos?). La
   barra no lleva título: el nombre está en la cabecera.
@@ -145,7 +148,8 @@ reordenado; las acciones siguen en la barra y en su menú ⋮.
      siempre.
   3. **DATOS PERSONALES:** fecha de nacimiento y nacionalidad.
   4. Las **notas**, como párrafo gris.
-  5. **DOCUMENTOS (n)** con el botón "Añadir documento" (U26).
+  5. **DOCUMENTOS (n)** con el botón "Añadir documento", el mismo icono +
+     (U26).
 
 ## Historial de entradas
 
@@ -692,8 +696,8 @@ Pantallas:
   lo añadido también espera y lo quitado se borra (lógicamente) al guardar.
   Cancelar descarta lo elegido. Mientras se copian los archivos se ve un
   indicador de progreso y Guardar espera.
-- **U23 — Detalle de la entrada:** tarjeta "Adjuntos (n)" con un botón
-  "Añadir adjunto": miniaturas en cuadrícula para las imágenes y filas para
+- **U23 — Detalle de la entrada:** tarjeta "Adjuntos (n)" con el botón
+  de icono "Añadir adjunto": miniaturas en cuadrícula para las imágenes y filas para
   los PDF / otros (icono, nombre, tamaño y día). Tocar abre.
 - **U24 — Fila del historial:** un clip con el número de adjuntos cuando la
   entrada tiene alguno.
@@ -704,7 +708,7 @@ Pantallas:
   del propio vehículo (permiso de circulación, póliza, inspección…), con las
   mismas acciones. Las pestañas se desplazan si no caben (texto grande).
 - **U26 — Ficha del propietario:** tarjeta "Documentos (n)" con la misma
-  lista y el botón "Añadir documento".
+  lista y el botón de icono "Añadir documento".
 - **U27 — Copia de seguridad:** debajo de la fecha de la última exportación,
   "N adjuntos, 123 MB" (todos los archivos que llevará el paquete, también
   los de adjuntos borrados).

@@ -67,7 +67,6 @@
   "errorVehicleNotFound": "Il veicolo non esiste più. Non è stato salvato nulla.",
   "errorInvalidInput": "Alcuni dati non sono validi. Controlla il modulo. Non è stato salvato nulla.",
   "errorUnexpected": "Qualcosa è andato storto. Non è stato salvato nulla.",
-  "vehicleKmNote": "Si modifica solo dalla scheda Chilometraggio.",
   "ownerNoVehicles": "Nessun veicolo",
   "notFoundTitle": "Non trovato",
   "vehicleNotFound": "Questo veicolo non esiste o è stato eliminato.",

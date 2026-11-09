@@ -45,6 +45,12 @@ Color appCardTintColor(AppCardTint tint, ThemeData theme) {
 /// width. [padding] is 16 dp all round; a card holding a full-width row
 /// (a `ListRow`, a `ListTile`) passes less, and the row's ink stays inside
 /// the rounded card.
+///
+/// An [action] is a 40 dp icon button at the end of the label row ("add"
+/// on the attachments card). It does not make the row taller: the button
+/// reaches into the card's top padding and the gap, so the label and the
+/// content sit where they sit on a card without one, and its icon lines up
+/// with the end of the content.
 class AppCard extends StatelessWidget {
   /// Creates the card.
   const AppCard({
@@ -54,6 +60,7 @@ class AppCard extends StatelessWidget {
     this.tint,
     this.gap = 8,
     this.padding = const EdgeInsets.all(16),
+    this.action,
     required this.child,
   });
 
@@ -72,6 +79,9 @@ class AppCard extends StatelessWidget {
   /// Space between the card's edge and its content.
   final EdgeInsetsGeometry padding;
 
+  /// The icon button at the end of the label row; none when `null`.
+  final AppCardAction? action;
+
   /// The content.
   final Widget child;
 
@@ -81,6 +91,7 @@ class AppCard extends StatelessWidget {
     final label = this.label;
     final trailing = this.trailing;
     final tint = this.tint;
+    final action = this.action;
     final BoxDecoration decoration;
     if (tint == null) {
       decoration = BoxDecoration(
@@ -95,8 +106,37 @@ class AppCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       );
     }
+    final resolved = padding.resolve(Directionality.of(context));
+    final Widget? labelRow;
+    if (action != null) {
+      // Room at the end of the label for the button laid over it, so a
+      // long label never runs under the icon.
+      labelRow = SectionLabel(
+        label ?? '',
+        trailing: const SizedBox(
+          width: AppCardAction.size - AppCardAction.inset,
+          height: _labelLineHeight,
+        ),
+      );
+    } else if (label != null || trailing != null) {
+      labelRow = SectionLabel(label ?? '', trailing: trailing);
+    } else {
+      labelRow = null;
+    }
+    final Widget content = Padding(
+      padding: resolved,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (labelRow != null) ...[
+            labelRow,
+            SizedBox(height: gap),
+          ],
+          child,
+        ],
+      ),
+    );
     return Container(
-      padding: padding,
       decoration: decoration,
       // Rows with ink inside (a tappable `ListRow`) are clipped to the card.
       clipBehavior: Clip.antiAlias,
@@ -104,17 +144,72 @@ class AppCard extends StatelessWidget {
       // above the card's colour instead of under it.
       child: Material(
         type: MaterialType.transparency,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (label != null || trailing != null) ...[
-              SectionLabel(label ?? '', trailing: trailing),
-              SizedBox(height: gap),
-            ],
-            child,
-          ],
-        ),
+        child: action == null
+            ? content
+            : Stack(
+                children: [
+                  content,
+                  // The 40 dp button is laid over the label row, centred on
+                  // the label line: it reaches into the top padding and
+                  // the gap, so the label and the content stay where they
+                  // are on a card without one, and its 24 dp icon ends
+                  // where the content ends.
+                  PositionedDirectional(
+                    top: resolved.top -
+                        (AppCardAction.size - _labelLineHeight) / 2,
+                    end: (Directionality.of(context) == TextDirection.rtl
+                            ? resolved.left
+                            : resolved.right) -
+                        AppCardAction.inset,
+                    child: IconButton(
+                      tooltip: action.tooltip,
+                      onPressed: action.onPressed,
+                      icon: Icon(action.icon),
+                      padding: EdgeInsets.zero,
+                      // 40 dp, not the 48 dp Material pads a button to.
+                      style: const ButtonStyle(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      constraints: const BoxConstraints.tightFor(
+                        width: AppCardAction.size,
+                        height: AppCardAction.size,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
+}
+
+/// The height of one [SectionLabel] line at the default text size, from
+/// which an [AppCardAction] is centred on it.
+const double _labelLineHeight = 16;
+
+/// The icon button at the end of an [AppCard]'s label row: an [icon], what
+/// it does for screen readers and on long press ([tooltip]), and what it
+/// runs ([onPressed]).
+class AppCardAction {
+  /// Creates the action.
+  const AppCardAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  /// The size of the button, square.
+  static const double size = 40;
+
+  /// The space between the button's edge and its 24 dp icon.
+  static const double inset = (size - 24) / 2;
+
+  /// The icon, such as `Icons.add`.
+  final IconData icon;
+
+  /// What the button does ("Add attachment").
+  final String tooltip;
+
+  /// Runs the action.
+  final VoidCallback onPressed;
 }

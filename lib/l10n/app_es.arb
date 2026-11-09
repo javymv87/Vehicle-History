@@ -67,7 +67,6 @@
   "errorVehicleNotFound": "El vehículo ya no existe. No se ha guardado nada.",
   "errorInvalidInput": "Algunos datos no son válidos. Revisa el formulario. No se ha guardado nada.",
   "errorUnexpected": "Algo ha ido mal. No se ha guardado nada.",
-  "vehicleKmNote": "Solo se cambia desde la pestaña Kilometraje.",
   "ownerNoVehicles": "Sin vehículos",
   "notFoundTitle": "No encontrado",
   "vehicleNotFound": "Este vehículo no existe o se ha eliminado.",

@@ -750,7 +750,8 @@ theme roles only (`ColorScheme` and the `StatusColors` theme extension of
 `lib/app/theme/`), never literal colours. The reminder screens are their
 first consumer (0.13.2); the vehicle Details tab, the entry detail and the
 owner page follow (0.14.0), with `StatusCard` (no state, facts grid, text
-hero), `ListSections(embedded:)`, `DetailField.row` and `AppCard(padding:)`
+hero), `ListSections(embedded:)`, `DetailField.row`, `AppCard(padding:)` and
+`AppCard(action:)` (a 40 dp icon button laid over the label row)
 added for them.
 
 **Layering rule.** Models, database and repositories live **only** in `data/`

@@ -300,10 +300,6 @@
   "@errorUnexpected": {
     "description": "Error for any unexpected failure while saving, deleting or restoring."
   },
-  "vehicleKmNote": "Changed only from the Mileage tab.",
-  "@vehicleKmNote": {
-    "description": "Note under the current km on the vehicle detail: the form cannot change it."
-  },
   "ownerNoVehicles": "No vehicles",
   "@ownerNoVehicles": {
     "description": "Shown in the owner detail when the owner has no vehicles."

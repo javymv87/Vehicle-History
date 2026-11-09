@@ -417,7 +417,7 @@ class _VehicleHeader extends ConsumerWidget {
 /// The Details tab (Ficha), built as a detail archetype
 /// (`Docs/07_design_and_theming.md`, "Una tarjeta por pregunta"): what the
 /// vehicle is and where it is now. First the odometer card (the current
-/// km, the day of the last reading and how the km changes; on an archived
+/// km and the day of the last reading; on an archived
 /// vehicle, the state and the archive day above it), then the
 /// identification, the engine and fuel, the owner (opening their page)
 /// and the manufacturer's notes. Only filled fields are shown.
@@ -453,11 +453,9 @@ class _VehicleInfo extends ConsumerWidget {
               ? null
               : l10n.vehicleArchivedOn(archivedAt.toLocalDateTime()),
           value: units.distance.format(vehicle.currentOdometerKm),
-          line: [
-            if (lastReading != null)
-              l10n.vehicleLastReading(lastReading.date.toLocalDateTime()),
-            l10n.vehicleKmNote,
-          ].join('\n'),
+          line: lastReading == null
+              ? null
+              : l10n.vehicleLastReading(lastReading.date.toLocalDateTime()),
         ),
         gap,
         AppCard(

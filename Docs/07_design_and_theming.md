@@ -152,7 +152,7 @@ pantalla nueva o rehecha**. Hay cuatro tipos de pantalla:
 
 | Widget | Qué es |
 | --- | --- |
-| `AppCard` | Tarjeta de 16 dp de radio y 16 dp de relleno (ajustable con `padding`, p. ej. para una fila táctil cuya tinta queda dentro de la tarjeta) sobre `surfaceContainer`; con tinte (`AppCardTint.ok / dueSoon / overdue / neutral`), fondo al 10 % y borde al 35 % del color del estado, texto e iconos en el color |
+| `AppCard` | Tarjeta de 16 dp de radio y 16 dp de relleno (ajustable con `padding`, p. ej. para una fila táctil cuya tinta queda dentro de la tarjeta) sobre `surfaceContainer`; con `action` (`AppCardAction`), un botón de icono de 40 dp al final de la etiqueta, superpuesto, que no hace más alta su fila; con tinte (`AppCardTint.ok / dueSoon / overdue / neutral`), fondo al 10 % y borde al 35 % del color del estado, texto e iconos en el color |
 | `SectionLabel` | Etiqueta pequeña en mayúsculas (`labelSmall`, espaciado 0,8, `onSurfaceVariant`), con un widget opcional al final |
 | `StatusCard` | La tarjeta teñida de "¿cómo está esto?": palabra del estado con icono, cifra grande (`headlineMedium` 600; `titleLarge` si es un texto), una cuadrícula opcional de valores (`facts`) y línea gris; o dos ejes (`twoAxes`). Sin tinte, sin palabra ni icono |
 | `StateLine` | Icono de 16 dp + texto en el color del estado (fila); `heading` = icono de 20 dp + `titleSmall` 600 (tarjeta) |

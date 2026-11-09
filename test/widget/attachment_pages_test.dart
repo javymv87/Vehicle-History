@@ -358,7 +358,7 @@ void main() {
     );
     await tester.scrollUntilVisible(find.text('Patente.pdf'), 100);
     expect(find.text('DOCUMENTS (1)'), findsOneWidget);
-    expect(find.text('Add document'), findsOneWidget);
+    expect(find.byTooltip('Add document'), findsOneWidget);
   });
 
   testWidgets('the viewer shows the position and edits the caption',

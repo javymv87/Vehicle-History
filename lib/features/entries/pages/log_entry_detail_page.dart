@@ -232,13 +232,11 @@ class _LogEntryDetailView extends ConsumerWidget {
           gap,
           AppCard(
             label: l10n.attachmentsCount(attachmentCount),
-            trailing: TextButton.icon(
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+            action: AppCardAction(
+              icon: Icons.add,
+              tooltip: l10n.addAttachment,
               onPressed: () => addAttachments(context, ref, target),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addAttachment),
             ),
-            gap: 0,
             child: AttachmentsSection(
               target: target,
               emptyText: l10n.noAttachments,

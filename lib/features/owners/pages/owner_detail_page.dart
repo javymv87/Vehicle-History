@@ -252,13 +252,11 @@ class _OwnerDetailView extends ConsumerWidget {
           inset(
             AppCard(
               label: l10n.documentsCount(documentCount),
-              trailing: TextButton.icon(
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              action: AppCardAction(
+                icon: Icons.add,
+                tooltip: l10n.addDocument,
                 onPressed: () => addAttachments(context, ref, target),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addDocument),
               ),
-              gap: 0,
               child: AttachmentsSection(
                 target: target,
                 emptyText: l10n.noDocuments,

@@ -255,6 +255,46 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  inBothThemes('AppCard action: an icon button that keeps the label row low',
+      (tester, theme) async {
+    var tapped = false;
+    await pump(
+      tester,
+      theme,
+      Column(
+        children: [
+          const AppCard(
+            key: ValueKey('plain'),
+            label: 'Consumption',
+            child: Text('plain child'),
+          ),
+          AppCard(
+            key: const ValueKey('action'),
+            label: 'Attachments (0)',
+            action: AppCardAction(
+              icon: Icons.add,
+              tooltip: 'Add attachment',
+              onPressed: () => tapped = true,
+            ),
+            child: const Text('action child'),
+          ),
+        ],
+      ),
+    );
+    double top(String card, String text) =>
+        tester.getTopLeft(find.text(text)).dy -
+        tester.getTopLeft(find.byKey(ValueKey(card))).dy;
+    // The label and the content sit where they sit without an action.
+    expect(top('action', 'ATTACHMENTS (0)'), top('plain', 'CONSUMPTION'));
+    expect(top('action', 'action child'), top('plain', 'plain child'));
+    expect(
+      tester.getSize(find.byType(IconButton)),
+      const Size(AppCardAction.size, AppCardAction.size),
+    );
+    await tester.tap(find.byTooltip('Add attachment'));
+    expect(tapped, isTrue);
+  });
+
   inBothThemes('StatusCard without a state: a text hero, facts and a line',
       (tester, theme) async {
     await pump(
