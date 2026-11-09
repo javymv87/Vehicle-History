@@ -9,19 +9,26 @@ import '../../../data/models/attachment.dart';
 import '../../../data/models/fuel_consumption.dart';
 import '../../../data/models/log_entry.dart';
 import '../../../data/models/refuel.dart';
+import '../../../data/models/reminder.dart';
+import '../../../data/models/vehicle.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/action_result.dart';
 import '../../../shared/utils/calendar_date_conversion.dart';
 import '../../../shared/utils/localized_labels.dart';
 import '../../../shared/utils/money.dart';
-import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/detail_field.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/not_found_page.dart';
-import '../../../shared/widgets/section_header.dart';
+import '../../../shared/widgets/state_line.dart';
+import '../../../shared/widgets/status_card.dart';
+import '../../attachments/controllers/attachment_list_controller.dart';
 import '../../attachments/widgets/attachment_actions.dart';
 import '../../attachments/widgets/attachment_selection_app_bar.dart';
 import '../../attachments/widgets/attachments_section.dart';
+import '../../reminders/controllers/reminder_list_controller.dart';
+import '../../reminders/widgets/reminder_texts.dart';
 import '../../reports/controllers/fuel_chains_controller.dart';
 import '../../reports/widgets/segment_texts.dart';
 import '../../settings/controllers/settings_controller.dart';
@@ -31,9 +38,11 @@ import '../controllers/log_entry_deletion_controller.dart';
 import '../controllers/log_entry_history_controller.dart';
 import '../widgets/log_entry_type_icon.dart';
 
-/// Detail of one history entry (`Docs/03_features.md`, U7): every field,
-/// with edit and delete; a refuel adds its fields and what it means for
-/// the consumption. Both ids come from the path; an unknown or deleted
+/// Detail of one history entry (`Docs/03_features.md`, U7), built as a
+/// detail archetype: the header (type icon, vehicle, the reminder it
+/// closed), the status card (what was done, when, at what km and for how
+/// much), for a refuel the consumption card, then the attachments; edit
+/// and delete in the app bar. Both ids come from the path; an unknown or deleted
 /// entry, or one reached through another vehicle's path, shows a not-found
 /// page.
 class LogEntryDetailPage extends ConsumerWidget {
@@ -120,8 +129,44 @@ class _LogEntryDetailView extends ConsumerWidget {
     final refuel = entry.refuel;
     final units = unitFormatterOf(context, ref);
     final target = AttachmentTarget.logEntry(entry.id);
+    final vehicle = ref.watch(vehicleByIdProvider(entry.vehicleId)).value;
+    final closed = ref.watch(entryClosedRemindersProvider(entry.id)).value ??
+        const <Reminder>[];
+    final attachmentCount =
+        ref.watch(attachmentsProvider(target)).value?.length ?? 0;
     // An archived vehicle: everything visible, nothing to change.
     final readOnly = ref.watch(vehicleReadOnlyProvider(entry.vehicleId));
+    final date = l10n.dateValue(entry.date.toLocalDateTime());
+    final distance = km == null ? null : units.distance.format(km);
+    final amount = cost == null ? null : formatEuroCents(cost, l10n.localeName);
+    final volume = refuel?.volume;
+    // The status card's values: for a refuel, how much, at what price and
+    // for how much on the first row, then when and at what km; one row
+    // (when, km, cost) otherwise.
+    final List<List<String>> facts;
+    if (refuel == null) {
+      facts = [
+        [
+          date,
+          if (distance != null) distance,
+          if (amount != null) amount,
+        ],
+      ];
+    } else {
+      facts = [
+        [
+          if (volume != null) units.fuelQuantity(refuel.fuel).format(volume),
+          if (volume != null && cost != null && volume > 0)
+            units.formatUnitPrice(refuel.fuel, cost / 100 / volume),
+          if (amount != null) amount,
+        ],
+        [
+          date,
+          if (distance != null) distance,
+        ],
+      ];
+    }
+    const gap = SizedBox(height: 20);
     return Scaffold(
       // U29: the contextual bar while attachments are selected.
       appBar: AttachmentSelectionAppBar(
@@ -145,80 +190,58 @@ class _LogEntryDetailView extends ConsumerWidget {
           ],
         ),
       ),
+      // One card per question, the most important first (what was done,
+      // when, and what it cost); 20 dp between blocks and at the sides.
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          ListTile(
-            leading: Icon(entry.type.icon),
-            title: Text(entry.type.label(l10n)),
-            subtitle: Text(l10n.fieldEntryType),
+          _Header(entry: entry, vehicle: vehicle, closed: closed),
+          gap,
+          StatusCard(
+            key: const ValueKey('entry-status-card'),
+            value: entry.description ?? entry.type.label(l10n),
+            textValue: true,
+            facts: facts,
+            line: km == null ? null : l10n.entryKmNote,
           ),
-          DetailField(
-            label: l10n.fieldEntryDate,
-            value: l10n.dateValue(entry.date.toLocalDateTime()),
-          ),
-          if (km != null)
-            DetailField(
-              label: l10n.fieldEntryKm,
-              value: units.distance.format(km),
-              note: l10n.entryKmNote,
-            ),
-          if (cost != null)
-            DetailField(
-              label:
-                  refuel == null ? l10n.fieldEntryCost : l10n.fieldRefuelAmount,
-              value: formatEuroCents(cost, l10n.localeName),
-            ),
           if (refuel != null) ...[
-            if (ref
-                    .watch(vehicleByIdProvider(entry.vehicleId))
-                    .value
-                    ?.fuelType
-                    .hasFuelChoice ??
-                false)
-              DetailField(
-                label: l10n.fieldRefuelFuel,
-                value: refuel.fuel.label(l10n),
-              ),
-            if (refuel.volume case final volume?) ...[
-              DetailField(
-                label: refuel.fuel.quantity == FuelQuantity.mass
-                    ? l10n.fieldRefuelMass
-                    : l10n.fieldRefuelVolume,
-                value: units.fuelQuantity(refuel.fuel).format(volume),
-              ),
-              if (cost != null && volume > 0)
-                DetailField(
-                  label: l10n.fieldRefuelPrice,
-                  value: units.formatUnitPrice(
-                    refuel.fuel,
-                    cost / 100 / volume,
+            gap,
+            AppCard(
+              label: l10n.refuelConsumptionTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _RefuelConsumption(entry: entry, readOnly: readOnly),
+                  if (vehicle?.fuelType.hasFuelChoice ?? false)
+                    DetailField.row(
+                      label: l10n.fieldRefuelFuel,
+                      value: refuel.fuel.label(l10n),
+                    ),
+                  DetailField.row(
+                    label: l10n.fieldRefuelFullTank,
+                    value: refuel.fullTank ? l10n.valueYes : l10n.valueNo,
                   ),
-                ),
-            ],
-            DetailField(
-              label: l10n.fieldRefuelFullTank,
-              value: refuel.fullTank ? l10n.valueYes : l10n.valueNo,
+                  DetailField.row(
+                    label: l10n.fieldRefuelMissed,
+                    value: refuel.missedPrevious ? l10n.valueYes : l10n.valueNo,
+                  ),
+                ],
+              ),
             ),
-            DetailField(
-              label: l10n.fieldRefuelMissed,
-              value: refuel.missedPrevious ? l10n.valueYes : l10n.valueNo,
-            ),
-            const Divider(height: 32),
-            SectionHeader(title: l10n.refuelConsumptionTitle),
-            _RefuelConsumption(entry: entry, readOnly: readOnly),
           ],
-          if (entry.description case final description?)
-            DetailField(label: l10n.fieldEntryDescription, value: description),
-          const Divider(height: 32),
-          SectionHeader(
-            title: l10n.attachmentsTitle,
-            actionLabel: l10n.addAttachment,
-            onAction: () => addAttachments(context, ref, target),
-          ),
-          AttachmentsSection(
-            target: target,
-            emptyText: l10n.noAttachments,
+          gap,
+          AppCard(
+            label: l10n.attachmentsCount(attachmentCount),
+            action: AppCardAction(
+              icon: Icons.add,
+              tooltip: l10n.addAttachment,
+              onPressed: () => addAttachments(context, ref, target),
+            ),
+            child: AttachmentsSection(
+              target: target,
+              emptyText: l10n.noAttachments,
+              inset: 0,
+            ),
           ),
         ],
       ),
@@ -226,10 +249,80 @@ class _LogEntryDetailView extends ConsumerWidget {
   }
 }
 
+/// The header: the entry type's icon in a 48 dp circle, the vehicle
+/// ("Fiat Punto · FS548KS") and, when the entry closed a reminder, a muted
+/// "Closed: Engine oil" line that opens it. The type is the app bar's
+/// title.
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.entry,
+    required this.vehicle,
+    required this.closed,
+  });
+
+  final LogEntry entry;
+  final Vehicle? vehicle;
+  final List<Reminder> closed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final vehicle = this.vehicle;
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 24,
+          child: Icon(entry.type.icon, semanticLabel: entry.type.label(l10n)),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (vehicle != null)
+                Text(
+                  vehicleLine(vehicle, l10n),
+                  style: theme.textTheme.titleMedium,
+                ),
+              for (final reminder in closed)
+                InkWell(
+                  onTap: () => context.push(
+                    AppRoutes.reminder(entry.vehicleId, reminder.id),
+                  ),
+                  child: Padding(
+                    // A comfortable touch target around one line of text.
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            l10n.entryClosedReminder(reminder.title),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, size: 18, color: muted),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// What a refuel means for the consumption (`Docs/03_features.md`, refuel
-/// detail): the segment it closes with its figures, or why there is none
-/// yet. A suspicious segment adds an amber line and a link to the edit
-/// form, where the missed-refuel flag is set; the reports never write.
+/// detail), the first line of the consumption card: the segment it closes
+/// with its figures, in the colour of its state with its icon (valid,
+/// suspicious, not computable), or why there is none yet. A suspicious
+/// segment adds the amber sentence and a link to the edit form, where the
+/// missed-refuel flag is set; the reports never write.
 class _RefuelConsumption extends ConsumerWidget {
   const _RefuelConsumption({required this.entry, required this.readOnly});
 
@@ -244,45 +337,60 @@ class _RefuelConsumption extends ConsumerWidget {
     final role = chains == null ? null : refuelRoleIn(chains, entry.id);
     if (role == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    final amber = theme.extension<StatusColors>()!.dueSoon;
+    final status = theme.extension<StatusColors>()!;
+    final muted = theme.colorScheme.onSurfaceVariant;
     final segment = switch (role) {
       ClosesSegment(:final segment) => segment,
       _ => null,
     };
+    const key = ValueKey('refuel-consumption');
+    if (segment == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: StateLine(
+          key: key,
+          icon: Icons.info_outline,
+          text: refuelRoleText(role, l10n, units)!,
+          color: muted,
+        ),
+      );
+    }
+    final (icon, color) = switch (segment.state) {
+      SegmentState.valid => (Icons.check_circle_outline, status.ok),
+      SegmentState.suspicious => (Icons.warning_amber, status.dueSoon),
+      SegmentState.invalid => (Icons.block, muted),
+    };
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            segment == null
-                ? refuelRoleText(role, l10n, units)!
-                : segmentStateText(segment, l10n, units),
-            key: const ValueKey('refuel-consumption'),
-            style: theme.textTheme.bodyLarge,
+          StateLine(
+            key: key,
+            icon: icon,
+            text: segmentStateText(segment, l10n, units),
+            color: color,
           ),
-          if (segment != null && segment.suspicious) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.warning_amber, color: amber),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.segmentSuspicious,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: amber),
-                  ),
-                ),
-              ],
+          if (segment.suspicious) ...[
+            Padding(
+              // Under the text of the line above, past its icon.
+              padding: const EdgeInsetsDirectional.only(start: 20, top: 4),
+              child: Text(
+                l10n.segmentSuspicious,
+                style: theme.textTheme.bodyMedium?.copyWith(color: color),
+              ),
             ),
             if (!readOnly)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: () => context.push(
-                    AppRoutes.editEntry(entry.vehicleId, entry.id),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 8),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton(
+                    onPressed: () => context.push(
+                      AppRoutes.editEntry(entry.vehicleId, entry.id),
+                    ),
+                    child: Text(l10n.actionEditRefuel),
                   ),
-                  child: Text(l10n.actionEditRefuel),
                 ),
               ),
           ],

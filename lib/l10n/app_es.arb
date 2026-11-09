@@ -67,7 +67,6 @@
   "errorVehicleNotFound": "El vehículo ya no existe. No se ha guardado nada.",
   "errorInvalidInput": "Algunos datos no son válidos. Revisa el formulario. No se ha guardado nada.",
   "errorUnexpected": "Algo ha ido mal. No se ha guardado nada.",
-  "vehicleKmNote": "Solo se cambia desde la pestaña Kilometraje.",
   "ownerNoVehicles": "Sin vehículos",
   "notFoundTitle": "No encontrado",
   "vehicleNotFound": "Este vehículo no existe o se ha eliminado.",
@@ -768,5 +767,12 @@
   "errorReminderKindInUse": "Ya hay un recordatorio de este tipo en este vehículo. No se ha guardado nada.",
   "errorReminderRule": "Este recordatorio no admite esa acción ahora. No se ha cambiado nada.",
   "validationDueDateRequired": "Elige la fecha de vencimiento",
-  "importConfirmContentsWithReminders": "Este archivo contiene {vehicles, plural, =1{1 vehículo} other{{vehicles} vehículos}}, {entries, plural, =1{1 entrada} other{{entries} entradas}}, {readings, plural, =1{1 lectura} other{{readings} lecturas}} y {reminders, plural, =1{1 recordatorio} other{{reminders} recordatorios}}; última modificación {date}."
+  "importConfirmContentsWithReminders": "Este archivo contiene {vehicles, plural, =1{1 vehículo} other{{vehicles} vehículos}}, {entries, plural, =1{1 entrada} other{{entries} entradas}}, {readings, plural, =1{1 lectura} other{{readings} lecturas}} y {reminders, plural, =1{1 recordatorio} other{{reminders} recordatorios}}; última modificación {date}.",
+  "vehicleIdentityCard": "Identificación",
+  "vehicleEngineCard": "Motor y combustible",
+  "vehicleLastReading": "Lectura del {date}",
+  "vehicleArchivedOn": "Archivado · {date}",
+  "ownerDataCard": "Datos personales",
+  "attachmentsCount": "Adjuntos ({count})",
+  "documentsCount": "Documentos ({count})"
 }

@@ -301,6 +301,9 @@ ya dice.
   de guardar: el campo es la vía explícita (CLAUDE.md, "keep it manual").
 - **Historial de entradas:** un pequeño icono en la fila de la entrada que
   cerró por última vez un recordatorio vivo.
+- **Detalle de la entrada** (desde 0.14.0): la cabecera muestra, en gris,
+  "Cerró: …" con el recordatorio vivo que la entrada cerró por última vez; al
+  tocarlo se abre ese recordatorio.
 
 ### Reglas de formato
 

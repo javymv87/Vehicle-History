@@ -643,7 +643,8 @@ no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
 (`lib/shared/constants/app_version.dart`) in the same change; a test fails if
 they differ. A revision between steps bumps the patch version and the build
 number instead (the reminder screens rework after step 13a = `0.13.1+16`,
-the shared archetype widgets = `0.13.2+17`).
+the shared archetype widgets = `0.13.2+17`; step 14b, the detail
+screens on the archetype, = `0.14.0+18`).
 
 Signing (Android): `android/app/build.gradle.kts` loads
 `android/key.properties` **if present** and signs **both `debug` and
@@ -747,7 +748,11 @@ shared widgets of `lib/shared/widgets/` described in
 dialog): when one does not fit, extend the widget, never copy it. They take
 theme roles only (`ColorScheme` and the `StatusColors` theme extension of
 `lib/app/theme/`), never literal colours. The reminder screens are their
-first consumer (0.13.2).
+first consumer (0.13.2); the vehicle Details tab, the entry detail and the
+owner page follow (0.14.0), with `StatusCard` (no state, facts grid, text
+hero), `ListSections(embedded:)`, `DetailField.row`, `AppCard(padding:)` and
+`AppCard(action:)` (a 40 dp icon button laid over the label row)
+added for them.
 
 **Layering rule.** Models, database and repositories live **only** in `data/`
 and are shared between features. Everything under `features/` is presentation:

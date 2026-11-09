@@ -163,7 +163,7 @@ void main() {
       expect((title! as Text).data, 'AB123CD');
     });
 
-    testWidgets('vehicle detail shows the read-only km with its note',
+    testWidgets('vehicle detail shows the km and the last reading day',
         (tester) async {
       final owner = store.addOwner('Mario');
       final vehicle = store.addVehicle('AB123CD', ownerId: owner.id, km: 12345);
@@ -177,7 +177,8 @@ void main() {
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
       expect(find.text('12,345\u00A0km'), findsNWidgets(2));
-      expect(find.textContaining('from the Mileage tab'), findsOneWidget);
+      expect(find.textContaining('Reading of'), findsOneWidget);
+      expect(find.textContaining('from the Mileage tab'), findsNothing);
     });
 
     testWidgets('edit form has no km field', (tester) async {

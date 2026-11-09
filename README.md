@@ -142,7 +142,10 @@ state, and the texts follow shared rules (years for multiples of 12 months,
 "left / ago"). Version 0.13.2 moved the pieces of those screens into shared
 archetype widgets (card, status card, list row, sectioned list, dialog, form
 section) with no visible change, so the other screens can be rebuilt on
-them. Next are local notifications (13b).
+them. Version 0.14.0 (step 14b) rebuilt the three detail screens on them, the
+vehicle's Details tab, the entry detail and the owner page: one card per
+question, the most important first, with everything shown before still
+shown. Next are local notifications (13b).
 
 Roadmap to the first usable version:
 
