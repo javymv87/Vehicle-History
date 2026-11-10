@@ -161,6 +161,33 @@ void main() {
   });
 
   testWidgets(
+      'the entry of an archived vehicle shows its attachments with no '
+      '"Add attachment"', (tester) async {
+    final entry = store.addEntry(
+      vehicleId,
+      date: const CalendarDate(2024, 3, 1),
+      description: 'Tagliando',
+    );
+    store.addAttachment(
+      AttachmentTarget.logEntry(entry.id),
+      staged('Fattura.pdf'),
+    );
+    store.vehicles[vehicleId] = store.vehicles[vehicleId]!.copyWith(
+      archivedAt: const CalendarDate(2024, 4, 1),
+    );
+
+    await pumpApp(
+      tester,
+      store,
+      location: AppRoutes.entry(vehicleId, entry.id),
+      backup: fakes,
+    );
+    await tester.scrollUntilVisible(find.text('Fattura.pdf'), 100);
+    expect(find.text('ATTACHMENTS (1)'), findsOneWidget);
+    expect(find.byTooltip('Add attachment'), findsNothing);
+  });
+
+  testWidgets(
       'the Documents tab (U25) adds a document with its button and deletes '
       'it with Undo', (tester) async {
     var sourceDeleted = false;
