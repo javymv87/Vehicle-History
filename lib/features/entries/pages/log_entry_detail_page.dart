@@ -232,11 +232,14 @@ class _LogEntryDetailView extends ConsumerWidget {
           gap,
           AppCard(
             label: l10n.attachmentsCount(attachmentCount),
-            action: AppCardAction(
-              icon: Icons.add,
-              tooltip: l10n.addAttachment,
-              onPressed: () => addAttachments(context, ref, target),
-            ),
+            // Nothing can be added to an archived vehicle's entry.
+            action: readOnly
+                ? null
+                : AppCardAction(
+                    icon: Icons.add,
+                    tooltip: l10n.addAttachment,
+                    onPressed: () => addAttachments(context, ref, target),
+                  ),
             child: AttachmentsSection(
               target: target,
               emptyText: l10n.noAttachments,

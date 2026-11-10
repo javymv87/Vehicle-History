@@ -644,7 +644,8 @@ no longer match: step 12 = `0.12.0+14`, step 13a = `0.13.0+15`), and updates
 they differ. A revision between steps bumps the patch version and the build
 number instead (the reminder screens rework after step 13a = `0.13.1+16`,
 the shared archetype widgets = `0.13.2+17`; step 14b, the detail
-screens on the archetype, = `0.14.0+18`).
+screens on the archetype, = `0.14.0+18`; hiding "Add attachment" on an
+archived vehicle's entry = `0.14.1+19`).
 
 Signing (Android): `android/app/build.gradle.kts` loads
 `android/key.properties` **if present** and signs **both `debug` and

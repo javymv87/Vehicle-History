@@ -636,7 +636,7 @@ Reglas de datos en `02_data_model.md` ("Archivo de vehículos").
   no hay ningún botón de añadir, editar ni borrar: ni el FAB, ni el lápiz,
   ni las acciones de las lecturas, ni la selección o el menú de borrar de
   los adjuntos (quedan Compartir y Guardar en…), ni editar / borrar en la
-  entrada. El menú ⋮ conserva **Mover a la papelera**. Un enlace directo a
+  entrada, ni el + de sus adjuntos (desde 0.14.1). El menú ⋮ conserva **Mover a la papelera**. Un enlace directo a
   un formulario de un vehículo archivado muestra "Este vehículo está
   archivado…".
 - **Ficha activa:** el menú ⋮ ofrece **Archivar** (y Mover a la papelera,
@@ -697,7 +697,8 @@ Pantallas:
   Cancelar descarta lo elegido. Mientras se copian los archivos se ve un
   indicador de progreso y Guardar espera.
 - **U23 — Detalle de la entrada:** tarjeta "Adjuntos (n)" con el botón
-  de icono "Añadir adjunto": miniaturas en cuadrícula para las imágenes y filas para
+  de icono "Añadir adjunto" (no aparece si el vehículo está archivado):
+  miniaturas en cuadrícula para las imágenes y filas para
   los PDF / otros (icono, nombre, tamaño y día). Tocar abre.
 - **U24 — Fila del historial:** un clip con el número de adjuntos cuando la
   entrada tiene alguno.
